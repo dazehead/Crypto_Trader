@@ -1,3 +1,9 @@
 TO-DO:
 figure out why length of product is only 848 and not 15000 available products to trade
 
+backtrader w/ optuna for hyper optimization since vectorbt is no longer supported
+PRO: has vs code extension and online dashboard 
+
+ws_testbed msg recieved from WSclient is in str format we need to convert to dictionary or dataframe
+and code so that it ignores heartbeats and only gets candles or whatever subscription we gave it
+
