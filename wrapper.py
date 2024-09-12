@@ -73,16 +73,3 @@ def get_candles(client, product_id: str, timestamps, granularity: str):
     return sorted_df
 
 
-def get_products(client, only_price = False):
-    """lots of data in df to use in scanner such as volume, and change percentage"""
-    pd.set_option('display.float_format', lambda x: '%.6f' % x)
-    pd.set_option('display.max_rows', None)
-    pd.set_option('display.max_columns', None)
-
-    dict = client.get_products(get_all_products=True)
-    df = utils.to_df(dict)
-    if only_price:
-        df['price'] = pd.to_numeric(df['price'], errors='coerce')
-        df = df[['product_id', 'price']].sort_values(by='price', ascending=False)
-
-    return df
