@@ -11,8 +11,8 @@ pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
 
 
-api_key = os.getenv('COINBASE_API_KEY')
-api_secret = os.getenv('COINBASE_API_SECRET')
+api_key = os.getenv('API_ENV_KEY') #API_ENV_KEY | COINBASE_API_KEY
+api_secret = os.getenv('API_SECRET_ENV_KEY') #API_SECRET_ENV_KEY | COINBASE_API_SECRET
 sandbox_key = os.getenv('SANDBOX_KEY')
 sandbox_rest_url = "https://api-public.sandbox.exchange.coinbase.com"
 
@@ -24,8 +24,6 @@ granularity = 'ONE_MINUTE'
 
 
 def run_backtest():
-    product_id = 'BTC-USD'
-    granularity = 'ONE_MINUTE'
     timestamps = get_unix_times(granularity=granularity, days=3)
 
     df = get_candles(client=client,
