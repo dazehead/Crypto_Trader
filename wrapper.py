@@ -73,3 +73,5 @@ def get_candles(client, product_id: str, timestamps, granularity: str):
     return sorted_df
 
 
+
+

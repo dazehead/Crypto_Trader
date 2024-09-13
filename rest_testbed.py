@@ -3,6 +3,7 @@ import asyncio
 import pandas as pd
 import utils
 import asyncio
+import datetime as dt
 from coinbase.rest import RESTClient
 from strategies.strategy import Strategy
 from backtest import Backtest
@@ -24,12 +25,14 @@ granularity = 'ONE_MINUTE'
 
 
 def run_backtest():
-    timestamps = get_unix_times(granularity=granularity, days=3)
+    timestamps = get_unix_times(granularity=granularity, days=1)
 
     df = get_candles(client=client,
                         product_id=product_id,
                         timestamps=timestamps,
                         granularity=granularity)
+    ####### future to try and set index to date for graphing purposes ########
+    #df.set_index('date', inplace=True)
 
     ma_strat = Strategy(df,
                         param1_data=None, # fast ma data
@@ -42,7 +45,19 @@ def run_backtest():
                         param2_data_name = 'Slow MA')
     stats = backtest.generate_backtest()
     print(stats)
-#run_backtest()
+run_backtest()
+
+
+def download_historical_data():
+    timestamps = get_unix_times(granularity=granularity, days=90)
+    df = get_candles(client=client,
+                        product_id=product_id,
+                        timestamps=timestamps,
+                        granularity=granularity)
+    todays_date = str(dt.datetime.now().date())
+    df.to_csv(path_or_buf=f"historical_data/{product_id}_{todays_date}.csv", sep=',')
+#download_historical_data()
+
 
 
 def get_product_book():
@@ -102,5 +117,6 @@ def get_portfolio_breakdown():
     indent = 0
     uuid = get_portfolio_uuid()
     dict = client.get_portfolio_breakdown(portfolio_uuid=uuid)
+    print(dict)
 #get_portfolio_breakdown()
 
