@@ -67,9 +67,12 @@ def get_candles(client, product_id: str, timestamps, granularity: str):
                                          granularity=granularity)
         df = utils.to_df(btc_candles)
         combined_df = pd.concat([combined_df, df], ignore_index=True)
-    print(combined_df)
     sorted_df = combined_df.sort_values(by='date', ascending=True).reset_index(drop=True)
-    print(sorted_df)
+
+    columns_to_convert = ['low', 'high', 'open', 'close', 'volume']
+    for col in columns_to_convert:
+        sorted_df[col] = pd.to_numeric(sorted_df[col], errors='coerce')
+    #print(sorted_df)
     return sorted_df
 
 

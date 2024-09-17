@@ -1,6 +1,7 @@
 """This needs to return signals"""
 import vectorbt as vbt
 import pandas as pd
+import numpy as np
 
 class Strategy:
     """Class to store strategy resources"""
@@ -9,21 +10,32 @@ class Strategy:
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-        self.open = self.df['open'].tolist()
-        self.high = self.df['high'].tolist()
-        self.low = self.df['low'].tolist()
-        self.close = self.df['close'].tolist()
+        self.open = self.df['open']
+        self.high = self.df['high']
+        self.low = self.df['low']
+        self.close = self.df['close']
 
         self.entries = None
         self.exits = None
 
 
-    def custom_indicator(self, fast_window, slow_window):
+    def custom_indicator(self, close,  fast_window, slow_window):
+        #close = self.close.to_list()
 
-        fast_ma = vbt.MA.run(self.close, fast_window)
-        slow_ma = vbt.MA.run(self.close, slow_window)
+        fast_ma = vbt.MA.run(close, fast_window)
+        slow_ma = vbt.MA.run(close, slow_window)
         self.param1_data = fast_ma.ma
         self.param2_data = slow_ma.ma
 
         self.entries = fast_ma.ma_crossed_above(slow_ma)
         self.exits = fast_ma.ma_crossed_below(slow_ma)
+
+        signal =np.zeros_like(close)
+        signal[self.entries] = 1.0
+        signal[self.exits] = -1.0
+
+        return signal
+
+    def _process_signals(self):
+        pass
+        

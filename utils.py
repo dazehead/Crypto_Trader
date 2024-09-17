@@ -4,7 +4,7 @@ pd.set_option('future.no_silent_downcasting', True)
 
 def to_df(dict:dict):
     """some dicts may have more than 1 as of right now the second is only the length"""
-    print(f"Length of dictionary : {len(dict.keys())}")
+    #print(f"Length of dictionary : {len(dict.keys())}")
     for i, key in enumerate(dict.keys()):
         if i == 1:
             break
