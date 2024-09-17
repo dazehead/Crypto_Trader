@@ -4,9 +4,21 @@ from backtest import Backtest
 
 class Hyper(Backtest):
     """A class to handle Hyper Optimization backtests"""
-    def __init__(self, strategy_object):
+    def __init__(self, strategy_object, **kwargs):
         """Initiates strategy resources"""
         super().__init__(strategy_object=strategy_object)
+        
+        possible_inputs = ['open', 'high', 'low', 'close']
+        self.input_names = []
+        self.inputs = []
+        self.params = {}
+        for key, value in kwargs.items():
+            if key in possible_inputs:
+                self.input_names.append(key)
+                self.inputs.append(value)
+                setattr(self, key, value)
+            else:
+                self.params[key] = value
 
         self.ind = self.build_indicator_factory()
         self.res = self.generate_signals()
@@ -18,11 +30,13 @@ class Hyper(Backtest):
 
     def build_indicator_factory(self):
         """Builds the Indicator Factory"""
+        param_names = list(self.params.keys())
+
         ind = vbt.IndicatorFactory(
             class_name="Custom",
             short_name="cust",
-            input_names=['close'],
-            param_names=['fast_window', 'slow_window'],
+            input_names=self.input_names,
+            param_names=param_names,
             output_names=['value']
         ).from_apply_func(
             self.strategy.custom_indicator,
@@ -34,9 +48,8 @@ class Hyper(Backtest):
         """Generates the entries/exits signals"""
 
         res = self.ind.run(
-            self.close,
-            fast_window=np.arange(10,40, step=5, dtype=int),
-            slow_window=np.arange(70, 80, step=2, dtype=int),
+            *self.inputs,
+            **self.params,
             param_product=True
         )
         return res
@@ -50,8 +63,9 @@ class Hyper(Backtest):
 
     def run_portfolio(self):
         """performing backtest"""
+        close_data = getattr(self, 'close', self.close)
         pf = vbt.Portfolio.from_signals(
-            self.close,
+            close_data, 
             self.entries,
             self.exits
         )
