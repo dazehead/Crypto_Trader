@@ -46,7 +46,7 @@ def run_backtest():
                         ti2_data_name = 'Slow MA')
     stats = backtest.generate_backtest()
     print(stats)
-#run_backtest()
+run_backtest()
 
 
 def run_hyper():
@@ -68,7 +68,7 @@ def run_hyper():
     
     print(hyper.returns.to_string())
     print(f"The maximum return was {hyper.returns.max()}\nFast Window: {hyper.returns.idxmax()[0]}\nSlow Window: {hyper.returns.idxmax()[1]}")
-run_hyper()
+#run_hyper()
 
 
 def download_historical_data():

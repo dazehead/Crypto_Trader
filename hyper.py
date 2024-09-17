@@ -16,7 +16,7 @@ class Hyper(Backtest):
             if key in possible_inputs:
                 self.input_names.append(key)
                 self.inputs.append(value)
-                setattr(self, key, value)
+                setattr(self, key, value) # dont think we need this it sets self.close = object
             else:
                 self.params[key] = value
 
