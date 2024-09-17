@@ -1,13 +1,14 @@
 import os
-import asyncio
 import pandas as pd
 import utils
 import asyncio
 import datetime as dt
+import wrapper
+import numpy as np
 from coinbase.rest import RESTClient
 from strategies.strategy import Strategy
 from backtest import Backtest
-from wrapper import get_candles, get_unix_times
+from hyper import Hyper
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
 
@@ -25,9 +26,9 @@ granularity = 'ONE_MINUTE'
 
 
 def run_backtest():
-    timestamps = get_unix_times(granularity=granularity, days=1)
+    timestamps = wrapper.get_unix_times(granularity=granularity, days=1)
 
-    df = get_candles(client=client,
+    df = wrapper.get_candles(client=client,
                         product_id=product_id,
                         timestamps=timestamps,
                         granularity=granularity)
@@ -35,27 +36,51 @@ def run_backtest():
     #df.set_index('date', inplace=True)
 
     ma_strat = Strategy(df,
-                        param1_data=None, # fast ma data
-                        param2_data=None) # slow ma data
+                        ti_data=None, # fast ma data
+                        ti2_data=None) # slow ma data
 
-    ma_strat.custom_indicator(fast_window=30, slow_window=80)
+    ma_strat.custom_indicator(ma_strat.close, fast_window=30, slow_window=80)
 
     backtest = Backtest(ma_strat)
-    backtest.graph_strat(param1_data_name = "Fast MA",
-                        param2_data_name = 'Slow MA')
+    backtest.graph_strat(ti_data_name = "Fast MA",
+                        ti2_data_name = 'Slow MA')
     stats = backtest.generate_backtest()
     print(stats)
-run_backtest()
+#run_backtest()
+
+
+def run_hyper():
+    timestamps = wrapper.get_unix_times(granularity=granularity, days=1)
+
+    df = wrapper.get_candles(client=client,
+                     product_id=product_id,
+                     timestamps=timestamps,
+                     granularity=granularity)
+    
+    ma_strat = Strategy(df,
+                        ti_data=None,
+                        ti2_data=None)
+
+    hyper = Hyper(ma_strat,
+                  close=ma_strat.close,
+                  fast_window=np.arange(10, 40, step=5),
+                  slow_window=np.arange(70, 80, step=2))
+    
+    print(hyper.returns.to_string())
+    print(f"The maximum return was {hyper.returns.max()}\nFast Window: {hyper.returns.idxmax()[0]}\nSlow Window: {hyper.returns.idxmax()[1]}")
+run_hyper()
 
 
 def download_historical_data():
-    timestamps = get_unix_times(granularity=granularity, days=90)
-    df = get_candles(client=client,
+    timestamps = wrapper.get_unix_times(granularity=granularity, days=90)
+    df = wrapper.get_candles(client=client,
                         product_id=product_id,
                         timestamps=timestamps,
                         granularity=granularity)
     todays_date = str(dt.datetime.now().date())
     df.to_csv(path_or_buf=f"historical_data/{product_id}_{todays_date}.csv", sep=',')
+
+
 #download_historical_data()
 
 
@@ -99,7 +124,7 @@ def get_best_bid_ask():
 def get_market_trades():
     """get the last market trades that have occured"""
 
-    timestamps = get_unix_times(granularity=granularity)
+    timestamps = utils.get_unix_times(granularity=granularity)
     dict = client.get_market_trades(product_id=product_id, limit = 10, start=timestamps[0][1], end=timestamps[0][0])
     df = utils.to_df(dict)
     print(df.head())

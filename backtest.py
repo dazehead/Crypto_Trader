@@ -4,7 +4,12 @@ import pandas as pd
 class Backtest:
     def __init__(self, strategy_object):
         self.strategy = strategy_object
+
         self.close = self.strategy.close
+        self.open = self.strategy.open
+        self.high = self.strategy.high
+        self.low = self.strategy.low
+        
         self.entries = self.strategy.entries
         self.exits = self.strategy.exits
 
