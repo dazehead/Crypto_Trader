@@ -22,11 +22,11 @@ class Backtest:
             setattr(self, key, value)
 
         fig = self.strategy.df['close'].vbt.plot(trace_kwargs=dict(name='Close'))
-        fig = self.strategy.param1_data.vbt.plot(trace_kwargs=dict(name=self.param1_data_name), fig=fig)
+        fig = self.strategy.ti_data.vbt.plot(trace_kwargs=dict(name=self.ti_data_name), fig=fig)
         if param_number > 1:
-            fig = self.strategy.param2_data.vbt.plot(trace_kwargs=dict(name=self.param2_data_name), fig=fig)
+            fig = self.strategy.ti2_data.vbt.plot(trace_kwargs=dict(name=self.ti2_data_name), fig=fig)
             if param_number > 2:
-                fig = self.strategy.param3_data.vbt.plot(trace_kwargs=dict(name=self.param3_data_name), fig=fig)
+                fig = self.strategy.ti3_data.vbt.plot(trace_kwargs=dict(name=self.ti3_data_name), fig=fig)
         fig = self.entries.vbt.signals.plot_as_entry_markers(self.close, fig=fig)
         fig = self.exits.vbt.signals.plot_as_exit_markers(self.close, fig=fig)
         fig.show()

@@ -24,8 +24,8 @@ class Strategy:
 
         fast_ma = vbt.MA.run(close, fast_window)
         slow_ma = vbt.MA.run(close, slow_window)
-        self.param1_data = fast_ma.ma
-        self.param2_data = slow_ma.ma
+        self.ti_data = fast_ma.ma
+        self.ti2_data = slow_ma.ma
 
         self.entries = fast_ma.ma_crossed_above(slow_ma)
         self.exits = fast_ma.ma_crossed_below(slow_ma)
