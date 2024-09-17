@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 import utils
-import asyncio
 import datetime as dt
 import wrapper
 import numpy as np

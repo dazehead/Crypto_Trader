@@ -2,7 +2,7 @@
 import time
 import os
 from coinbase.websocket import WSClient, WSClientConnectionClosedException
-from utils import to_df
+
 
 api_key = os.getenv('COINBASE_API_KEY')
 api_secret = os.getenv('COINBASE_API_SECRET')
