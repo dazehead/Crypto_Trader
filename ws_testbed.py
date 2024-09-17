@@ -3,6 +3,7 @@ import time
 import os
 from coinbase.websocket import WSClient, WSClientConnectionClosedException
 from utils import to_df
+from candle_formatter import process_message
 
 api_key = os.getenv('COINBASE_API_KEY')
 api_secret = os.getenv('COINBASE_API_SECRET')
@@ -14,8 +15,7 @@ product_id = 'BTC-USD'
 def market_data_subscription():
     def on_message(msg):
         print("------------------------------------")
-        ### string format needs to be converted into dictionary
-        print(msg)
+        process_message(msg)
         print('\n')
 
     def on_open():
@@ -29,11 +29,11 @@ def market_data_subscription():
     client.open()
     client.subscribe(product_ids=[product_id], channels=['candles', 'heartbeats'])
 
-    time.sleep(1)
+    time.sleep(10)
 
     client.unsubscribe(product_ids=[product_id], channels=['candles', 'heartbeats'])
     client.close()
-#market_data_subscription()
+market_data_subscription()
 
 
 #################################
@@ -60,4 +60,4 @@ def run_forever_market_data():
             connect_and_subscribe()
     connect_and_subscribe()
 
-run_forever_market_data()
+#run_forever_market_data()
