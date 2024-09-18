@@ -9,6 +9,7 @@ from coinbase.rest import RESTClient
 from strategies.strategy import Strategy
 from backtest import Backtest
 from hyper import Hyper
+from longbook import Longbook
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
 
@@ -46,7 +47,7 @@ def run_backtest():
                         ti2_data_name = 'Slow MA')
     stats = backtest.generate_backtest()
     print(stats)
-run_backtest()
+#run_backtest()
 
 
 def run_hyper():
@@ -63,12 +64,13 @@ def run_hyper():
 
     hyper = Hyper(ma_strat,
                   close=ma_strat.close,
-                  fast_window=np.arange(10, 40, step=5),
-                  slow_window=np.arange(70, 80, step=2))
+                  fast_window=np.arange(10, 40, step=1),
+                  slow_window=np.arange(50, 90, step=1))
     
     print(hyper.returns.to_string())
     print(f"The maximum return was {hyper.returns.max()}\nFast Window: {hyper.returns.idxmax()[0]}\nSlow Window: {hyper.returns.idxmax()[1]}")
-#run_hyper()
+    longbook = Longbook(data = hyper.returns.to_string())
+run_hyper()
 
 
 def download_historical_data():
