@@ -38,14 +38,14 @@ def run_backtest():
                         ti_data=None, # fast ma data
                         ti2_data=None) # slow ma data
 
-    ma_strat.custom_indicator(ma_strat.close, fast_window=30, slow_window=80)
+    ma_strat.custom_indicator(ma_strat.close, fast_window=2, slow_window=66)
 
     backtest = Backtest(ma_strat)
     backtest.graph_strat(ti_data_name = "Fast MA",
                         ti2_data_name = 'Slow MA')
     stats = backtest.generate_backtest()
     print(stats)
-run_backtest()
+#run_backtest()
 
 
 def run_hyper():
@@ -62,8 +62,8 @@ def run_hyper():
 
     hyper = Hyper(ma_strat,
                   close=ma_strat.close,
-                  fast_window=np.arange(10, 40, step=5),
-                  slow_window=np.arange(70, 80, step=2))
+                  fast_window=np.arange(1, 30, step=1),
+                  slow_window=np.arange(60, 90, step=1))
     
     print(hyper.returns.to_string())
     print(f"The maximum return was {hyper.returns.max()}\nFast Window: {hyper.returns.idxmax()[0]}\nSlow Window: {hyper.returns.idxmax()[1]}")

@@ -2,8 +2,7 @@
 import time
 import os
 from coinbase.websocket import WSClient, WSClientConnectionClosedException
-
-from candle_formatter import process_message
+from dataframe_manager import DF_Manager
 
 api_key = os.getenv('API_ENV_KEY')
 api_secret = os.getenv('API_SECRET_ENV_KEY')
@@ -13,9 +12,10 @@ product_id = 'BTC-USD'
 #####################################################
 "continious market data for given time"
 def market_data_subscription():
+    global df_manager
     def on_message(msg):
         print("------------------------------------")
-        process_message(msg)
+        df_manager.process_message(msg)
         print('\n')
 
     def on_open():
@@ -25,6 +25,7 @@ def market_data_subscription():
                     api_secret=api_secret,
                     on_message=on_message,
                     on_open=on_open)
+    df_manager = DF_Manager()
 
     client.open()
     client.subscribe(product_ids=[product_id], channels=['candles', 'heartbeats'])
@@ -33,20 +34,23 @@ def market_data_subscription():
 
     client.unsubscribe(product_ids=[product_id], channels=['candles', 'heartbeats'])
     client.close()
-market_data_subscription()
+#market_data_subscription()
 
 
 #################################
 """aysnc functionality running forever  ctl+C to exit"""
 def run_forever_market_data():
+    global df_manager
 
     def on_message(msg):
         "function that gets called when new data comes in"
         print('----------------------------------------------')
-        print(msg)
-        print('\n')
+        #print(msg)
+        df_manager.process_message(msg)
 
+    """---------------start of program-----------------"""
     client = WSClient(api_key=api_key, api_secret=api_secret, on_message=on_message, retry=False)
+    df_manager = DF_Manager()
 
     def connect_and_subscribe():
         "function to connect subscribe and then reconnect after 20 seconds"
@@ -58,6 +62,11 @@ def run_forever_market_data():
             print("Connection closed! Sleeping for 20 seconds before reconnecting...")
             time.sleep(20)
             connect_and_subscribe()
+        except Exception as e:
+            """suppose to catch any error and stop the program but it still runs"""
+            print(f"An error occured:\n{e}")
+            print("Stopping the program.")
+            raise
     connect_and_subscribe()
 
-#run_forever_market_data()
+run_forever_market_data()
