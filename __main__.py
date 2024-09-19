@@ -55,7 +55,7 @@ def connect_and_subscribe():
     "function to connect subscribe and then reconnect after 20 seconds"
     try:
         ws_client.open()
-        ws_client.subscribe(product_ids=[product_id], channels=['candles', 'heartbeats'])
+        ws_client.subscribe(product_ids=[scanner.products_to_trade], channels=['candles', 'heartbeats'])
         ws_client.run_forever_with_exception_check()
 
     except WSClientConnectionClosedException as e:
