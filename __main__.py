@@ -39,7 +39,7 @@ granularity = 'ONE_MINUTE'
 ws_client = WSClient(api_key=api_key, api_secret=api_secret, on_message=on_message, retry=False)
 rest_client = RESTClient(api_key=api_key, api_secret=api_secret)
 
-scanner = Scanner(rest_client=rest_client
+scanner = Scanner(rest_client=rest_client,
                   granularity=granularity)
 
 df_manager = DF_Manager()
