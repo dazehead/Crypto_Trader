@@ -84,51 +84,8 @@ def download_historical_data():
 
 
 
-def get_product_book():
-    """gets bids gets asks and time could eventually incorpoate into scanner"""
 
-    dict = client.get_product_book(product_id=product_id, limit=10)
-    df = utils.to_df(dict)
-    pd.set_option('display.max_rows', None)
-    pd.set_option('display.max_columns', None)
-    print(df.columns)
-#get_product_book()
-
-
-
-def get_products(client, only_price = False):
-    """lots of data in df to use in scanner such as volume, and change percentage"""
-
-    pd.set_option('display.float_format', lambda x: '%.6f' % x)
-    pd.set_option('display.max_rows', None)
-    pd.set_option('display.max_columns', None)
-    dict = client.get_products(get_all_products=True)
-    df = utils.to_df(dict)
-    if only_price:
-        df['price'] = pd.to_numeric(df['price'], errors='coerce')
-        df = df[['product_id', 'price']].sort_values(by='price', ascending=False)
-    return df
-
-
-
-def get_best_bid_ask():
-    """gets the best bid and ask"""
-
-    dict = client.get_best_bid_ask(product_ids=[product_id])
-    df = utils.to_df(dict)
-    print(df.head())
-#get_best_bid_ask()
-
-
-def get_market_trades():
-    """get the last market trades that have occured"""
-
-    timestamps = utils.get_unix_times(granularity=granularity)
-    dict = client.get_market_trades(product_id=product_id, limit = 10, start=timestamps[0][1], end=timestamps[0][0])
-    df = utils.to_df(dict)
-    print(df.head())
-#get_market_trades()
-
+"""below will eventually be put in a Risk Analysis Class"""
 def get_portfolio_uuid():
     """gets portfolio data this returns the uuid which is needed for further portfolio data"""
     dict = client.get_portfolios() # only good data in this is the uuid
