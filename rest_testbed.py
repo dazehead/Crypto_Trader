@@ -64,12 +64,19 @@ def run_hyper():
 
     hyper = Hyper(ma_strat,
                   close=ma_strat.close,
-                  fast_window=np.arange(10, 40, step=1),
-                  slow_window=np.arange(50, 90, step=1))
+                  fast_window=np.arange(10, 40, step=5),
+                  slow_window=np.arange(50, 90, step=5))
     
     print(hyper.returns.to_string())
     print(f"The maximum return was {hyper.returns.max()}\nFast Window: {hyper.returns.idxmax()[0]}\nSlow Window: {hyper.returns.idxmax()[1]}")
-    longbook = Longbook(data = hyper.returns.to_string())
+    print(type(hyper.returns.max()))
+    print(type(hyper.returns.idxmax()[0]))
+    longbook = Longbook(data = hyper.returns.to_numpy(),
+                        max = hyper.returns.max(),
+                        fast_window = hyper.returns.idxmax()[0],
+                        slow_window = hyper.returns.idxmax()[1])
+    longbook.into_llist()
+    longbook.bests()
 run_hyper()
 
 
