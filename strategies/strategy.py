@@ -30,11 +30,11 @@ class Strategy:
         self.entries = fast_ma.ma_crossed_above(slow_ma)
         self.exits = fast_ma.ma_crossed_below(slow_ma)
 
-        signal =np.zeros_like(close)
-        signal[self.entries] = 1.0
-        signal[self.exits] = -1.0
+        signals =np.zeros_like(close)
+        signals[self.entries] = 1.0
+        signals[self.exits] = -1.0
 
-        return signal
+        return signals
 
     def _process_signals(self):
         pass
