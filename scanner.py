@@ -8,16 +8,16 @@ class Scanner():
 
         self.products = self.get_products()
 
-        self.filtered_products = self.filter_products()
-        pass
+        self.products_to_trade = self.filter_products()
 
     def filter_products(self):
         filter_list = []
         """
         this is where we define what we want our filter to be such as 
         for each product in self.products
-            if market trades are > 1000000 then
-            append that product to self.filter_products
+            if market trades are > 1000000
+            or if change percentage is > 20%
+            then append that product to self.filter_products
         """
         return filter_list
 

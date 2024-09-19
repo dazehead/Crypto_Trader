@@ -42,6 +42,10 @@ rest_client = RESTClient(api_key=api_key, api_secret=api_secret)
 scanner = Scanner(rest_client=rest_client,
                   granularity=granularity)
 
+"""Loops through the scanner until a product gets returned from our defined filter parameters"""
+while not scanner.products_to_trade:
+    scanner.filter_products()
+
 df_manager = DF_Manager()
 logbook = LinkedList()
 
