@@ -6,6 +6,7 @@ import wrapper
 import numpy as np
 from coinbase.rest import RESTClient
 from strategies.strategy import Strategy
+from strategies.kama import KAMA_Strategy
 from backtest import Backtest
 from hyper import Hyper
 pd.set_option('display.max_rows', None)
@@ -25,7 +26,7 @@ granularity = 'ONE_MINUTE'
 
 
 def run_backtest():
-    timestamps = wrapper.get_unix_times(granularity=granularity, days=1)
+    timestamps = wrapper.get_unix_times(granularity=granularity, days=4)
 
     df = wrapper.get_candles(client=client,
                         product_id=product_id,
@@ -34,39 +35,43 @@ def run_backtest():
     ####### future to try and set index to date for graphing purposes ########
     #df.set_index('date', inplace=True)
 
-    ma_strat = Strategy(df,
-                        ti_data=None, # fast ma data
-                        ti2_data=None) # slow ma data
+    kama_strat = KAMA_Strategy(df,
+                        ti_data=None) # fast ma data
+                        #ti2_data=None) # slow ma data
 
-    ma_strat.custom_indicator(ma_strat.close, fast_window=2, slow_window=66)
+    kama_strat.custom_indicator(close = kama_strat.close,
+                                efratio_window=15,
+                                ef_threshold_buy= 0.1,
+                                ef_threshold_sell= -0.8)
 
-    backtest = Backtest(ma_strat)
-    backtest.graph_strat(ti_data_name = "Fast MA",
-                        ti2_data_name = 'Slow MA')
-    stats = backtest.generate_backtest()
-    print(stats)
-#run_backtest()
+    backtest = Backtest(kama_strat)
+    backtest.graph_strat(ti_data_name = "KAMA")
+                         #ti2_data_name = 'Slow MA')
+    # stats = backtest.generate_backtest()
+    # print(stats)
+run_backtest()
 
 
 def run_hyper():
-    timestamps = wrapper.get_unix_times(granularity=granularity, days=1)
+    timestamps = wrapper.get_unix_times(granularity=granularity, days=4)
 
     df = wrapper.get_candles(client=client,
                      product_id=product_id,
                      timestamps=timestamps,
                      granularity=granularity)
     
-    ma_strat = Strategy(df,
-                        ti_data=None,
-                        ti2_data=None)
+    kama_strat = KAMA_Strategy(df,
+                        ti_data=None)
+                        #ti2_data=None)
 
-    hyper = Hyper(ma_strat,
-                  close=ma_strat.close,
-                  fast_window=np.arange(1, 30, step=1),
-                  slow_window=np.arange(60, 90, step=1))
+    hyper = Hyper(strategy_object=kama_strat,
+                  close=kama_strat.close,
+                  efratio_window=np.arange(6, 30, step=3),
+                  ef_threshold_buy=np.arange(0.1, 1, step=.1),
+                  ef_threshold_sell=np.arange(-1, -0.1, step=.1))
     
     print(hyper.returns.to_string())
-    print(f"The maximum return was {hyper.returns.max()}\nFast Window: {hyper.returns.idxmax()[0]}\nSlow Window: {hyper.returns.idxmax()[1]}")
+    print(f"The maximum return was {hyper.returns.max()}\nefratio window: {hyper.returns.idxmax()[0]}\nef threshoold buy: {hyper.returns.idxmax()[1]}\nef threshold sell: {hyper.returns.idxmax()[2]}")
 #run_hyper()
 
 
