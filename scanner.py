@@ -32,7 +32,7 @@ class Scanner():
         pd.set_option('display.max_rows', None)
         pd.set_option('display.max_columns', None)
         print(df.columns)
-
+    
 
     def get_products(self, client, only_price = False):
         """lots of data in df to use in scanner such as volume, and change percentage"""

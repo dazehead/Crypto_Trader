@@ -2,6 +2,7 @@
 import vectorbt as vbt
 import pandas as pd
 import numpy as np
+from utils import format_signals
 
 class Strategy:
     """Class to store strategy resources"""
@@ -36,6 +37,26 @@ class Strategy:
 
         return signals
 
+    def generate_signals(self, buy_signal, sell_signal):
+        """Common method to generate and format buy/sell signals"""
+        signals = np.zeros_like(self.close)
+        signals[buy_signal] = 1.0
+        signals[sell_signal] = -1.0
+
+        signals = format_signals(signals)
+
+        # For graphing
+        self.entries = np.zeros_like(signals, dtype=bool)
+        self.exits = np.zeros_like(signals, dtype=bool)
+
+        self.entries[signals == 1] = True
+        self.exits[signals == -1] = True
+
+        self.entries = pd.Series(self.entries, index=self.close.index)
+        self.exits = pd.Series(self.exits, index=self.close.index)
+
+        return signals
+    
     def _process_signals(self):
         pass
         

@@ -9,6 +9,7 @@ from strategies.strategy import Strategy
 from strategies.kama import KAMA_Strategy
 from backtest import Backtest
 from hyper import Hyper
+from strategies.vwap import Vwap_Strategy
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
 
@@ -47,9 +48,9 @@ def run_backtest():
     backtest = Backtest(kama_strat)
     backtest.graph_strat(ti_data_name = "KAMA")
                          #ti2_data_name = 'Slow MA')
-    # stats = backtest.generate_backtest()
-    # print(stats)
-run_backtest()
+    stats = backtest.generate_backtest()
+    print(stats)
+#run_backtest()
 
 
 def run_hyper():
@@ -74,6 +75,19 @@ def run_hyper():
     print(f"The maximum return was {hyper.returns.max()}\nefratio window: {hyper.returns.idxmax()[0]}\nef threshoold buy: {hyper.returns.idxmax()[1]}\nef threshold sell: {hyper.returns.idxmax()[2]}")
 #run_hyper()
 
+def test_vvwap():
+    timestamps = wrapper.get_unix_times(granularity=granularity, days=4)
+
+    df = wrapper.get_candles(client=client,
+                     product_id=product_id,
+                     timestamps=timestamps,
+                     granularity=granularity)
+    
+    vvwap_strategy = Vwap_Strategy(df)
+
+    
+    vvwap_strategy.vwap()                
+test_vvwap()
 
 def download_historical_data():
     timestamps = wrapper.get_unix_times(granularity=granularity, days=90)

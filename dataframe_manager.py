@@ -31,7 +31,7 @@ class DF_Manager():
     def process_message(self, message):
         msg_data = json.loads(message) # loads data into json format
         candles_data = msg_data.get('events', [])[0].get('candles', []) # retrives data if there is some if not an empty list
-
+        print(candles_data)
         if candles_data: # if not an empty list
             candles_data = {'candles': candles_data} #rename to work with _to_df
             self.new_df = self._to_df(candles_data)
