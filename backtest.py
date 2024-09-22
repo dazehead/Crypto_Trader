@@ -9,7 +9,7 @@ class Backtest:
         self.open = self.strategy.open
         self.high = self.strategy.high
         self.low = self.strategy.low
-        self.volume = self.strategy.volume
+        #self.volume = self.strategy.volume
         
         self.entries = self.strategy.entries
         self.exits = self.strategy.exits

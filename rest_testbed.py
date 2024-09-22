@@ -73,9 +73,9 @@ def run_hyper():
     
     print(hyper.returns.to_string())
     print(f"The maximum return was {hyper.returns.max()}\nefratio window: {hyper.returns.idxmax()[0]}\nef threshoold buy: {hyper.returns.idxmax()[1]}\nef threshold sell: {hyper.returns.idxmax()[2]}")
-#run_hyper()
+run_hyper()
 
-def test_vvwap():
+def test_vwap():
     timestamps = wrapper.get_unix_times(granularity=granularity, days=4)
 
     df = wrapper.get_candles(client=client,
@@ -83,11 +83,27 @@ def test_vvwap():
                      timestamps=timestamps,
                      granularity=granularity)
     
-    vvwap_strategy = Vwap_Strategy(df)
+    vwap_strategy = Vwap_Strategy(df)
 
+    hyper = Hyper(strategy_object=vwap_strategy,
+                  close=vwap_strategy.close,
+                  rsi_period=np.arange(6, 30, step=3),
+                  atr_period=np.arange(6, 30, step=3),
+                  volume_window=np.arange(15, 45, step=3),
+                  threshold=np.arange(0.001, 0.005, step=0.001),  # Fixed step
+                  ef_threshold_buy=np.arange(15, 45, step=3),
+                  ef_threshold_sell=np.arange(60, 85, step=3),
+                  atr_threshold=np.arange(0.001, 0.01, step=0.001))  # Fixed typo
     
-    vvwap_strategy.vwap()                
-test_vvwap()
+    print(hyper.returns.to_string())
+    print(f"The maximum return was {hyper.returns.max()}\n"
+          f"rsi_period: {hyper.returns.idxmax()[0]}\n"
+          f"atr_period: {hyper.returns.idxmax()[1]}\n"
+          f"volume_window: {hyper.returns.idxmax()[2]}\n"
+          f"ef_threshold_buy: {hyper.returns.idxmax()[3]}\n"
+          f"ef_threshold_sell: {hyper.returns.idxmax()[4]}")
+#test_vwap()
+ 
 
 def download_historical_data():
     timestamps = wrapper.get_unix_times(granularity=granularity, days=90)
