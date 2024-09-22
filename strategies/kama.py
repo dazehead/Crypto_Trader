@@ -18,7 +18,6 @@ class KAMA_Strategy(Strategy):
         self.ti_data = pd.Series(kama, index=self.close.index)
         #print(kama)
 
-
         # for trading
         buy_signal = efratios > ef_threshold_buy
         sell_signal = efratios < ef_threshold_sell
