@@ -34,8 +34,8 @@ class Vwap_Strategy(Strategy):
     def custom_indicator(self,close, rsi_period=14, atr_period=14, volume_window=20):
         self.close = close
         threshold= 0.001
-        rsi_threshold_buy = 30
-        rsi_threshold_sell = 70
+        rsi_threshold_buy = 40
+        rsi_threshold_sell = 60
         atr_threshold = 0.005
 
         # Calculate indicators
@@ -59,9 +59,9 @@ class Vwap_Strategy(Strategy):
         buy_signal = (self.close > self.vwap_values * (1 + threshold)) & \
                      (np.roll(self.close, 1) <= np.roll(self.vwap_values, 1) * (1 + threshold)) & \
                      (rsi < rsi_threshold_buy) & \
-                     (atr > atr_threshold) & \
                      (self.close > self.long_vwap_values) & \
                      (self.volume > volume_avg)
+        print(buy_signal)
 
         # Sell signal: Price crosses below VWAP, RSI > 70, high ATR, price < long-term VWAP, and volume > average
         sell_signal = (self.close < self.vwap_values * (1 - threshold)) & \
@@ -73,5 +73,5 @@ class Vwap_Strategy(Strategy):
         signals = self.generate_signals(buy_signal, sell_signal) 
         print(signals)
 
-        return self.generate_signals(buy_signal, sell_signal) 
+        return signals
     
