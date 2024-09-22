@@ -47,12 +47,15 @@ class Hyper(Backtest):
     
     def generate_signals(self):
         """Generates the entries/exits signals"""
-
-        res = self.ind.run(
-            *self.inputs,
-            **self.params,
-            param_product=True
-        )
+        try:
+            res = self.ind.run(
+                *self.inputs,
+                **self.params,
+                param_product=True
+            )
+        except Exception as e:
+            print(f"Error during signal generation: {e}")
+            res = None  # Handle as needed
         return res
     
     def convert_signals(self):
