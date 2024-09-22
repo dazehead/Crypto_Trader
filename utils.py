@@ -1,5 +1,6 @@
 import pandas as pd
 import datetime as dt
+import numpy as np
 pd.set_option('future.no_silent_downcasting', True)
 
 def to_df(dict:dict):
@@ -12,4 +13,16 @@ def to_df(dict:dict):
         df = df.ffill()
     return df
  
-    
+def format_signals(signals):
+    """formats signals so no double buy or double sells"""
+    formatted_signals = np.zeros_like(signals)
+    in_position = False
+        
+    for i in range(len(signals)):
+        if signals[i] == 1 and not in_position:
+            formatted_signals[i] = 1
+            in_position = True
+        elif signals[i] == -1 and in_position:
+            formatted_signals[i] = -1
+            in_position = False
+    return formatted_signals    

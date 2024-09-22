@@ -1,6 +1,7 @@
 import vectorbt as vbt
 import numpy as np
 from backtest import Backtest
+import talib
 
 class Hyper(Backtest):
     """A class to handle Hyper Optimization backtests"""
@@ -8,7 +9,7 @@ class Hyper(Backtest):
         """Initiates strategy resources"""
         super().__init__(strategy_object=strategy_object)
         
-        possible_inputs = ['open', 'high', 'low', 'close']
+        possible_inputs = ['open', 'high', 'low', 'close', 'volume']
         self.input_names = []
         self.inputs = []
         self.params = {}

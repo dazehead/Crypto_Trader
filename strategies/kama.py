@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import talib as ta
 from strategies.strategy import Strategy
+from utils import format_signals
 
 
 class KAMA_Strategy(Strategy):
@@ -19,44 +20,11 @@ class KAMA_Strategy(Strategy):
 
 
         # for trading
-        signals =np.zeros_like(close)
-        self.entries = np.zeros_like(efratios, dtype=bool)
-        self.exits = np.zeros_like(efratios, dtype=bool)
+        buy_signal = efratios > ef_threshold_buy
+        sell_signal = efratios < ef_threshold_sell
 
-        self.entries[efratios > ef_threshold_buy] = True
-        self.exits[efratios < ef_threshold_sell] = True
-
-        signals[self.entries] = 1.0
-        signals[self.exits] = -1.0
-
-        signals = self._format_signals(signals)
-
-        # for graphing
-        self.entries = np.zeros_like(signals, dtype=bool)
-        self.exits = np.zeros_like(signals, dtype=bool)
-
-        self.entries[signals == 1] = True
-        self.exits[signals == -1] = True
-
-        self.entries = pd.Series(self.entries, index=close.index)
-        self.exits = pd.Series(self.exits, index=close.index)
-
-        return signals
-
-
-    def _format_signals(self, signals):
-        """formats signals so no double buy or double sells"""
-        formatted_signals = np.zeros_like(signals)
-        in_position = False
-        
-        for i in range(len(signals)):
-            if signals[i] == 1 and not in_position:
-                formatted_signals[i] = 1
-                in_position = True
-            elif signals[i] == -1 and in_position:
-                formatted_signals[i] = -1
-                in_position = False
-        return formatted_signals
+        return self.generate_signals(buy_signal, sell_signal)
+ 
     
     def calculate_efratios(self, efratio_window):
         efratios = []
