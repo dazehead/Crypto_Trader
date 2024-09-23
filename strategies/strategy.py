@@ -2,7 +2,6 @@
 import vectorbt as vbt
 import pandas as pd
 import numpy as np
-from utils import format_signals
 
 class Strategy:
     """Class to store strategy resources"""
@@ -43,7 +42,7 @@ class Strategy:
         signals[buy_signal] = 1.0
         signals[sell_signal] = -1.0
 
-        signals = format_signals(signals)
+        signals = self.format_signals(signals)
 
         # For graphing
         self.entries = np.zeros_like(signals, dtype=bool)
@@ -57,6 +56,17 @@ class Strategy:
 
         return signals
     
-    def _process_signals(self):
-        pass
+    def format_signals(signals):
+        """formats signals so no double buy or double sells"""
+        formatted_signals = np.zeros_like(signals)
+        in_position = False
+            
+        for i in range(len(signals)):
+            if signals[i] == 1 and not in_position:
+                formatted_signals[i] = 1
+                in_position = True
+            elif signals[i] == -1 and in_position:
+                formatted_signals[i] = -1
+                in_position = False
+        return formatted_signals    
         
