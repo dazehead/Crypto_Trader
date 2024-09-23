@@ -14,17 +14,19 @@ class Strategy:
         self.high = self.df['high']
         self.low = self.df['low']
         self.close = self.df['close']
+        self.volume = self.df['volume']
 
         self.entries = None
         self.exits = None
 
 
-    def custom_indicator(self, close,  fast_window, slow_window):
+    def custom_indicator(self, close,  fast_window=5, slow_window=30):
         #close = self.close.to_list()
 
         fast_ma = vbt.MA.run(close, fast_window)
         slow_ma = vbt.MA.run(close, slow_window)
         self.ti_data = fast_ma.ma
+        #print(type(self.ti_data))
         self.ti2_data = slow_ma.ma
 
         self.entries = fast_ma.ma_crossed_above(slow_ma)
@@ -36,13 +38,14 @@ class Strategy:
 
         return signals
 
-    def generate_signals(self, buy_signal, sell_signal):
+    def generate_signals(self, buy_signal, sell_signal, with_formating=True):
         """Common method to generate and format buy/sell signals"""
         signals = np.zeros_like(self.close)
         signals[buy_signal] = 1.0
         signals[sell_signal] = -1.0
 
-        signals = self.format_signals(signals)
+        if with_formating:
+            signals = self.format_signals(signals)
 
         # For graphing
         self.entries = np.zeros_like(signals, dtype=bool)
@@ -56,7 +59,7 @@ class Strategy:
 
         return signals
     
-    def format_signals(signals):
+    def format_signals(self, signals):
         """formats signals so no double buy or double sells"""
         formatted_signals = np.zeros_like(signals)
         in_position = False

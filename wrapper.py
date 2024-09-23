@@ -72,6 +72,7 @@ def get_candles(client, product_id: str, timestamps, granularity: str):
     columns_to_convert = ['low', 'high', 'open', 'close', 'volume']
     for col in columns_to_convert:
         sorted_df[col] = pd.to_numeric(sorted_df[col], errors='coerce')
+    sorted_df.set_index('date', inplace=True)
     #print(sorted_df)
     return sorted_df
 

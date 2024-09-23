@@ -16,6 +16,8 @@ class Backtest:
 
 
     def graph_strat(self, **kwargs):
+        """----NOTE: ALL DATA MUST BE PD.SERIES----"""
+
         """Graphs the strategy with entry and exit markers"""
         param_number = 0
         for key, value in kwargs.items():
