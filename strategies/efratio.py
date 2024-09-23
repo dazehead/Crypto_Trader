@@ -5,7 +5,7 @@ from strategies.strategy import Strategy
 from utils import format_signals
 
 
-class KAMA_Strategy(Strategy):
+class EFratio_Strategy(Strategy):
     """KAMA IS NOT CORRECT AT THE MOMENT ONLY USING EFRATIO FOR STRATEGY"""
     def __init__(self, df, **kwargs):
         super().__init__(df = df, **kwargs)
@@ -13,16 +13,16 @@ class KAMA_Strategy(Strategy):
     def custom_indicator(self, close, efratio_window, ef_threshold_buy, ef_threshold_sell):
         """SELLING THRESHOLD IS ONLY THERE FOR TESTING NEED TO HYPER TEST SELLING"""
         efratios = self.calculate_efratios(efratio_window)
-        #print(efratios)
-        kama = self.calculate_kama(efratios, close)
+        #kama = self.calculate_kama(efratios, close)
         self.ti_data = pd.Series(kama, index=self.close.index)
-        #print(kama)
 
         # for trading
         buy_signal = efratios > ef_threshold_buy
         sell_signal = efratios < ef_threshold_sell
 
-        return self.generate_signals(buy_signal, sell_signal)
+        signals = self.generate_signals(buy_signal, sell_signal)
+
+        return signals
  
     
     def calculate_efratios(self, efratio_window):

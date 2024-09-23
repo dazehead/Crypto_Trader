@@ -19,19 +19,20 @@ class Vwap_Strategy(Strategy):
 
         cumulative_price_volume = np.cumsum(typical_price * volume)
         cumulative_volume = np.cumsum(volume)
+        #print("VWAP:", self.vwap_value)
 
         return cumulative_price_volume / cumulative_volume
-
-        print("VWAP:", self.vwap_value)
-        print('-----------------------------------------------------')
 
     def calculate_long_vwap(self, window=100):
         typical_price = (self.high + self.low + self.close) / 3
         self.df['cum_price_volume'] = np.cumsum(typical_price * self.volume)
         self.df['cum_volume'] = np.cumsum(self.volume)
-        self.long_vwap_values = self.df['cum_price_volume'].rolling(window=window).mean() / self.df['cum_volume'].rolling(window=window).mean()
+        long_vwap_values = self.df['cum_price_volume'].rolling(window=window).mean() / self.df['cum_volume'].rolling(window=window).mean()
+
+        return long_vwap_values
 
     def custom_indicator(self,close, rsi_period=14, atr_period=14, volume_window=20):
+        #assign variables
         self.close = close
         threshold= 0.001
         rsi_threshold_buy = 40
@@ -39,11 +40,8 @@ class Vwap_Strategy(Strategy):
         atr_threshold = 0.005
 
         # Calculate indicators
-        if self.vwap_values is None:
-            self.vwap_values = self.calculate_vwap()
-
-        if self.long_vwap_values is None:
-            self.calculate_long_vwap()
+        self.vwap_values = self.calculate_vwap()
+        self.long_vwap_values = self.calculate_long_vwap()
 
         # Calculate RSI
         rsi = talib.RSI(self.close, timeperiod=rsi_period)
@@ -70,8 +68,8 @@ class Vwap_Strategy(Strategy):
                       (atr > atr_threshold) & \
                       (self.close < self.long_vwap_values) & \
                       (self.volume > volume_avg)
+        
         signals = self.generate_signals(buy_signal, sell_signal) 
-        print(signals)
 
         return signals
     
