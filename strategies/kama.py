@@ -7,7 +7,7 @@ from strategies.efratio import EFratio_Strategy
 class KAMA_Strategy(EFratio_Strategy):
     def __init__(self, df, efratio_window=15, **kwargs):
         super().__init__(df=df, **kwargs)
-
+        
         self.efratios = self.calculate_efratios(efratio_window)
 
     def custom_indicator(self,close, fast_window=30, slow_window=3):
@@ -17,8 +17,6 @@ class KAMA_Strategy(EFratio_Strategy):
         
 
     def calculate_kama(self, efratios, close, fast_window, slow_window):
-        fast_period = 30
-        slow_period = 3
 
         fast_ma = ta.EMA(close, timeperiod=fast_window)
         slow_ma = ta.EMA(close, timeperiod=slow_window)
@@ -36,9 +34,9 @@ class KAMA_Strategy(EFratio_Strategy):
         x = k/ np.power(close, n_values)
 
         smoothing_constant = (efratios * (fastest - slowest) + slowest) ** x
-        kama[fast_period -1] = close[fast_period - 1]
+        kama[fast_window -1] = close[fast_window - 1]
 
-        for i in range(fast_period, len(close)):
+        for i in range(fast_window, len(close)):
             kama[i] = kama[i-1] + smoothing_constant[i] * close[i] - kama[i-1]
         
         return kama

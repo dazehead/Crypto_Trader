@@ -1,5 +1,5 @@
 import numpy as np
-import talib
+import talib as ta
 from strategies.strategy import Strategy
 
 class Vwap_Strategy(Strategy):
@@ -33,7 +33,6 @@ class Vwap_Strategy(Strategy):
 
     def custom_indicator(self,close, rsi_period=14, atr_period=14, volume_window=20):
         #assign variables
-        self.close = close
         threshold= 0.001
         rsi_threshold_buy = 40
         rsi_threshold_sell = 60
@@ -44,10 +43,10 @@ class Vwap_Strategy(Strategy):
         self.long_vwap_values = self.calculate_long_vwap()
 
         # Calculate RSI
-        rsi = talib.RSI(self.close, timeperiod=rsi_period)
+        rsi = ta.RSI(self.close, timeperiod=rsi_period)
         
         # Calculate ATR for volatility filter
-        atr = talib.ATR(self.high, self.low, self.close, timeperiod=atr_period)
+        atr = ta.ATR(self.high, self.low, self.close, timeperiod=atr_period)
         self.ti_data = atr
 
         # Calculate moving average of volume for volume confirmation
