@@ -72,4 +72,17 @@ class Strategy:
                 formatted_signals[i] = -1
                 in_position = False
         return formatted_signals    
-        
+
+
+    def combine_signals(self, signal_1, signal_2):
+        combined_signals = []
+        try:
+            for i in range(signal_1):
+                if signal_1[i] == True & signal_2[i] == True:
+                    combined_signals.append(True)
+                else:
+                    combined_signals.append(False)
+        except:
+            print("Invalid signals")
+            
+        return combined_signals            
