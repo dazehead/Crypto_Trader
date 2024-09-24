@@ -7,8 +7,8 @@ class Strategy:
     """Class to store strategy resources"""
     def __init__(self, df, **kwargs):
         self.df = df
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+        # for key, value in kwargs.items():
+        #     setattr(self, key, value)
 
         self.open = self.df['open']
         self.high = self.df['high']

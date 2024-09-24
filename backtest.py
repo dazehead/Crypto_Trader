@@ -19,20 +19,31 @@ class Backtest:
         """----NOTE: ALL DATA MUST BE PD.SERIES----"""
 
         """Graphs the strategy with entry and exit markers"""
+        # Create a figure with the 'close' prices
         param_number = 0
+        fig = self.strategy.df['close'].vbt.plot(trace_kwargs=dict(name='Close'))
+
+        # Loop over kwargs, set attributes dynamically, and plot ti_data if it's not None
         for key, value in kwargs.items():
             param_number += 1
             setattr(self, key, value)
+            
+            # Dynamically access the ti{i}_data attribute and check if it's not None
+            ti_data_attr = getattr(self.strategy, f"ti{param_number}_data", None)
+            
+            if ti_data_attr is not None:  # Ensure it's not None before plotting
+                ti_data_name_attr = getattr(self, f"ti{param_number}_data_name", None)
+                
+                if ti_data_name_attr:  # Ensure the name attribute exists
+                    fig = ti_data_attr.vbt.plot(trace_kwargs=dict(name=ti_data_name_attr), fig=fig)
 
-        fig = self.strategy.df['close'].vbt.plot(trace_kwargs=dict(name='Close'))
-        if self.ti_data_name:
-            fig = self.strategy.ti_data.vbt.plot(trace_kwargs=dict(name=self.ti_data_name), fig=fig)
-            if param_number > 1:
-                fig = self.strategy.ti2_data.vbt.plot(trace_kwargs=dict(name=self.ti2_data_name), fig=fig)
-                if param_number > 2:
-                    fig = self.strategy.ti3_data.vbt.plot(trace_kwargs=dict(name=self.ti3_data_name), fig=fig)
+        # Plot entry and exit markers
         fig = self.entries.vbt.signals.plot_as_entry_markers(self.close, fig=fig)
         fig = self.exits.vbt.signals.plot_as_exit_markers(self.close, fig=fig)
+
+        fig2 = self.strategy.osc1_data.vbt.plot(trace_kwargs=dict(name='20-day Volume'))
+
+        # Display the figure
         fig.show()
     
     def generate_backtest(self):

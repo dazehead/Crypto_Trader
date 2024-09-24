@@ -27,12 +27,12 @@ class Vwap_Strategy(Strategy):
 
         # Calculate indicators
         self.vwap_values = self.calculate_vwap()
-        self.ti_data = pd.Series(self.vwap_values, index=self.close.index)
+        self.ti1_data = pd.Series(self.vwap_values, index=self.close.index)
         #print(self.ti_data)
 
         # Calculate moving average of volume for volume confirmation
         volume_avg = self.volume.rolling(window=volume_window).mean()
-        self.ti2_data = pd.Series(volume_avg, index=self.close.index)
+        self.osc1_data = pd.Series(volume_avg, index=self.close.index)
 
         buy_signal = (self.close > self.vwap_values)
         sell_signal = (self.close < self.vwap_values)   
