@@ -2,13 +2,12 @@
 import vectorbt as vbt
 import pandas as pd
 import numpy as np
+import plotly.subplots as sp
 
 class Strategy:
     """Class to store strategy resources"""
-    def __init__(self, df, **kwargs):
+    def __init__(self, df):
         self.df = df
-        # for key, value in kwargs.items():
-        #     setattr(self, key, value)
 
         self.open = self.df['open']
         self.high = self.df['high']
@@ -20,6 +19,7 @@ class Strategy:
         self.exits = None
 
         # technical indicator data assigned in custom_indicator
+        #
         self.ti1_data = None
         self.ti2_data = None
         self.ti3_data = None
@@ -37,8 +37,8 @@ class Strategy:
         fast_ma = vbt.MA.run(close, fast_window)
         slow_ma = vbt.MA.run(close, slow_window)
         
-        self.ti_data = fast_ma.ma
-        self.ti2_data = slow_ma.ma
+        self.ti1_data = ("Fast MA", fast_ma.ma)
+        self.ti2_data = ("Slow MA", slow_ma.ma)
 
         self.entries = fast_ma.ma_crossed_above(slow_ma)
         self.exits = fast_ma.ma_crossed_below(slow_ma)
@@ -97,3 +97,81 @@ class Strategy:
             print("Invalid signals")
             
         return combined_signals            
+
+
+    def graph(self, *args):
+        """
+        strat.graph(('fig1', 32000), ('fig2', 2500))
+        ARGS: You can specify which figure (fig1 or fig2) and at which value to graph a horizontal line.
+        """
+
+        # Start by plotting the first figure (Close price)
+        param_number = 0
+        fig1 = self.close.vbt.plot(trace_kwargs=dict(name='Close'))
+        fig2 = None
+
+        # Loop over param_numbers to dynamically access ti_data and osc_data
+        while True:
+            param_number += 1
+
+            # Dynamically access ti{i}_data and check if it's not None
+            ti_data_attr = getattr(self, f"ti{param_number}_data", None)
+            
+            if ti_data_attr is not None:
+                ti_data_name, ti_data = ti_data_attr  # Unpack the tuple (name, data)
+                if ti_data is not None:
+                    ti_data = pd.Series(ti_data, index=self.close.index)
+                    fig1 = ti_data.vbt.plot(trace_kwargs=dict(name=ti_data_name), fig=fig1)
+
+            # Dynamically access osc{i}_data and check if it's not None
+            osc_data_attr = getattr(self, f"osc{param_number}_data", None)
+            
+            if osc_data_attr is not None:
+                osc_data_name, osc_data = osc_data_attr  # Unpack the tuple (name, data)
+                if osc_data is not None:
+                    osc_data = pd.Series(osc_data, index=self.close.index)
+                    if fig2 is None:
+                        fig2 = osc_data.vbt.plot(trace_kwargs=dict(name=osc_data_name))
+                    else:
+                        fig2 = osc_data.vbt.plot(trace_kwargs=dict(name=osc_data_name), fig=fig2)
+
+            # Break the loop if both ti_data and osc_data for the current param_number are None
+            if ti_data_attr is None and osc_data_attr is None:
+                break
+
+        # Plot entry and exit markers on the first figure (fig1)
+        if self.entries is not None:
+            fig1 = self.entries.vbt.signals.plot_as_entry_markers(self.close, fig=fig1)
+        if self.exits is not None:
+            fig1 = self.exits.vbt.signals.plot_as_exit_markers(self.close, fig=fig1)
+
+        # Create a subplot figure with 2 rows, 1 column
+        fig_combined = sp.make_subplots(rows=2, cols=1)
+
+        # Add the traces from the first figure (fig1) to the first row of the subplot
+        for trace in fig1['data']:
+            fig_combined.add_trace(trace, row=1, col=1)
+
+        # Add the traces from the second figure (fig2) to the second row of the subplot, if fig2 exists
+        if fig2 is not None:
+            for trace in fig2['data']:
+                fig_combined.add_trace(trace, row=2, col=1)
+
+        # Add horizontal lines based on *args
+        for arg in args:
+            fig_name, line_value = arg  # Unpack the tuple (fig_name, line_value)
+
+            if fig_name == 'fig1':
+                # Add horizontal line to fig1 (which is on row=1, col=1 in the subplot)
+                fig_combined.add_hline(y=line_value, line_color='red', line_width=1.5, row=1, col=1)
+            elif fig_name == 'fig2':
+                # Add horizontal line to fig2 (which is on row=2, col=1 in the subplot)
+                if fig2 is not None:
+                    fig_combined.add_hline(y=line_value, line_color='blue', line_width=1.5, row=2, col=1)
+
+        # Optionally, update the layout of the combined figure
+        fig_combined.update_layout(height=800, title_text="Combined Plot: Close Price and Oscillator Data")
+
+        # Display the combined figure
+        fig_combined.show()
+

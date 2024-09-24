@@ -3,8 +3,8 @@ import pandas as pd
 from strategies.strategy import Strategy
 
 class Vwap_Strategy(Strategy):
-    def __init__(self, df, **kwargs):
-        super().__init__(df, **kwargs)
+    def __init__(self, df):
+        super().__init__(df)
         self.vwap_values= None
         self.long_vwap_values = None
 
@@ -27,12 +27,12 @@ class Vwap_Strategy(Strategy):
 
         # Calculate indicators
         self.vwap_values = self.calculate_vwap()
-        self.ti1_data = pd.Series(self.vwap_values, index=self.close.index)
+        self.ti1_data = ('VWAP', self.vwap_values)
         #print(self.ti_data)
 
         # Calculate moving average of volume for volume confirmation
         volume_avg = self.volume.rolling(window=volume_window).mean()
-        self.osc1_data = pd.Series(volume_avg, index=self.close.index)
+        self.osc1_data = ('Volume', volume_avg)
 
         buy_signal = (self.close > self.vwap_values)
         sell_signal = (self.close < self.vwap_values)   

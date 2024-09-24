@@ -5,15 +5,15 @@ from strategies.efratio import EFratio_Strategy
 
 
 class KAMA_Strategy(EFratio_Strategy):
-    def __init__(self, df, efratio_window=15, **kwargs):
-        super().__init__(df=df, **kwargs)
+    def __init__(self, df, efratio_window=15):
+        super().__init__(df=df,)
         
         self.efratios = self.calculate_efratios(efratio_window)
 
     def custom_indicator(self,close, fast_window=30, slow_window=3):
 
         kama = self.calculate_kama(self.efratios, close, fast_window, slow_window)
-        self.ti_data = pd.Series(kama, index=self.close.index)
+        self.ti1_data = ("KAMA", kama)
         
 
     def calculate_kama(self, efratios, close, fast_window, slow_window):

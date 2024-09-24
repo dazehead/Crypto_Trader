@@ -6,12 +6,13 @@ from strategies.strategy import Strategy
 
 class EFratio_Strategy(Strategy):
     """Efficiency Ratio Strategy"""
-    def __init__(self, df, **kwargs):
-        super().__init__(df = df, **kwargs)
+    def __init__(self, df):
+        super().__init__(df = df)
 
     def custom_indicator(self, close, efratio_window=15, ef_threshold_buy=0.4, ef_threshold_sell=-0.8):
 
         efratios = self.calculate_efratios(efratio_window)
+        self.osc1_data = ("Effiecency Ratio", efratios)
 
         # for trading
         buy_signal = efratios > ef_threshold_buy
@@ -33,7 +34,6 @@ class EFratio_Strategy(Strategy):
         
         zeros = np.zeros(efratio_window-1)
         efratios = np.concatenate((zeros, efratios))
-        efratios = pd.Series(efratios, index=close.index)
         
         return efratios
     

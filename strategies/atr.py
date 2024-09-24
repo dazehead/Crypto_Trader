@@ -2,16 +2,15 @@ import talib
 from strategies.strategy import Strategy
 
 class ATR(Strategy):
-    def __init__(self, df, atr_window=14, **kwargs):
-        super().__init__(df=df, **kwargs)
-        self.atr_window = atr_window
+    def __init__(self, df):
+        super().__init__(df=df)
 
-    def custom_indicator(self, high, low, close, atr_window=None):
-        atr_window = atr_window if atr_window is not None else self.atr_window
+    def custom_indicator(self,atr_window=None):
 
-        atr = self.calculate_atr(high, low, close, atr_window)
+        atr = self.calculate_atr(atr_window)
+        self.osc1_data = ('ATR', atr)
         return atr
 
-    def calculate_atr(self, high, low, close, atr_window):
-        atr = talib.ATR(high, low, close, timeperiod=atr_window)
+    def calculate_atr(self, atr_window):
+        atr = talib.ATR(self.high, self.low, self.close, timeperiod=atr_window)
         return atr
