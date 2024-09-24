@@ -1,4 +1,9 @@
 TO-DO:
+
+fix bug in WS where we recieve imcoming message but ignore until granualirty comes
+
+might be bug if we have more than 2 osc_data will have to test later specifically plotting entrys and exits on the graph
+
 test if we can not input close in the hyper and if it will give the same results so we dont have to send close 
 to custom_indicator
 

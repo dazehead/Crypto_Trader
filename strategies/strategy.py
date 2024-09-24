@@ -119,21 +119,19 @@ class Strategy:
             
             if ti_data_attr is not None:
                 ti_data_name, ti_data = ti_data_attr  # Unpack the tuple (name, data)
-                if ti_data is not None:
-                    ti_data = pd.Series(ti_data, index=self.close.index)
-                    fig1 = ti_data.vbt.plot(trace_kwargs=dict(name=ti_data_name), fig=fig1)
+                ti_data = pd.Series(ti_data, index=self.close.index)
+                fig1 = ti_data.vbt.plot(trace_kwargs=dict(name=ti_data_name), fig=fig1)
 
             # Dynamically access osc{i}_data and check if it's not None
             osc_data_attr = getattr(self, f"osc{param_number}_data", None)
             
             if osc_data_attr is not None:
                 osc_data_name, osc_data = osc_data_attr  # Unpack the tuple (name, data)
-                if osc_data is not None:
-                    osc_data = pd.Series(osc_data, index=self.close.index)
-                    if fig2 is None:
-                        fig2 = osc_data.vbt.plot(trace_kwargs=dict(name=osc_data_name))
-                    else:
-                        fig2 = osc_data.vbt.plot(trace_kwargs=dict(name=osc_data_name), fig=fig2)
+                osc_data = pd.Series(osc_data, index=self.close.index)
+                if fig2 is None:
+                    fig2 = osc_data.vbt.plot(trace_kwargs=dict(name=osc_data_name))
+                else:
+                    fig2 = osc_data.vbt.plot(trace_kwargs=dict(name=osc_data_name), fig=fig2)
 
             # Break the loop if both ti_data and osc_data for the current param_number are None
             if ti_data_attr is None and osc_data_attr is None:
@@ -142,8 +140,10 @@ class Strategy:
         # Plot entry and exit markers on the first figure (fig1)
         if self.entries is not None:
             fig1 = self.entries.vbt.signals.plot_as_entry_markers(self.close, fig=fig1)
+            fig2 = self.entries.vbt.signals.plot_as_entry_markers(osc_data, fig=fig2)
         if self.exits is not None:
             fig1 = self.exits.vbt.signals.plot_as_exit_markers(self.close, fig=fig1)
+            fig2 = self.exits.vbt.signals.plot_as_exit_markers(osc_data, fig=fig2)
 
         # Create a subplot figure with 2 rows, 1 column
         fig_combined = sp.make_subplots(rows=2, cols=1)
