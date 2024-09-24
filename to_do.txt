@@ -7,3 +7,5 @@ puts all attributs with 'ti' as the first in a list with their values and checks
 a pandas Series if not then print out a statement saying that ti_data needs to be a pandas data frame
 in order to graph ---- or better yet graph function convert them so that its not making a lot of pd.Series
 when running hyper
+
+program so that we can choose to only graph the ti_data such as oscilators and not close
