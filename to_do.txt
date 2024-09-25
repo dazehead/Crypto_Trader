@@ -9,3 +9,4 @@ to custom_indicator
 
 make scanner, and complete logbook class for DB
 
+need to add the name of the product_id to the hyper so as not to have 600 different tables and its all on 1 table per strategy

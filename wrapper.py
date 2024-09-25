@@ -56,12 +56,12 @@ def get_unix_times(granularity:str, days: int = None):
     # If no days are specified, return a single pair of (now, timestamp_max_range)
     return [(now, timestamp_max_range)]
 
-def get_candles(client, product_id: str, timestamps, granularity: str):
+def get_candles(client, symbol: str, timestamps, granularity: str):
     """function that gets candles for every pair of tuples in timestamps then combines them all"""
     combined_df = pd.DataFrame()
     for pair in timestamps:
         end, start = pair
-        btc_candles = client.get_candles(product_id=product_id,
+        btc_candles = client.get_candles(product_id=symbol,
                                          start = start,
                                          end=end,
                                          granularity=granularity)
