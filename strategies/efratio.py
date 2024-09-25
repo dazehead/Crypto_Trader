@@ -4,7 +4,7 @@ import talib as ta
 from strategies.strategy import Strategy
 
 
-class EFratio_Strategy(Strategy):
+class EFratio(Strategy):
     """Efficiency Ratio Strategy"""
     def __init__(self, df):
         super().__init__(df = df)

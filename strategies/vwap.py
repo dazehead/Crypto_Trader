@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from strategies.strategy import Strategy
 
-class Vwap_Strategy(Strategy):
+class Vwap(Strategy):
     def __init__(self, df):
         super().__init__(df)
         self.vwap_values= None

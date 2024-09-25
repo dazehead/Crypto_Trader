@@ -4,7 +4,7 @@ import pandas as pd
 from strategies.efratio import EFratio_Strategy
 
 
-class KAMA_Strategy(EFratio_Strategy):
+class Kama(EFratio_Strategy):
     def __init__(self, df, efratio_window=15):
         super().__init__(df=df,)
         
