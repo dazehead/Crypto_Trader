@@ -85,18 +85,31 @@ class Strategy:
         return formatted_signals    
 
 
-    def combine_signals(self, signal_1, signal_2):
+    def combine_signals(self, *signals):
         combined_signals = []
+        signal_length = len(signals[0])
         try:
-            for i in range(signal_1):
-                if signal_1[i] == True & signal_2[i] == True:
-                    combined_signals.append(True)
-                else:
-                    combined_signals.append(False)
-        except:
-            print("Invalid signals")
+            for i in range(signal_length):
+                combined = True
+                for signal in signals:
+                    combined &= signal[i]
+                combined_signals.append(combined)
+        except Exception as e:
+            print(f"Invalid signals: {e}")
+        return combined_signals
+    
+
+        # combined_signals = []
+        # try:
+        #     for i in range(signal_1):
+        #         if signal_1[i] == True & signal_2[i] == True:
+        #             combined_signals.append(True)
+        #         else:
+        #             combined_signals.append(False)
+        # except:
+        #     print("Invalid signals")
             
-        return combined_signals            
+        # return combined_signals            
 
 
     def graph(self, *args):
@@ -175,3 +188,4 @@ class Strategy:
         # Display the combined figure
         fig_combined.show()
 
+        

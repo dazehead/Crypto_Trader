@@ -29,7 +29,6 @@ class Hyper(Backtest):
         self.max = self.returns.max()
 
 
-
     def build_indicator_factory(self):
         """Builds the Indicator Factory"""
         param_names = list(self.params.keys())
