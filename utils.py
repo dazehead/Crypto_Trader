@@ -21,6 +21,7 @@ def get_historical_from_db():
     tables_data = {}
     for table in tables['name']:
         data = pd.read_sql_query(f"SELECT * FROM {table}", conn)
+        data.set_index('date', inplace=True)
         tables_data[table] = data
     conn.close()
 

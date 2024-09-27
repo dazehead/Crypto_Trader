@@ -5,7 +5,14 @@ class RSI(Strategy):
     def __init__(self, df):
         super().__init__(df=df)
 
-    def custom_indicator(self, close, rsi_window=30, buy_threshold=30, sell_threshold=70):
+    def custom_indicator(self, close, rsi_window=14, buy_threshold=30, sell_threshold=70):
+        """
+        if you want the thresholds graphed you need to assign them to self.buy_threshold and self.sell_threshold
+        this could be changed by sending them to it when we init the class; however, we need to test this in hyper to see if it will
+        make any errors im about 90% sure it will because the factory in vectorbt only work with the custom_indicator function
+        """
+        self.buy_threshold = buy_threshold
+        self.sell_threshold = sell_threshold
 
         rsi = self.calculate_rsi(self.close, rsi_window)
         self.osc1_data = ('RSI', rsi)

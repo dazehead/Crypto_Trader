@@ -9,14 +9,16 @@ class EFratio(Strategy):
     def __init__(self, df):
         super().__init__(df = df)
 
-    def custom_indicator(self, close, efratio_window=15, ef_threshold_buy=0.4, ef_threshold_sell=-0.8):
+    def custom_indicator(self, close, efratio_window=15, buy_threshold=0.4, sell_threshold=-0.8):
+        self.buy_threshold = buy_threshold
+        self.sell_threshold = sell_threshold
 
         efratios = self.calculate_efratios(efratio_window)
         self.osc1_data = ("Effiecency Ratio", efratios)
 
         # for trading
-        buy_signal = efratios > ef_threshold_buy
-        sell_signal = efratios < ef_threshold_sell
+        buy_signal = efratios > buy_threshold
+        sell_signal = efratios < sell_threshold
 
         signals = self.generate_signals(buy_signal, sell_signal)
 

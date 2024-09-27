@@ -31,6 +31,9 @@ class Strategy:
         self.osc3_data = None
         self.osc4_data = None
 
+        self.buy_threshold = None
+        self.sell_threshold = None
+
 
     def custom_indicator(self, close,  fast_window=5, slow_window=30):
 
@@ -116,12 +119,8 @@ class Strategy:
         # return combined_signals            
 
 
-    def graph(self, *args):
-        """
-        strat.graph(('fig1', 32000), ('fig2', 2500))
-        ARGS: You can specify which figure (fig1 or fig2) and at which value to graph a horizontal line.
-        """
-
+    def graph(self):
+ 
         # Start by plotting the first figure (Close price)
         param_number = 0
         fig1 = self.close.vbt.plot(trace_kwargs=dict(name='Close'))
@@ -174,17 +173,11 @@ class Strategy:
             for trace in fig2['data']:
                 fig_combined.add_trace(trace, row=2, col=1)
 
-        # Add horizontal lines based on *args
-        for arg in args:
-            fig_name, line_value = arg  # Unpack the tuple (fig_name, line_value)
-
-            if fig_name == 'fig1':
-                # Add horizontal line to fig1 (which is on row=1, col=1 in the subplot)
-                fig_combined.add_hline(y=line_value, line_color='red', line_width=1.5, row=1, col=1)
-            elif fig_name == 'fig2':
-                # Add horizontal line to fig2 (which is on row=2, col=1 in the subplot)
-                if fig2 is not None:
-                    fig_combined.add_hline(y=line_value, line_color='blue', line_width=1.5, row=2, col=1)
+        # Automatically add buy_threshold and sell_threshold to fig2 if they are not None
+        if self.buy_threshold is not None:
+            fig_combined.add_hline(y=self.buy_threshold, line_color='green', line_width=1.5, row=2, col=1)
+        if self.sell_threshold is not None:
+            fig_combined.add_hline(y=self.sell_threshold, line_color='red', line_width=1.5, row=2, col=1)
 
         # Optionally, update the layout of the combined figure
         fig_combined.update_layout(height=800, title_text="Combined Plot: Close Price and Oscillator Data")
