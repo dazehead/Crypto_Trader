@@ -22,7 +22,7 @@ class Vwap(Strategy):
         return cumulative_price_volume / cumulative_volume
 
 
-    def custom_indicator(self, close ,volume_window=20):
+    def custom_indicator(self, close=None ,volume_window=20):
         """for these signals we may not to to use generate signals because we want True all while its over vwap"""
 
         # Calculate indicators
@@ -31,8 +31,8 @@ class Vwap(Strategy):
         #print(self.ti_data)
 
         # Calculate moving average of volume for volume confirmation
-        volume_avg = self.volume.rolling(window=volume_window).mean()
-        self.osc1_data = ('Volume', volume_avg)
+        # volume_avg = self.volume.rolling(window=volume_window).mean()
+        # self.osc1_data = ('Volume', volume_avg)
 
         buy_signal = (self.close > self.vwap_values)
         sell_signal = (self.close < self.vwap_values)   

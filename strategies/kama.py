@@ -10,9 +10,9 @@ class Kama(EFratio_Strategy):
         
         self.efratios = self.calculate_efratios(efratio_window)
 
-    def custom_indicator(self,close, fast_window=30, slow_window=3):
+    def custom_indicator(self,close=None, fast_window=30, slow_window=3):
 
-        kama = self.calculate_kama(self.efratios, close, fast_window, slow_window)
+        kama = self.calculate_kama(self.efratios, self.close, fast_window, slow_window)
         self.ti1_data = ("KAMA", kama)
         
 

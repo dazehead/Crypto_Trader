@@ -103,6 +103,18 @@ class Strategy:
                 combined_signals.append(combined)
         except Exception as e:
             print(f"Invalid signals: {e}")
+        
+        combined_signals = self.format_signals(combined_signals)
+
+        self.entries = np.zeros_like(self.close, dtype=bool) #from signal to signal_length
+        self.exits = np.zeros_like(self.close, dtype=bool)#from signal to signal_length
+
+        self.entries[combined_signals == 1] = True
+        self.exits[combined_signals == -1] = True
+
+        self.entries = pd.Series(self.entries, index=self.close.index)
+        self.exits = pd.Series(self.exits, index=self.close.index)
+
         return combined_signals
     
 
@@ -125,6 +137,7 @@ class Strategy:
         param_number = 0
         fig1 = self.close.vbt.plot(trace_kwargs=dict(name='Close'))
         fig2 = None
+        osc_data = None
 
         # Loop over param_numbers to dynamically access ti_data and osc_data
         while True:
@@ -156,10 +169,13 @@ class Strategy:
         # Plot entry and exit markers on the first figure (fig1)
         if self.entries is not None:
             fig1 = self.entries.vbt.signals.plot_as_entry_markers(self.close, fig=fig1)
-            fig2 = self.entries.vbt.signals.plot_as_entry_markers(osc_data, fig=fig2)
+            if osc_data is not None:  # Only plot if osc_data exists
+                fig2 = self.entries.vbt.signals.plot_as_entry_markers(osc_data, fig=fig2)
+
         if self.exits is not None:
             fig1 = self.exits.vbt.signals.plot_as_exit_markers(self.close, fig=fig1)
-            fig2 = self.exits.vbt.signals.plot_as_exit_markers(osc_data, fig=fig2)
+            if osc_data is not None:  # Only plot if osc_data exists
+                fig2 = self.exits.vbt.signals.plot_as_exit_markers(osc_data, fig=fig2)
 
         # Create a subplot figure with 2 rows, 1 column
         fig_combined = sp.make_subplots(rows=2, cols=1)
