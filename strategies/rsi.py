@@ -1,13 +1,13 @@
-import talib
+import talib as ta
 from strategies.strategy import Strategy
 
 class RSI(Strategy):
     def __init__(self, df):
         super().__init__(df=df)
 
-    def custom_indicator(self, close, rsi_window=None, buy_threshold=None, sell_threshold=None):
+    def custom_indicator(self, close, rsi_window=30, buy_threshold=30, sell_threshold=70):
 
-        rsi = self.calculate_rsi(close, rsi_window)
+        rsi = self.calculate_rsi(self.close, rsi_window)
         self.osc1_data = ('RSI', rsi)
 
         buy_signal = rsi < buy_threshold
@@ -17,5 +17,5 @@ class RSI(Strategy):
         return signals        
 
     def calculate_rsi(self, close, rsi_window):
-        rsi = talib.RSI(close, timeperiod=rsi_window)
+        rsi = ta.RSI(close, timeperiod=rsi_window)
         return rsi

@@ -44,16 +44,16 @@ class Strategy:
         self.exits = fast_ma.ma_crossed_below(slow_ma)
 
         signals =np.zeros_like(close)
-        signals[self.entries] = 1.0
-        signals[self.exits] = -1.0
+        signals[self.entries] = 1
+        signals[self.exits] = -1
 
         return signals
 
     def generate_signals(self, buy_signal, sell_signal, with_formating=True):
         """Common method to generate and format buy/sell signals"""
-        signals = np.zeros_like(self.close)
-        signals[buy_signal] = 1.0
-        signals[sell_signal] = -1.0
+        signals = np.zeros_like(self.close, dtype=int)
+        signals[buy_signal] = 1
+        signals[sell_signal] = -1
 
         if with_formating:
             signals = self.format_signals(signals)
@@ -87,12 +87,16 @@ class Strategy:
 
     def combine_signals(self, *signals):
         combined_signals = []
-        signal_length = len(signals[0])
+        signal_length = len(signals[0])  # Assuming all signals have the same length
         try:
             for i in range(signal_length):
-                combined = True
+                combined = 1  # Start with the most optimistic signal
                 for signal in signals:
-                    combined &= signal[i]
+                    if signal[i] == -1:
+                        combined = -1  # If any signal is -1, set combined to -1 and break
+                        break
+                    elif signal[i] == 0 and combined != -1:
+                        combined = 0  # If any signal is 0 and no -1 encountered, set combined to 0
                 combined_signals.append(combined)
         except Exception as e:
             print(f"Invalid signals: {e}")
