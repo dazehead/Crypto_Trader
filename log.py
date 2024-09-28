@@ -1,8 +1,9 @@
 import sqlite3
+import utils
 class Node:
     """A class representing a single node in the linked list."""
     def __init__(self, value, next_node=None):
-        self.value = value
+        self.value = value 
         self.next_node = next_node
 
     def get_value(self):
@@ -60,3 +61,11 @@ class LinkedList:
             string_list += str(current_node.get_value()) + "\n"
             current_node = current_node.get_next_node()
         return string_list
+    
+    def export_multiple_pf_to_db(self):
+        current_node = self.get_head_node()
+        while current_node:
+            pf = current_node.get_value()
+            #extract data   
+
+            current_node = current_node.get_next_node()

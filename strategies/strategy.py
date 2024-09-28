@@ -116,19 +116,7 @@ class Strategy:
         self.exits = pd.Series(self.exits, index=self.close.index)
 
         return combined_signals
-    
-
-        # combined_signals = []
-        # try:
-        #     for i in range(signal_1):
-        #         if signal_1[i] == True & signal_2[i] == True:
-        #             combined_signals.append(True)
-        #         else:
-        #             combined_signals.append(False)
-        # except:
-        #     print("Invalid signals")
-            
-        # return combined_signals            
+          
 
 
     def graph(self):
@@ -201,4 +189,7 @@ class Strategy:
         # Display the combined figure
         fig_combined.show()
 
-        
+    def generate_backtest(self):
+        """Performs backtest and returns the stats"""
+        portfolio = vbt.Portfolio.from_signals(self.close, self.entries, self.exits)
+        return portfolio

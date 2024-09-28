@@ -1,85 +1,113 @@
-import vectorbt as vbt
+import os
 import pandas as pd
-import plotly.subplots as sp
+import utils
+import datetime as dt
+import wrapper
+import numpy as np
+from coinbase.rest import RESTClient
+from strategies.strategy import Strategy
+from strategies.efratio import EFratio
+from strategies.vwap import Vwap
+from strategies.rsi import RSI
+from strategies.atr import ATR
+from strategies.combined_strategy import Combined_Strategy
+from log import LinkedList
+from hyper import Hyper
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
+import sqlite3
 
-class Backtest:
-    def __init__(self, strategy_object):
-        self.strategy = strategy_object
 
-        self.close = self.strategy.close
-        self.open = self.strategy.open
-        self.high = self.strategy.high
-        self.low = self.strategy.low
-        #self.volume = self.strategy.volume
-        
-        self.entries = self.strategy.entries
-        self.exits = self.strategy.exits
+api_key = os.getenv('API_ENV_KEY') #API_ENV_KEY | COINBASE_API_KEY
+api_secret = os.getenv('API_SECRET_ENV_KEY') #API_SECRET_ENV_KEY | COINBASE_API_SECRET
+sandbox_key = os.getenv('SANDBOX_KEY')
+sandbox_rest_url = "https://api-public.sandbox.exchange.coinbase.com"
+
+client = RESTClient(api_key=api_key, api_secret=api_secret)
 
 
+symbol = 'BTC-USD'
+granularity = 'ONE_MINUTE'
 
-    def graph_strat(self):
-        """----NOTE: ALL DATA MUST BE PD.SERIES----"""
+def test_multiple_strategy():
+    logbook = LinkedList()
+    df_dict = utils.get_historical_from_db()
 
-        # Start by plotting the first figure (Close price)
-        param_number = 0
-        fig = self.strategy.df['close'].vbt.plot(trace_kwargs=dict(name='Close'))
-        fig2 = None
+    for df in df_dict.values():
+        rsi_vwap = Combined_Strategy(df, RSI, Vwap)
+        rsi_vwap.generate_combined_signals()
+        rsi_vwap.graph()
 
-        # Loop over param_numbers to dynamically access ti_data and osc_data
-        while True:
-            param_number += 1
+        # rsi = RSI(df)
+        # rsi.custom_indicator(df.close)
+        # rsi.graph()
 
-            # Dynamically access ti{i}_data and check if it's not None
-            ti_data_attr = getattr(self.strategy, f"ti{param_number}_data", None)
-            
-            if ti_data_attr is not None:
-                ti_data_name, ti_data = ti_data_attr  # Unpack the tuple (name, data)
-                if ti_data is not None:
-                    ti_data = pd.Series(ti_data, index=self.close.index)
-                    fig = ti_data.vbt.plot(trace_kwargs=dict(name=ti_data_name), fig=fig)
+        # vwap = Vwap(df)
+        # vwap.custom_indicator(df.close)
+        # vwap.graph()
 
-            # Dynamically access osc{i}_data and check if it's not None
-            osc_data_attr = getattr(self.strategy, f"osc{param_number}_data", None)
-            
-            if osc_data_attr is not None:
-                osc_data_name, osc_data = osc_data_attr  # Unpack the tuple (name, data)
-                if osc_data is not None:
-                    osc_data = pd.Series(osc_data, index=self.close.index)
-                    if fig2 is None:
-                        fig2 = osc_data.vbt.plot(trace_kwargs=dict(name=osc_data_name))
-                    else:
-                        fig2 = osc_data.vbt.plot(trace_kwargs=dict(name=osc_data_name), fig=fig2)
+        combined_pf = rsi_vwap.generate_backtest()
+        logbook.insert_beginning(combined_pf)
 
-            # Break the loop if both ti_data and osc_data for the current param_number are None
-            if ti_data_attr is None and osc_data_attr is None:
-                break
 
-        # Plot entry and exit markers on the first figure
-        fig = self.entries.vbt.signals.plot_as_entry_markers(self.close, fig=fig)
-        fig = self.exits.vbt.signals.plot_as_exit_markers(self.close, fig=fig)
 
-        # Create a subplot figure with 2 rows, 1 column
-        fig_combined = sp.make_subplots(rows=2, cols=1)
+#test_multiple_strategy()
 
-        # Add the traces from the first figure (fig) to the first row of the subplot
-        for trace in fig['data']:
-            fig_combined.add_trace(trace, row=1, col=1)
+def run_basic_backtest():
+    timestamps = wrapper.get_unix_times(granularity=granularity, days=4)
 
-        # Add the traces from the second figure (fig2) to the second row of the subplot
-        if 'fig2' in locals():  # Only add fig2 if osc data was found and plotted
-            for trace in fig2['data']:
-                fig_combined.add_trace(trace, row=2, col=1)
+    df = wrapper.get_candles(client=client,
+                        symbol=symbol,
+                        timestamps=timestamps,
+                        granularity=granularity)
 
-        # Optionally, update the layout of the combined figure
-        fig_combined.update_layout(height=800, title_text="Combined Plot: Close Price and Oscillator Data")
-
-        # Display the combined figure
-        fig_combined.show()
-
+    strat = RSI(df=df)
     
-    def generate_backtest(self):
-        """Performs backtest and returns the stats"""
-        portfolio_trade = vbt.Portfolio.from_signals(self.close, self.entries, self.exits)
-        stats = portfolio_trade.stats()
+    strat.custom_indicator(close=strat.close,
+                           rsi_window=14,
+                           buy_threshold=20,
+                           sell_threshold=70)
+    strat.graph()
+    pf = strat.generate_backtest()
+    for i in dir(pf):
+        print(i)
+    print('------------------------------------\n')
+    print(pf.stats())
 
-        return stats
+
+    # fig = pf.plot(subplots = [
+    # 'orders',
+    # 'trade_pnl',
+    # 'cum_returns',
+    # 'drawdowns',
+    # 'underwater',
+    # 'gross_exposure'])
+    # fig.show()
+
+    #print(stats)
+run_basic_backtest()
+
+
+
+
+def run_hyper():
+    timestamps = wrapper.get_unix_times(granularity=granularity, days=4)
+
+    df = wrapper.get_candles(client=client,
+                     symbol=symbol,
+                     timestamps=timestamps,
+                     granularity=granularity)
+    
+    strat = EFratio(df)
+
+    hyper = Hyper(strategy_object=strat,
+                  close=strat.close,
+                  efratio_window=np.arange(6, 12, step=3),
+                  ef_threshold_buy=np.arange(0.1, 1, step=.3),
+                  ef_threshold_sell=np.arange(-1, -0.1, step=.3))
+    #print(hyper.returns.to_string())
+    #print(type(hyper.returns))
+    utils.export_hyper_to_db(hyper.returns, symbol, granularity, strat)
+
+    #print(f"The maximum return was {hyper.returns.max()}\nefratio window: {hyper.returns.idxmax()[0]}\nef threshoold buy: {hyper.returns.idxmax()[1]}\nef threshold sell: {hyper.returns.idxmax()[2]}")
+#run_hyper()

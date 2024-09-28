@@ -1,9 +1,9 @@
 import vectorbt as vbt
 import numpy as np
-from backtest import Backtest
+from strategies.strategy import Strategy
 import talib
 
-class Hyper(Backtest):
+class Hyper(Strategy):
     """A class to handle Hyper Optimization backtests"""
     def __init__(self, strategy_object, **kwargs):
         """Initiates strategy resources"""

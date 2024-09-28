@@ -27,4 +27,21 @@ def get_historical_from_db():
 
     return tables_data
 
+def export_hyper_to_db(data, symbol, granularity, strategy_object):
+    df = data.to_frame().reset_index()
+    df.columns = df.columns.str.replace('cust_', '')
+    df = df.rename(columns={df.columns[-1]: 'return_percentage'})
+    df['symbol'] = symbol
+    #print(df)
 
+    conn = sql.connect('database/hyper.db')
+    df.to_sql(f'{strategy_object.__class__.__name__}_{granularity}', conn, if_exists='append', index=False)
+    conn.close()
+
+def export_historical_to_df(df, symbol, granularity):
+    conn = sql.connect('database/historical_data.db')
+    first_date = df.index[0].date()
+    last_date = df.index[-1].date()
+    table_name = f'{symbol}_{granularity}_{first_date}_TO_{last_date}'.replace('-', '_')
+
+    df.to_sql(table_name, conn, if_exists='append', index=True)
