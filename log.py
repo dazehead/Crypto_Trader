@@ -66,6 +66,6 @@ class LinkedList:
         current_node = self.get_head_node()
         while current_node:
             pf = current_node.get_value()
-            #extract data   
+            print(pf.stats())
 
             current_node = current_node.get_next_node()

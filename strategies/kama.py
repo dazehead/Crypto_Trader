@@ -1,10 +1,10 @@
 import talib as ta
 import numpy as np
 import pandas as pd
-from strategies.efratio import EFratio_Strategy
+from strategies.efratio import EFratio
 
 
-class Kama(EFratio_Strategy):
+class Kama(EFratio):
     def __init__(self, df, efratio_window=15):
         super().__init__(df=df,)
         

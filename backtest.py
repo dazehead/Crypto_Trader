@@ -36,22 +36,15 @@ def test_multiple_strategy():
     for df in df_dict.values():
         rsi_vwap = Combined_Strategy(df, RSI, Vwap)
         rsi_vwap.generate_combined_signals()
-        rsi_vwap.graph()
-
-        # rsi = RSI(df)
-        # rsi.custom_indicator(df.close)
-        # rsi.graph()
-
-        # vwap = Vwap(df)
-        # vwap.custom_indicator(df.close)
-        # vwap.graph()
+        #rsi_vwap.graph()
 
         combined_pf = rsi_vwap.generate_backtest()
         logbook.insert_beginning(combined_pf)
+    
+    logbook.export_multiple_pf_to_db()
 
+test_multiple_strategy()
 
-
-#test_multiple_strategy()
 
 def run_basic_backtest():
     timestamps = wrapper.get_unix_times(granularity=granularity, days=4)
@@ -85,7 +78,7 @@ def run_basic_backtest():
     # fig.show()
 
     #print(stats)
-run_basic_backtest()
+#run_basic_backtest()
 
 
 
