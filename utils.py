@@ -39,9 +39,9 @@ def export_hyper_to_db(data, symbol, granularity, strategy_object):
     conn.close()
 
 def export_historical_to_db(df, symbol, granularity):
-    conn = sql.connect('database/historical_data.db')
+    conn = sql.connect(f'database/{granularity}_DATA.db')
     first_date = df.index[0].date()
     last_date = df.index[-1].date()
-    table_name = f'{symbol}_{granularity}_{first_date}_TO_{last_date}'.replace('-', '_')
+    table_name = f'{symbol}_{first_date}_TO_{last_date}'.replace('-', '_')
 
     df.to_sql(table_name, conn, if_exists='append', index=True)

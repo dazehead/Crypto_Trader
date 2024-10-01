@@ -34,6 +34,8 @@ class Strategy:
         self.buy_threshold = None
         self.sell_threshold = None
 
+        self.portfolio = None
+
 
     def custom_indicator(self, close,  fast_window=5, slow_window=30):
 
@@ -191,5 +193,6 @@ class Strategy:
 
     def generate_backtest(self):
         """Performs backtest and returns the stats"""
-        portfolio = vbt.Portfolio.from_signals(self.close, self.entries, self.exits)
-        return portfolio
+        self.portfolio = vbt.Portfolio.from_signals(self.close, self.entries, self.exits)
+
+        return self.portfolio

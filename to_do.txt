@@ -1,8 +1,23 @@
 TO-DO:
-fix bug in WS where we recieve imcoming message but ignore until granualirty comes
+---fix bug in WS where we recieve imcoming message but ignore until granualirty comes
 
-might be bug if we have more than 2 osc_data will have to test later specifically plotting entrys and exits on the graph
+---might be bug if we have more than 2 osc_data will have to test later specifically plotting entrys and exits on the graph
 
-make scanner, and complete logbook class for DB
+---create a new database for every granularity - this will stop us from having to name ONE_MINUTE in the table and split our data 
+    names should be like this
+        database names will be ONE_MINUTE_DATA
+        'BTC_USD_2024_09_26_TO_2024_09_28'
+        we will only have send it symbol and the database
+        then the other database will be named
 
-need to add the name of the product_id to the hyper so as not to have 600 different tables and its all on 1 table per strategy
+        'FIVE_MINUTE_DATA'
+        'FIFTEEN_MINUTE_DATA'
+        'THIRTY_MINUTE_DATA'
+        'ONE_HOUR_DATA'
+        'TWO_HOUR_DATA'
+        'SIX_HOUR_DATA'
+        'ONE_DAY_DATA'
+        then we can create a group folder named Historical Data
+
+        ---error in one of the data keyError 'start' aparently one of the data recieved back doesn't have start need
+        to program error handling for keyError
