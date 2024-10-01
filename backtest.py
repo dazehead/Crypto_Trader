@@ -43,7 +43,7 @@ def test_multiple_strategy():
     
     logbook.export_multiple_pf_to_db()
 
-test_multiple_strategy()
+#test_multiple_strategy()
 
 
 def run_basic_backtest():
@@ -56,16 +56,13 @@ def run_basic_backtest():
 
     strat = RSI(df=df)
     
-    strat.custom_indicator(close=strat.close,
-                           rsi_window=14,
-                           buy_threshold=20,
-                           sell_threshold=70)
-    strat.graph()
-    pf = strat.generate_backtest()
-    for i in dir(pf):
-        print(i)
-    print('------------------------------------\n')
-    print(pf.stats())
+    strat.custom_indicator()
+    #strat.graph()
+    strat.generate_backtest()
+
+    utils.export_backtest_to_db(strategy_object=strat,
+                                symbol=symbol,
+                                granularity=granularity)
 
 
     # fig = pf.plot(subplots = [
@@ -78,7 +75,7 @@ def run_basic_backtest():
     # fig.show()
 
     #print(stats)
-#run_basic_backtest()
+run_basic_backtest()
 
 
 

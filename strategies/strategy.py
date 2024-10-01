@@ -38,6 +38,8 @@ class Strategy:
 
 
     def custom_indicator(self, close,  fast_window=5, slow_window=30):
+        self.fast_window = fast_window
+        self.slow_window = slow_window
 
         fast_ma = vbt.MA.run(close, fast_window)
         slow_ma = vbt.MA.run(close, slow_window)

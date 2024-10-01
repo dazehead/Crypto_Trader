@@ -6,6 +6,7 @@ class ATR(Strategy):
         super().__init__(df=df)
 
     def custom_indicator(self,atr_window=None):
+        self.atr_window = atr_window
 
         atr = self.calculate_atr(atr_window)
         self.osc1_data = ('ATR', atr)
