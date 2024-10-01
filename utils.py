@@ -95,26 +95,23 @@ def export_backtest_to_db(strategy_object, symbol, granularity):
     conn= sql.connect('database/backtest.db')
 
     query = f"SELECT * FROM {table_name} WHERE symbol = ? "
+    delete_query = f"DELETE FROM {table_name} WHERE symbol = ? "
     param_query = (symbol,)
+    
     for i,param in enumerate(params):
         param_string = f"AND {param} = ? "
         query += param_string
+        delete_query += param_string
         param_query += (value_list[i],)
     query += ';'
+    delete_query += ';'
 
     existing_row = pd.read_sql(query.replace('-','_'), conn, params=param_query)
 
     if not existing_row.empty:
-        delete_query = f"DELETE FROM {table_name} WHERE symbol = ? "
-        for param in params:
-            param_string = f"AND {param} = ? "
-            delete_query += param_string
-        delete_query += ';'
-
         cursor = conn.cursor()
         cursor.execute(delete_query, param_query)
         conn.commit()
-        print('should have deleted a row')
 
         backtest_df.to_sql(table_name, conn, if_exists='append', index=False)
 
