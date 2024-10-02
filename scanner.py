@@ -4,10 +4,10 @@ import pandas as pd
 class Scanner():
     def __init__(self, rest_client, granularity):
         self.client = rest_client
-        self.graularity = granularity
+        self.granularity = granularity
 
-        self.products = self.get_products()
-        self.products_to_trade = self.filter_products()
+        #self.products = self.get_products()
+        self.products_to_trade = ['BTC-USD']#self.filter_products()
 
 
 

@@ -1,5 +1,6 @@
 import time
 import os
+import wrapper
 from coinbase.websocket import WSClient, WSClientConnectionClosedException
 from coinbase.rest import RESTClient
 from dataframe_manager import DF_Manager
@@ -8,14 +9,19 @@ from trade import Trade
 from log import LinkedList
 from scanner import Scanner
 
+granularity = 'ONE_MINUTE'
 
 def on_message(msg):
-    "function that gets called when new data comes in"
+    """
+    function that gets called everytime a new message appears
+    we will need only send msg to a our Trade function so it can montior the trade
+    for any issues during execution
+    
+    """
+    
     df_manager.process_message(msg)
 
-    ma_strat = Strategy(df_manager.df,
-                    ti_data=None, # fast ma data
-                    ti2_data=None) # slow ma data
+    ma_strat = Strategy(df_manager.df) # slow ma data
 
     signals = ma_strat.custom_indicator(ma_strat.close,
                                         fast_window=2,
@@ -45,8 +51,8 @@ scanner = Scanner(rest_client=rest_client,
 """Loops through the scanner until a product gets returned from our defined filter parameters"""
 while not scanner.products_to_trade:
     scanner.filter_products()
+df_manager = DF_Manager(scanner)
 
-df_manager = DF_Manager()
 logbook = LinkedList()
 
 
