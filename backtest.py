@@ -31,9 +31,11 @@ granularity = 'ONE_MINUTE'
 
 def test_multiple_strategy():
     logbook = LinkedList()
-    df_dict = utils.get_historical_from_db()
+    df_dict = utils.get_historical_from_db(granularity=granularity)
 
-    for df in df_dict.values():
+    for i,df in enumerate(df_dict.values()):
+        print(i)
+
         rsi_vwap = Combined_Strategy(df, RSI, Vwap)
         rsi_vwap.generate_combined_signals()
         #rsi_vwap.graph()
@@ -41,9 +43,9 @@ def test_multiple_strategy():
         combined_pf = rsi_vwap.generate_backtest()
         logbook.insert_beginning(combined_pf)
     
-    logbook.export_multiple_pf_to_db()
+    #logbook.export_multiple_pf_to_db()
 
-#test_multiple_strategy()
+test_multiple_strategy()
 
 
 def run_basic_backtest():
@@ -75,7 +77,7 @@ def run_basic_backtest():
     # fig.show()
 
     #print(stats)
-run_basic_backtest()
+#run_basic_backtest()
 
 
 
