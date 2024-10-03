@@ -5,7 +5,7 @@ from pickling import to_pickle, from_pickle
 
 class DF_Manager():
     """this only needs to be instansiated during WSClient"""
-    def __init__(self,scanner = None, df=None):
+    def __init__(self,scanner: object, df=None):
         self.granularity = scanner.granularity
         self.products_to_trade = scanner.products_to_trade
         if not df:
@@ -35,7 +35,7 @@ class DF_Manager():
             df = df.infer_objects(copy=False)#forward fill NANs
         return df
 
-    def process_message(self, message):
+    def process_message(self, message, pickle = False):
         """"""
         msg_data = json.loads(message) # loads data into json format
         if msg_data.get('channel') == 'candles':
@@ -43,26 +43,28 @@ class DF_Manager():
 
         #print(candles_data)
             if candles_data: # if not an empty list
+                if pickle:
+                    to_pickle(candles_data)      
                 candles_data = {'candles': candles_data} #rename to work with _to_df
                 self.new_df = self._to_df(candles_data)
                 self.df = pd.concat([self.df, self.new_df], ignore_index = True)
                 print(self.df.tail())
 
-
-        elif msg_data.get('channel') == 'user':
-            events = msg_data.get('events', [])
-            if events: 
-                order_data = events[0].get('orders', [])
-                if order_data:  
-                    order_info = order_data[0]
-            list_of_keys = ['order_id',
-                            'order_side',
-                            'order_type']
-            
-            for key in list_of_keys:
-                if key in order_info:  
-                    pickle_data = order_info[key]
-                    to_pickle(pickle_data)
+        if pickle:
+            if msg_data.get('channel') == 'user':
+                events = msg_data.get('events', [])
+                if events: 
+                    order_data = events[0].get('orders', [])
+                    if order_data:  
+                        order_info = order_data[0]
+                list_of_keys = ['order_id',
+                                'order_side',
+                                'order_type']
+                
+                for key in list_of_keys:
+                    if key in order_info:  
+                        pickle_data = order_info[key]
+                        to_pickle(pickle_data)
 
             print(order_data)
         
