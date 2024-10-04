@@ -10,6 +10,7 @@ from strategies.efratio import EFratio
 from strategies.vwap import Vwap
 from strategies.rsi import RSI
 from strategies.atr import ATR
+from strategies.macd import MACD
 from strategies.combined_strategy import Combined_Strategy
 from log import LinkedList
 from hyper import Hyper
@@ -27,7 +28,7 @@ client = RESTClient(api_key=api_key, api_secret=api_secret)
 
 
 symbol = 'BTC-USD'
-granularity = 'ONE_MINUTE'
+granularity = 'ONE_HOUR'
 
 def test_multiple_strategy():
     logbook = LinkedList()
@@ -47,34 +48,35 @@ def test_multiple_strategy():
 
 
 def run_basic_backtest():
-    timestamps = wrapper.get_unix_times(granularity=granularity, days=4)
+    timestamps = wrapper.get_unix_times(granularity=granularity, days=60)
 
     df = wrapper.get_candles(client=client,
                         symbol=symbol,
                         timestamps=timestamps,
                         granularity=granularity)
 
-    strat = RSI(df=df)
+    strat = MACD(df=df)
     
     strat.custom_indicator()
-    #strat.graph()
+    strat.graph()
     strat.generate_backtest()
+    pf = strat.portfolio
 
-    utils.export_backtest_to_db(strategy_object=strat,
-                                symbol=symbol,
-                                granularity=granularity)
+    # utils.export_backtest_to_db(strategy_object=strat,
+    #                             symbol=symbol,
+    #                             granularity=granularity)
 
 
-    # fig = pf.plot(subplots = [
-    # 'orders',
-    # 'trade_pnl',
-    # 'cum_returns',
-    # 'drawdowns',
-    # 'underwater',
-    # 'gross_exposure'])
-    # fig.show()
+    fig = pf.plot(subplots = [
+    'orders',
+    'trade_pnl',
+    'cum_returns',
+    'drawdowns',
+    'underwater',
+    'gross_exposure'])
+    fig.show()
 
-    #print(stats)
+    print(pf.stats())
 run_basic_backtest()
 
 
