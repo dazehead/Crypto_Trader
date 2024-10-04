@@ -62,10 +62,12 @@ class LinkedList:
             current_node = current_node.get_next_node()
         return string_list
     
-    def export_multiple_pf_to_db(self):
+    def export_multiple_to_db(self):
+        """not finished"""
         current_node = self.get_head_node()
         while current_node:
-            pf = current_node.get_value()
-            print(pf.stats())
+            strat = current_node.get_value()
+            # this is where we are going to call the util function for exporting
+            utils.export_mulitple_to_db(strat)
 
             current_node = current_node.get_next_node()

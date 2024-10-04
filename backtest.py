@@ -26,24 +26,26 @@ sandbox_rest_url = "https://api-public.sandbox.exchange.coinbase.com"
 client = RESTClient(api_key=api_key, api_secret=api_secret)
 
 
-symbol = 'BTC-USD'
+symbol = ['BTC-USD', 'ETH-USD']
 granularity = 'ONE_MINUTE'
 
 def test_multiple_strategy():
     logbook = LinkedList()
-    df_dict = utils.get_historical_from_db(granularity=granularity)
+    all_data_dict_df = utils.get_historical_from_db(granularity=granularity, symbols_to_get=symbol)
 
-    for i,df in enumerate(df_dict.values()):
-        print(i)
 
-        rsi_vwap = Combined_Strategy(df, RSI, Vwap)
-        rsi_vwap.generate_combined_signals()
-        #rsi_vwap.graph()
+    print(all_data_dict_df.keys())
 
-        combined_pf = rsi_vwap.generate_backtest()
-        logbook.insert_beginning(combined_pf)
-    
-    #logbook.export_multiple_pf_to_db()
+
+    # rsi_vwap = Combined_Strategy(df, RSI, Vwap)
+    # rsi_vwap.generate_combined_signals()
+
+
+    # rsi_vwap.generate_backtest()
+    # logbook.insert_beginning(rsi_vwap)
+
+
+    #logbook.export_multiple_to_db()
 
 test_multiple_strategy()
 

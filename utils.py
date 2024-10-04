@@ -3,6 +3,7 @@ import datetime as dt
 import numpy as np
 import sqlite3 as sql
 import inspect
+import re
 pd.set_option('future.no_silent_downcasting', True)
 
 def to_df(dict:dict):
@@ -15,16 +16,31 @@ def to_df(dict:dict):
         df = df.ffill()
     return df
  
-def get_historical_from_db(granularity):
+def get_historical_from_db(granularity, symbols_to_get: list=None):
+
+    def clean_table_name(table_name):
+        clean_name = re.sub(r'_\d{4}_\d{2}_\d{2}_TO_\d{4}_\d{2}_\d{2}', '', table_name)
+        clean_name = clean_name.replace('_', '-')
+        return clean_name
+
     conn = sql.connect(f'database/{granularity}.db')
     query = "SELECT name FROM sqlite_master WHERE type='table';"
     tables = pd.read_sql_query(query, conn)
     tables_data = {}
+
     for table in tables['name']:
-        print(table)
-        data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
-        data.set_index('date', inplace=True)
-        tables_data[table] = data
+        if symbols_to_get is not None:
+            for symbol in symbols_to_get:
+                if symbol.replace('-', '_')in table:
+                    data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
+                    data.set_index('date', inplace=True)
+                    tables_data[symbol] = data             
+        else:
+            clean_name = clean_table_name(table)
+            data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
+            data.set_index('date', inplace=True)
+            tables_data[clean_name] = data
+
     conn.close()
 
     return tables_data
@@ -120,4 +136,8 @@ def export_backtest_to_db(strategy_object, symbol, granularity):
         backtest_df.to_sql(table_name, conn, if_exists='append', index=False)
 
     conn.close()
+
+def export_mulitple_to_db(strat):
+    pass
+
 
