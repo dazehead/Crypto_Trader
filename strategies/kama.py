@@ -5,8 +5,8 @@ from strategies.efratio import EFratio
 
 
 class Kama(EFratio):
-    def __init__(self, df, efratio_window=15):
-        super().__init__(df=df,)
+    def __init__(self, dict_df, efratio_window=15):
+        super().__init__(dict_df=dict_df,)
         
         self.efratios = self.calculate_efratios(efratio_window)
 

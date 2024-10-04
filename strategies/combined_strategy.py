@@ -5,8 +5,8 @@ import pandas as pd
 from strategies.strategy import Strategy
 
 class Combined_Strategy(Strategy):
-    def __init__(self, df, *strategies):
-        super().__init__(df=df)
+    def __init__(self, dict_df, *strategies):
+        super().__init__(dict_df=dict_df)
         self.strategies = [strategy(df) for strategy in strategies]
 
             # we are initializing the strategies saved in self.strategies

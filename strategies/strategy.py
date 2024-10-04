@@ -6,8 +6,11 @@ import plotly.subplots as sp
 
 class Strategy:
     """Class to store strategy resources"""
-    def __init__(self, df):
-        self.df = df
+    def __init__(self, dict_df):
+        for key, value in dict_df.items():
+            self.symbol = key
+            self.df = value
+
 
         self.open = self.df['open']
         self.high = self.df['high']

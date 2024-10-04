@@ -26,15 +26,17 @@ sandbox_rest_url = "https://api-public.sandbox.exchange.coinbase.com"
 client = RESTClient(api_key=api_key, api_secret=api_secret)
 
 
-symbol = ['BTC-USD', 'ETH-USD']
+symbols = ['BTC-USD', 'ETH-USD']
+symbol = ['BTC-USD']
 granularity = 'ONE_MINUTE'
 
 def test_multiple_strategy():
     logbook = LinkedList()
-    all_data_dict_df = utils.get_historical_from_db(granularity=granularity, symbols_to_get=symbol)
+    dict_df = utils.get_historical_from_db(granularity=granularity, symbols_to_get=symbols)
 
 
-    print(all_data_dict_df.keys())
+    for symbol, df in dict_df.items():
+        print(df.head())
 
 
     # rsi_vwap = Combined_Strategy(df, RSI, Vwap)
@@ -47,25 +49,27 @@ def test_multiple_strategy():
 
     #logbook.export_multiple_to_db()
 
-test_multiple_strategy()
+#test_multiple_strategy()
 
 
 def run_basic_backtest():
+    """only use 1 symbol in a list"""
+    symbol = ['BTC-USD']
     timestamps = wrapper.get_unix_times(granularity=granularity, days=4)
 
-    df = wrapper.get_candles(client=client,
-                        symbol=symbol,
+    df_dict = wrapper.get_candles(client=client,
+                        symbols=symbol,
                         timestamps=timestamps,
                         granularity=granularity)
+    #print(df_dict)
 
-    strat = RSI(df=df)
-    
+    strat = RSI(dict_df=df_dict)
     strat.custom_indicator()
-    #strat.graph()
+    strat.graph()
     strat.generate_backtest()
 
     utils.export_backtest_to_db(strategy_object=strat,
-                                symbol=symbol,
+                                 symbol=symbol,
                                 granularity=granularity)
 
 
@@ -79,7 +83,7 @@ def run_basic_backtest():
     # fig.show()
 
     #print(stats)
-#run_basic_backtest()
+run_basic_backtest()
 
 
 

@@ -56,25 +56,32 @@ def get_unix_times(granularity:str, days: int = None):
     # If no days are specified, return a single pair of (now, timestamp_max_range)
     return [(now, timestamp_max_range)]
 
-def get_candles(client, symbol: str, timestamps, granularity: str):
+def get_candles(client, symbols: list, timestamps, granularity: str):
     """function that gets candles for every pair of tuples in timestamps then combines them all"""
-    combined_df = pd.DataFrame()
-    for pair in timestamps:
-        end, start = pair
-        btc_candles = client.get_candles(product_id=symbol,
-                                         start = start,
-                                         end=end,
-                                         granularity=granularity)
-        df = utils.to_df(btc_candles)
-        combined_df = pd.concat([combined_df, df], ignore_index=True)
-    sorted_df = combined_df.sort_values(by='date', ascending=True).reset_index(drop=True)
+    combined_data = {}
+    for symbol in symbols:
+        combined_df = pd.DataFrame()
 
-    columns_to_convert = ['low', 'high', 'open', 'close', 'volume']
-    for col in columns_to_convert:
-        sorted_df[col] = pd.to_numeric(sorted_df[col], errors='coerce')
-    sorted_df.set_index('date', inplace=True)
+        for pair in timestamps:
+            end, start = pair
+            btc_candles = client.get_candles(product_id=symbol,
+                                            start = start,
+                                            end=end,
+                                            granularity=granularity)
+            df = utils.to_df(btc_candles)
+            combined_df = pd.concat([combined_df, df], ignore_index=True)
+        sorted_df = combined_df.sort_values(by='date', ascending=True).reset_index(drop=True)
+
+        columns_to_convert = ['low', 'high', 'open', 'close', 'volume']
+        for col in columns_to_convert:
+            sorted_df[col] = pd.to_numeric(sorted_df[col], errors='coerce')
+
+        sorted_df.set_index('date', inplace=True)
+
+        combined_data[symbol] = sorted_df
+
     #print(sorted_df)
-    return sorted_df
+    return combined_data
 
 
 

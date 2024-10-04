@@ -2,8 +2,8 @@ import talib as ta
 from strategies.strategy import Strategy
 
 class RSI(Strategy):
-    def __init__(self, df):
-        super().__init__(df=df)
+    def __init__(self, dict_df):
+        super().__init__(dict_df=dict_df)
 
     def custom_indicator(self, close=None, rsi_window=14, buy_threshold=30, sell_threshold=70):
 

@@ -3,8 +3,8 @@ import pandas as pd
 from strategies.strategy import Strategy
 
 class Vwap(Strategy):
-    def __init__(self, df):
-        super().__init__(df)
+    def __init__(self, dict_df):
+        super().__init__(dict_df)
         self.vwap_values= None
         self.long_vwap_values = None
 

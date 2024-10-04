@@ -66,6 +66,7 @@ def export_historical_to_db(df, symbol, granularity):
 
 
 def export_backtest_to_db(strategy_object, symbol, granularity):
+    symbol = strategy_object.symbol
     portfolio = strategy_object.portfolio
     backtest_dict = {'symbol': symbol}
 
