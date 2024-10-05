@@ -28,7 +28,7 @@ client = RESTClient(api_key=api_key, api_secret=api_secret)
 
 
 symbol = 'BTC-USD'
-granularity = 'ONE_HOUR'
+granularity = ['FIVE_MINUTE', 'FIFTEEN_MINUTE', 'THIRTY_MINUTE', 'ONE_HOUR', 'TWO_HOUR', 'SIX_HOUR', 'ONE_DAY']
 
 def test_multiple_strategy():
     logbook = LinkedList()
@@ -48,36 +48,37 @@ def test_multiple_strategy():
 
 
 def run_basic_backtest():
-    timestamps = wrapper.get_unix_times(granularity=granularity, days=60)
+    for gran in granularity:
+        timestamps = wrapper.get_unix_times(granularity=gran, days=60)
 
-    df = wrapper.get_candles(client=client,
-                        symbol=symbol,
-                        timestamps=timestamps,
-                        granularity=granularity)
+        df = wrapper.get_candles(client=client,
+                            symbol=symbol,
+                            timestamps=timestamps,
+                            granularity=gran)
 
-    strat = MACD(df=df)
-    
-    strat.custom_indicator()
-    strat.graph()
-    strat.generate_backtest()
-    pf = strat.portfolio
+        strat = MACD(df=df)
+        
+        strat.custom_indicator()
+        strat.graph()
+        strat.generate_backtest()
+        pf = strat.portfolio
 
-    # utils.export_backtest_to_db(strategy_object=strat,
-    #                             symbol=symbol,
-    #                             granularity=granularity)
+        # utils.export_backtest_to_db(strategy_object=strat,
+        #                             symbol=symbol,
+        #                             granularity=granularity)
 
 
-    fig = pf.plot(subplots = [
-    'orders',
-    'trade_pnl',
-    'cum_returns',
-    'drawdowns',
-    'underwater',
-    'gross_exposure'])
-    fig.show()
+        # fig = pf.plot(subplots = [
+        # 'orders',
+        # 'trade_pnl',
+        # 'cum_returns',
+        # 'drawdowns',
+        # 'underwater',
+        # 'gross_exposure'])
+        # fig.show()
 
-    print(pf.stats())
-run_basic_backtest()
+        print(f"Granularity: {gran}, Stats: {pf.stats()}")
+#run_basic_backtest()
 
 
 
@@ -103,3 +104,32 @@ def run_hyper():
 
     #print(f"The maximum return was {hyper.returns.max()}\nefratio window: {hyper.returns.idxmax()[0]}\nef threshoold buy: {hyper.returns.idxmax()[1]}\nef threshold sell: {hyper.returns.idxmax()[2]}")
 #run_hyper()
+
+def run_hyper_macd():
+    for gran in granularity:
+        timestamps = wrapper.get_unix_times(granularity=gran, days=60)
+
+        df = wrapper.get_candles(client=client,
+                                symbol=symbol,
+                                timestamps=timestamps,
+                                granularity=gran)
+        
+        strat = MACD(df=df)
+
+        # Hyperparameter grid for MACD strategy
+        hyper = Hyper(strategy_object=strat,
+                        close=strat.close,
+                        fastperiod=np.arange(8, 14, step=1),  # Testing fastperiods between 8 and 14
+                        slowperiod=np.arange(20, 30, step=1), # Testing slowperiods between 20 and 30
+                        signalperiod=np.arange(6, 12, step=1)) # Testing signal periods between 6 and 12
+
+        # Export hyperparameter results to the database
+        #utils.export_hyper_to_db(hyper.returns, symbol, granularity, strat)
+        print(f"Stats for {gran}")
+        # Display the best hyperparameters based on the returns
+        print(f"The maximum return was {hyper.returns.max()}")
+        print(f"Best fastperiod: {hyper.returns.idxmax()[0]}")
+        print(f"Best slowperiod: {hyper.returns.idxmax()[1]}")
+        print(f"Best signalperiod: {hyper.returns.idxmax()[2]}")
+
+run_hyper_macd()    

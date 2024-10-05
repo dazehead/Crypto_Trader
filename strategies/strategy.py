@@ -6,7 +6,7 @@ import plotly.subplots as sp
 
 class Strategy:
     """Class to store strategy resources"""
-    def __init__(self, df):
+    def __init__(self, df, strategy_object = None):
         self.df = df
 
         self.open = self.df['open']
@@ -14,6 +14,8 @@ class Strategy:
         self.low = self.df['low']
         self.close = self.df['close']
         self.volume = self.df['volume']
+
+        self.strategy = strategy_object
 
         self.entries = None
         self.exits = None
@@ -124,7 +126,6 @@ class Strategy:
 
 
     def graph(self):
- 
         # Start by plotting the first figure (Close price)
         param_number = 0
         fig1 = self.close.vbt.plot(trace_kwargs=dict(name='Close'))
@@ -137,7 +138,6 @@ class Strategy:
 
             # Dynamically access ti{i}_data and check if it's not None
             ti_data_attr = getattr(self, f"ti{param_number}_data", None)
-            
             if ti_data_attr is not None:
                 ti_data_name, ti_data = ti_data_attr  # Unpack the tuple (name, data)
                 ti_data = pd.Series(ti_data, index=self.close.index)
@@ -145,7 +145,6 @@ class Strategy:
 
             # Dynamically access osc{i}_data and check if it's not None
             osc_data_attr = getattr(self, f"osc{param_number}_data", None)
-            
             if osc_data_attr is not None:
                 osc_data_name, osc_data = osc_data_attr  # Unpack the tuple (name, data)
                 osc_data = pd.Series(osc_data, index=self.close.index)
@@ -189,9 +188,8 @@ class Strategy:
 
         # Optionally, update the layout of the combined figure
         fig_combined.update_layout(height=800, title_text="Combined Plot: Close Price and Oscillator Data")
-
-        # Display the combined figure
         fig_combined.show()
+
 
     def generate_backtest(self):
         """Performs backtest and returns the stats"""

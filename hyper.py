@@ -7,8 +7,9 @@ class Hyper(Strategy):
     """A class to handle Hyper Optimization backtests"""
     def __init__(self, strategy_object, **kwargs):
         """Initiates strategy resources"""
-        super().__init__(strategy_object=strategy_object)
-        
+        super().__init__(df=strategy_object.df)  # Provide df here
+        self.strategy_object = strategy_object  # Save the strategy object
+
         possible_inputs = ['open', 'high', 'low', 'close', 'volume']
         self.input_names = []
         self.inputs = []
@@ -17,7 +18,7 @@ class Hyper(Strategy):
             if key in possible_inputs:
                 self.input_names.append(key)
                 self.inputs.append(value)
-                setattr(self, key, value) # dont think we need this it sets self.close = object
+                setattr(self, key, value)
             else:
                 self.params[key] = value
 
@@ -25,9 +26,8 @@ class Hyper(Strategy):
         self.res = self.generate_signals()
         self.entries, self.exits = self.convert_signals()
         self.pf = self.run_portfolio()
-        self.returns = self.pf.total_return() #to view print(self.returns.to_string())
+        self.returns = self.pf.total_return()
         self.max = self.returns.max()
-
 
     def build_indicator_factory(self):
         """Builds the Indicator Factory"""
@@ -40,10 +40,11 @@ class Hyper(Strategy):
             param_names=param_names,
             output_names=['value']
         ).from_apply_func(
-            self.strategy.custom_indicator,
+            self.strategy_object.custom_indicator,
             to_2d=False
         )
         return ind
+
     
     def generate_signals(self):
         """Generates the entries/exits signals"""

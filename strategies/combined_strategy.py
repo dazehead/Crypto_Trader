@@ -13,7 +13,7 @@ class Combined_Strategy(Strategy):
             # even though we having manually done it the strategies saved in self.strategies are now initialized and available for use
 
     def generate_combined_signals(self):
-        signals = [strategy.custom_indicator(self) for strategy in self.strategies] # have we seen list comprehension before???
+        signals = [strategy.custom_indicator(self) for strategy in self.strategies] # have we seen list comprehension before??? yes we have
         combined_signals = self.combine_signals(*signals)
 
         self.assign_strategy_attributes()
