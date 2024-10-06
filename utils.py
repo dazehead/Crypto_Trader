@@ -15,15 +15,16 @@ def to_df(dict:dict):
         df = df.ffill()
     return df
  
-def get_historical_from_db():
-    conn = sql.connect('database/historical_data.db')
+def get_historical_from_db(granularity):
+    conn = sql.connect(f'database/{granularity}.db')
     query = "SELECT name FROM sqlite_master WHERE type='table';"
     tables = pd.read_sql_query(query, conn)
     tables_data = {}
     for table in tables['name']:
-        data = pd.read_sql_query(f"SELECT * FROM {table}", conn)
+        data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
         data.set_index('date', inplace=True)
-        tables_data[table] = data
+        clean_table_name = '-'.join(table.split('_')[:2])
+        tables_data[clean_table_name] = data
     conn.close()
 
     return tables_data
