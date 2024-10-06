@@ -2,11 +2,20 @@ import vectorbt as vbt
 import numpy as np
 import plotly.subplots as sp
 import pandas as pd
+import sys
 from strategies.strategy import Strategy
 
 class Combined_Strategy(Strategy):
+    """
+    THE DEFAULT VALUES WILL BE RAN YOU MUST SET DEFAULT VALUES
+    """
     def __init__(self, dict_df, *strategies):
         super().__init__(dict_df=dict_df)
+        choice = 'N'
+        if choice != 'Y':
+            choice = input("\nThe Combined_Strategy class uses the default values assigned in the custom indicator function for the respective strategies being used.\nHave you set your desired values?\nY or N: ").upper()
+        if choice == 'N':
+            sys.exit(1)
         self.strategies = [strategy(dict_df) for strategy in strategies]
 
             # we are initializing the strategies saved in self.strategies

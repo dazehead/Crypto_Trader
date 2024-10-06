@@ -42,9 +42,9 @@ def test_multiple_strategy():
 
             rsi_vwap = Combined_Strategy(current_dict_df, RSI, Vwap)
             rsi_vwap.generate_combined_signals()
-            rsi_vwap.graph()
-
+            #rsi_vwap.graph()
             rsi_vwap.generate_backtest()
+
             logbook.insert_beginning(rsi_vwap)
     
     logbook.export_multiple_to_db(granularity=granularity)
@@ -53,36 +53,35 @@ test_multiple_strategy()
 
 
 def run_basic_backtest():
-    timestamps = wrapper.get_unix_times(granularity=granularity, days=60)
+    timestamps = wrapper.get_unix_times(granularity=granularity, days=3)
 
-    df_dict = wrapper.get_candles(client=client,
+    dict_df = wrapper.get_candles(client=client,
                         symbols=symbol,
                         timestamps=timestamps,
                         granularity=granularity)
-    #print(df_dict)
 
-    strat = MACD(df=df)
+    strat = RSI(dict_df=dict_df)
     
     strat.custom_indicator()
     strat.graph()
     strat.generate_backtest()
     pf = strat.portfolio
 
-    # utils.export_backtest_to_db(strategy_object=strat,
-    #                             symbol=symbol,
-    #                             granularity=granularity)
+
+    utils.export_backtest_to_db(object=strat,
+                                granularity=granularity)
 
 
-    fig = pf.plot(subplots = [
-    'orders',
-    'trade_pnl',
-    'cum_returns',
-    'drawdowns',
-    'underwater',
-    'gross_exposure'])
-    fig.show()
+    # fig = pf.plot(subplots = [
+    # 'orders',
+    # 'trade_pnl',
+    # 'cum_returns',
+    # 'drawdowns',
+    # 'underwater',
+    # 'gross_exposure'])
+    # fig.show()
 
-    print(pf.stats())
+    # print(pf.stats())
 #run_basic_backtest()
 
 

@@ -68,6 +68,19 @@ class LinkedList:
         while current_node:
             strat = current_node.get_value()
             # this is where we are going to call the util function for exporting
-            utils.export_mulitple_to_db(strat, granularity=granularity)
+            output_dict = {}
+            table_name = ''
+            for strategy in strat.strategies:
+                table_name += strategy.__class__.__name__ + '_'
+                output_dict.update(utils.get_params_from_strategy(strategy))
+            table_name = table_name.rstrip('_')
+
+            df = utils.get_metrics_from_backtest(strat,
+                                                 multiple=True,
+                                                 multiple_dict=output_dict)
+            
+            utils.export_backtest_to_db(df,
+                                        granularity=granularity,
+                                        multiple_table_name=table_name)
 
             current_node = current_node.get_next_node()
