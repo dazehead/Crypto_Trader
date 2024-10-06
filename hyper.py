@@ -7,7 +7,10 @@ class Hyper(Strategy):
     """A class to handle Hyper Optimization backtests"""
     def __init__(self, strategy_object, **kwargs):
         """Initiates strategy resources"""
-        super().__init__(strategy_object=strategy_object)
+        dict_df = {strategy_object.symbol: strategy_object.df}
+        super().__init__(dict_df=dict_df)
+        self.strategy = strategy_object
+
         
         possible_inputs = ['open', 'high', 'low', 'close', 'volume']
         self.input_names = []

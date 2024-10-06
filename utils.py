@@ -32,7 +32,8 @@ def get_historical_from_db(granularity):
 
     return tables_data
 
-def export_hyper_to_db(data, symbol, granularity, strategy_object):
+def export_hyper_to_db(data, strategy_object,granularity):
+    symbol = strategy_object.symbol
     df = data.to_frame().reset_index()
     df.columns = df.columns.str.replace('cust_', '')
     df = df.rename(columns={df.columns[-1]: 'return_percentage'})
@@ -156,15 +157,12 @@ def export_backtest_to_db(object, granularity, multiple_table_name = None):
             cursor.execute(create_table_query)
             conn.commit()
             print(f"Table {table_name} created successfully.")
-        print('exitted function------------------------------')
+
 
 
     if not isinstance(object, pd.DataFrame):
         strategy_object = object
         backtest_df, value_list, params = get_metrics_from_backtest(strategy_object)
-        print('value list data types below')
-        print([type(value) for value in value_list])
-        print('\n')
         symbol = backtest_df['symbol'].unique()[0]
         table_name = f"{strategy_object.__class__.__name__}_{granularity}"
 
@@ -219,11 +217,9 @@ def export_backtest_to_db(object, granularity, multiple_table_name = None):
         # print(f"query: {query}")
         # print(f"delete_query: {delete_query}")
 
-    print(f"Executing query: {query}\n")
-    print(f"Parameter values: {[type(value) for value in param_query]}\n")
+
     existing_row = pd.read_sql(query, conn, params=param_query)
 
-    print(existing_row)
 
 
     if not existing_row.empty:

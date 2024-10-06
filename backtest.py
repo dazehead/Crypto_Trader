@@ -49,7 +49,7 @@ def test_multiple_strategy():
     
     logbook.export_multiple_to_db(granularity=granularity)
 
-test_multiple_strategy()
+#test_multiple_strategy()
 
 
 def run_basic_backtest():
@@ -60,7 +60,7 @@ def run_basic_backtest():
                         timestamps=timestamps,
                         granularity=granularity)
 
-    strat = RSI(dict_df=dict_df)
+    strat = MACD(dict_df=dict_df)
     
     strat.custom_indicator()
     strat.graph()
@@ -90,21 +90,21 @@ def run_basic_backtest():
 def run_hyper():
     timestamps = wrapper.get_unix_times(granularity=granularity, days=4)
 
-    df = wrapper.get_candles(client=client,
-                     symbol=symbol,
+    dict_df = wrapper.get_candles(client=client,
+                     symbols=symbol,
                      timestamps=timestamps,
                      granularity=granularity)
     
-    strat = EFratio(df)
+    strat = MACD(dict_df)
 
     hyper = Hyper(strategy_object=strat,
                   close=strat.close,
-                  efratio_window=np.arange(6, 12, step=3),
-                  ef_threshold_buy=np.arange(0.1, 1, step=.3),
-                  ef_threshold_sell=np.arange(-1, -0.1, step=.3))
+                  fastperiod=np.arange(8, 14, step=1),
+                  slowperiod=np.arange(20, 30, step=1),
+                  signalperiod=np.arange(6, 12, step=1))
     #print(hyper.returns.to_string())
     #print(type(hyper.returns))
-    utils.export_hyper_to_db(hyper.returns, symbol, granularity, strat)
+    utils.export_hyper_to_db(hyper.returns, strat, granularity)
 
-    #print(f"The maximum return was {hyper.returns.max()}\nefratio window: {hyper.returns.idxmax()[0]}\nef threshoold buy: {hyper.returns.idxmax()[1]}\nef threshold sell: {hyper.returns.idxmax()[2]}")
-#run_hyper()
+    print(f"The maximum return was {hyper.returns.max()}\nfast_period: {hyper.returns.idxmax()[0]}\nslow_period: {hyper.returns.idxmax()[1]}\nsignal_perido: {hyper.returns.idxmax()[2]}")
+run_hyper()
