@@ -22,7 +22,7 @@ class Vwap(Strategy):
         return cumulative_price_volume / cumulative_volume
 
 
-    def custom_indicator(self, close=None ,volume_window=20):
+    def custom_indicator(self, close=None ,volume_window=1):
         self.volume_window = volume_window
         """for these signals we may not to to use generate signals because we want True all while its over vwap"""
 

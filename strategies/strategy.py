@@ -3,14 +3,17 @@ import vectorbt as vbt
 import pandas as pd
 import numpy as np
 import plotly.subplots as sp
+import sys
 
 class Strategy:
     """Class to store strategy resources"""
     def __init__(self, dict_df):
+        if not isinstance(dict_df, dict):
+            print('You have passed a Dataframe. This Class needs to be dictionary with key as symbol and value as DataFrame')
+            sys.exit(1)
         for key, value in dict_df.items():
             self.symbol = key
             self.df = value
-
 
         self.open = self.df['open']
         self.high = self.df['high']

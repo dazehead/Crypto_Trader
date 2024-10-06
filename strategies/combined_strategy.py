@@ -7,7 +7,7 @@ from strategies.strategy import Strategy
 class Combined_Strategy(Strategy):
     def __init__(self, dict_df, *strategies):
         super().__init__(dict_df=dict_df)
-        self.strategies = [strategy(df) for strategy in strategies]
+        self.strategies = [strategy(dict_df) for strategy in strategies]
 
             # we are initializing the strategies saved in self.strategies
             # even though we having manually done it the strategies saved in self.strategies are now initialized and available for use

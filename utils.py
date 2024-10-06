@@ -124,7 +124,7 @@ def export_backtest_to_db(strategy_object, symbol, granularity):
 
     conn.close()
 
-def export_mulitple_to_db(strat):
+def export_mulitple_to_db(strat, granularity):
     pass
 
 

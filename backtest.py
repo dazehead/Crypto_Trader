@@ -38,18 +38,16 @@ def test_multiple_strategy():
 
     for symbol, df in df_dict.items():
         if symbol == 'BTC-USD':
-            current_df = {symbol:df}
-            print(current_df)
-            #print(df_dict[df])
+            current_dict_df = {symbol:df}
 
-        #     rsi_vwap = Combined_Strategy(df, RSI, Vwap)
-        #     rsi_vwap.generate_combined_signals()
-        #     #rsi_vwap.graph()
+            rsi_vwap = Combined_Strategy(current_dict_df, RSI, Vwap)
+            rsi_vwap.generate_combined_signals()
+            rsi_vwap.graph()
 
-        #     combined_pf = rsi_vwap.generate_backtest()
-        #     logbook.insert_beginning(combined_pf)
+            rsi_vwap.generate_backtest()
+            logbook.insert_beginning(rsi_vwap)
     
-    # logbook.export_multiple_pf_to_db()
+    logbook.export_multiple_to_db(granularity=granularity)
 
 test_multiple_strategy()
 
