@@ -10,6 +10,7 @@ from strategies.efratio import EFratio
 from strategies.vwap import Vwap
 from strategies.rsi import RSI
 from strategies.atr import ATR
+from strategies.macd import MACD
 from strategies.combined_strategy import Combined_Strategy
 from log import LinkedList
 from hyper import Hyper
@@ -32,30 +33,29 @@ granularity = 'ONE_MINUTE'
 
 def test_multiple_strategy():
     logbook = LinkedList()
-    dict_df = utils.get_historical_from_db(granularity=granularity, symbols_to_get=symbols)
+    df_dict = utils.get_historical_from_db(granularity=granularity)
 
 
-    for symbol, df in dict_df.items():
-        print(df.head())
+    for symbol, df in df_dict.items():
+        if symbol == 'BTC-USD':
+            current_df = {symbol:df}
+            print(current_df)
+            #print(df_dict[df])
 
+        #     rsi_vwap = Combined_Strategy(df, RSI, Vwap)
+        #     rsi_vwap.generate_combined_signals()
+        #     #rsi_vwap.graph()
 
-    # rsi_vwap = Combined_Strategy(df, RSI, Vwap)
-    # rsi_vwap.generate_combined_signals()
+        #     combined_pf = rsi_vwap.generate_backtest()
+        #     logbook.insert_beginning(combined_pf)
+    
+    # logbook.export_multiple_pf_to_db()
 
-
-    # rsi_vwap.generate_backtest()
-    # logbook.insert_beginning(rsi_vwap)
-
-
-    #logbook.export_multiple_to_db()
-
-#test_multiple_strategy()
+test_multiple_strategy()
 
 
 def run_basic_backtest():
-    """only use 1 symbol in a list"""
-    symbol = ['BTC-USD']
-    timestamps = wrapper.get_unix_times(granularity=granularity, days=4)
+    timestamps = wrapper.get_unix_times(granularity=granularity, days=60)
 
     df_dict = wrapper.get_candles(client=client,
                         symbols=symbol,
@@ -63,27 +63,29 @@ def run_basic_backtest():
                         granularity=granularity)
     #print(df_dict)
 
-    strat = RSI(dict_df=df_dict)
+    strat = MACD(df=df)
+    
     strat.custom_indicator()
     strat.graph()
     strat.generate_backtest()
+    pf = strat.portfolio
 
-    utils.export_backtest_to_db(strategy_object=strat,
-                                 symbol=symbol,
-                                granularity=granularity)
+    # utils.export_backtest_to_db(strategy_object=strat,
+    #                             symbol=symbol,
+    #                             granularity=granularity)
 
 
-    # fig = pf.plot(subplots = [
-    # 'orders',
-    # 'trade_pnl',
-    # 'cum_returns',
-    # 'drawdowns',
-    # 'underwater',
-    # 'gross_exposure'])
-    # fig.show()
+    fig = pf.plot(subplots = [
+    'orders',
+    'trade_pnl',
+    'cum_returns',
+    'drawdowns',
+    'underwater',
+    'gross_exposure'])
+    fig.show()
 
-    #print(stats)
-run_basic_backtest()
+    print(pf.stats())
+#run_basic_backtest()
 
 
 

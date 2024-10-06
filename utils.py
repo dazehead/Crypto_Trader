@@ -16,31 +16,17 @@ def to_df(dict:dict):
         df = df.ffill()
     return df
  
-def get_historical_from_db(granularity, symbols_to_get: list=None):
-
-    def clean_table_name(table_name):
-        clean_name = re.sub(r'_\d{4}_\d{2}_\d{2}_TO_\d{4}_\d{2}_\d{2}', '', table_name)
-        clean_name = clean_name.replace('_', '-')
-        return clean_name
-
+def get_historical_from_db(granularity):
     conn = sql.connect(f'database/{granularity}.db')
     query = "SELECT name FROM sqlite_master WHERE type='table';"
     tables = pd.read_sql_query(query, conn)
     tables_data = {}
 
     for table in tables['name']:
-        if symbols_to_get is not None:
-            for symbol in symbols_to_get:
-                if symbol.replace('-', '_')in table:
-                    data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
-                    data.set_index('date', inplace=True)
-                    tables_data[symbol] = data             
-        else:
-            clean_name = clean_table_name(table)
-            data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
-            data.set_index('date', inplace=True)
-            tables_data[clean_name] = data
-
+        data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
+        data.set_index('date', inplace=True)
+        clean_table_name = '-'.join(table.split('_')[:2])
+        tables_data[clean_table_name] = data
     conn.close()
 
     return tables_data
