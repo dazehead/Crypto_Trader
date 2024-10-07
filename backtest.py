@@ -88,7 +88,7 @@ def run_basic_backtest():
 
 
 def run_hyper():
-    timestamps = wrapper.get_unix_times(granularity=granularity, days=4)
+    timestamps = wrapper.get_unix_times(granularity=granularity, days=3)
 
     dict_df = wrapper.get_candles(client=client,
                      symbols=symbol,
@@ -99,11 +99,11 @@ def run_hyper():
 
     hyper = Hyper(strategy_object=strat,
                   close=strat.close,
-                  fastperiod=np.arange(8, 14, step=1),
-                  slowperiod=np.arange(20, 30, step=1),
-                  signalperiod=np.arange(6, 12, step=1))
-    #print(hyper.returns.to_string())
-    #print(type(hyper.returns))
+                  fast_period=np.arange(5, 50, step=5),
+                  slow_period=np.arange(50, 100, step=5),
+                  signal_period=np.arange(3, 50, step=5))
+    print(hyper.returns.to_string())
+    print(type(hyper.returns))
     utils.export_hyper_to_db(hyper.returns, strat, granularity)
 
     print(f"The maximum return was {hyper.returns.max()}\nfast_period: {hyper.returns.idxmax()[0]}\nslow_period: {hyper.returns.idxmax()[1]}\nsignal_perido: {hyper.returns.idxmax()[2]}")

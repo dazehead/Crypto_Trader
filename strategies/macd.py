@@ -5,7 +5,8 @@ class MACD(Strategy):
     def __init__(self, dict_df):
         super().__init__(dict_df=dict_df)
 
-    def custom_indicator(self, fast_period=12, slow_period=26, signal_period=9):
+    def custom_indicator(self,close =None, fast_period=35, slow_period=70, signal_period=33):
+
         self.fast_period = fast_period
         self.slow_period = slow_period
         self.signal_period = signal_period
@@ -25,5 +26,5 @@ class MACD(Strategy):
 
     def calculate_macd(self, fastperiod, slowperiod, signalperiod):
         # Calculate MACD, signal line and MACD histogram
-        macd, macd_signal, _ = ta.MACD(self.close, fastperiod=fastperiod, slowperiod=slowperiod, signalperiod=signalperiod)
+        macd, macd_signal, macdhist = ta.MACD(self.close, fastperiod=fastperiod, slowperiod=slowperiod, signalperiod=signalperiod)
         return macd, macd_signal
