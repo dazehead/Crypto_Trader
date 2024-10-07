@@ -56,8 +56,41 @@ def get_unix_times(granularity:str, days: int = None):
     # If no days are specified, return a single pair of (now, timestamp_max_range)
     return [(now, timestamp_max_range)]
 
+
+def fetch_data_with_retries(client, symbol, start, end, granularity, max_retries=5):
+    from datetime import datetime, timedelta
+
+    retry_count = 0
+    df = pd.DataFrame()
+    original_start = start
+
+    while retry_count < max_retries:
+        btc_candles = client.get_candles(
+            product_id=symbol,
+            start=start,
+            end=end,
+            granularity=granularity
+        )
+        df = utils.to_df(btc_candles)
+
+        if not df.empty:
+            break  # Data found, exit the loop
+        else:
+            # Decrement the start date by one month (or any preferred interval)
+            start_datetime = datetime.fromisoformat(start)
+            new_start_datetime = start_datetime - timedelta(days=30)
+            start = new_start_datetime.isoformat()
+            retry_count += 1
+            print(f"No data for {symbol} between {start} and {end}. Retrying with earlier start date: {start}")
+
+    if df.empty:
+        print(f"Unable to retrieve data for {symbol} after {max_retries} retries starting from {original_start}.")
+    return df
+
+
+
 def get_candles(client, symbols: list, timestamps, granularity: str):
-    """function that gets candles for every pair of tuples in timestamps then combines them all"""
+    """Function that gets candles for every pair of timestamps and combines them all."""
     combined_data = {}
     for symbol in symbols:
         print(f'...getting data for {symbol}')
@@ -65,23 +98,19 @@ def get_candles(client, symbols: list, timestamps, granularity: str):
 
         for pair in timestamps:
             end, start = pair
-            btc_candles = client.get_candles(product_id=symbol,
-                                            start = start,
-                                            end=end,
-                                            granularity=granularity)
-            df = utils.to_df(btc_candles)
+            df = fetch_data_with_retries(client, symbol, start, end, granularity)
             combined_df = pd.concat([combined_df, df], ignore_index=True)
-        sorted_df = combined_df.sort_values(by='date', ascending=True).reset_index(drop=True)
 
-        columns_to_convert = ['low', 'high', 'open', 'close', 'volume']
-        for col in columns_to_convert:
-            sorted_df[col] = pd.to_numeric(sorted_df[col], errors='coerce')
+        if not combined_df.empty:
+            sorted_df = combined_df.sort_values(by='date', ascending=True).reset_index(drop=True)
+            columns_to_convert = ['low', 'high', 'open', 'close', 'volume']
+            for col in columns_to_convert:
+                sorted_df[col] = pd.to_numeric(sorted_df[col], errors='coerce')
+            sorted_df.set_index('date', inplace=True)
+            combined_data[symbol] = sorted_df
+        else:
+            print(f"No data available for {symbol} in the specified date ranges.")
 
-        sorted_df.set_index('date', inplace=True)
-
-        combined_data[symbol] = sorted_df
-
-    #print(sorted_df)
     return combined_data
 
 

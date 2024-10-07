@@ -6,14 +6,22 @@ import inspect
 import re
 pd.set_option('future.no_silent_downcasting', True)
 
-def to_df(dict:dict):
-    key = next(iter(dict)) # gets the first key
-    df = pd.DataFrame(dict[key]) # converts to df
+def to_df(data_dict: dict):
+    if not data_dict:
+        return pd.DataFrame()  # Return empty DataFrame if data_dict is empty
+
+    key = next(iter(data_dict))  # gets the first key
+    df = pd.DataFrame(data_dict[key])  # converts to df
+
     if key == 'candles':
-        df['start'] = pd.to_datetime(df['start'].astype(float), unit='s')
-        df = df.rename(columns={'start': 'date'}) # renames the start colum to date
-        df.loc[:, df.columns != 'date'] = df.loc[:, df.columns != 'date'].apply(pd.to_numeric, errors='coerce')
-        df = df.ffill()
+        if not df.empty:
+            df.columns = ['start', 'low', 'high', 'open', 'close', 'volume']
+            df['start'] = pd.to_datetime(df['start'].astype(float), unit='s')
+            df = df.rename(columns={'start': 'date'})  # renames the start column to date
+            df.loc[:, df.columns != 'date'] = df.loc[:, df.columns != 'date'].apply(pd.to_numeric, errors='coerce')
+            df = df.ffill()
+        else:
+            print(f"No candle data available.")
     return df
  
 def get_historical_from_db(granularity):
@@ -60,7 +68,7 @@ def export_historical_to_db(dict_df, granularity):
         
         # If a table with the symbol exists, drop it.
         if existing_table:
-            cursor.execute(f"DROP TABLE IF EXISTS {existing_table[0]}")
+            cursor.execute(f"DROP TABLE IF EXISTS \"{existing_table[0]}\"")
         
         # Write the DataFrame to the new table.
         df.to_sql(new_table_name, conn, if_exists='replace', index=True)
