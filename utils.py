@@ -44,13 +44,29 @@ def export_hyper_to_db(data, strategy_object,granularity):
     df.to_sql(f'{strategy_object.__class__.__name__}_{granularity}', conn, if_exists='append', index=False)
     conn.close()
 
-def export_historical_to_db(df, symbol, granularity):
+def export_historical_to_db(dict_df, granularity):
     conn = sql.connect(f'database/{granularity}.db')
-    first_date = df.index[0].date()
-    last_date = df.index[-1].date()
-    table_name = f'{symbol}_{first_date}_TO_{last_date}'.replace('-', '_')
-
-    df.to_sql(table_name, conn, if_exists='append', index=True)
+    cursor = conn.cursor()
+    
+    for symbol, df in dict_df.items():
+        # Construct the new table name with the updated date range.
+        first_date = df.index[0].date()
+        last_date = df.index[-1].date()
+        new_table_name = f'{symbol}_{first_date}_TO_{last_date}'.replace('-', '_')
+        
+        # Check if any table name contains the symbol.
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ?", (f'{symbol}_%',))
+        existing_table = cursor.fetchone()
+        
+        # If a table with the symbol exists, drop it.
+        if existing_table:
+            cursor.execute(f"DROP TABLE IF EXISTS {existing_table[0]}")
+        
+        # Write the DataFrame to the new table.
+        df.to_sql(new_table_name, conn, if_exists='replace', index=True)
+    
+    conn.commit()
+    conn.close()
 
 
 

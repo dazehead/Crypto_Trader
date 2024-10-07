@@ -6,8 +6,9 @@ class Scanner():
         self.client = rest_client
         self.granularity = granularity
 
-        #self.products = self.get_products()
-        self.products_to_trade = ['BTC-USD']#self.filter_products()
+        self.products = self.get_products(filter_type='SPOT')
+        self.symbols = None
+        #self.products_to_trade = ['BTC-USD']#self.filter_products()
 
 
 
@@ -18,6 +19,7 @@ class Scanner():
                 print(f'filter_type needs to be one of these values {acceptable_values}')
                 return
             self.products = self.products[self.products['product_type'] == filter_type]
+            self.symbols = list(self.products['product_id'])
         return self.products
 
 

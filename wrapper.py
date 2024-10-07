@@ -60,6 +60,7 @@ def get_candles(client, symbols: list, timestamps, granularity: str):
     """function that gets candles for every pair of tuples in timestamps then combines them all"""
     combined_data = {}
     for symbol in symbols:
+        print(f'...getting data for {symbol}')
         combined_df = pd.DataFrame()
 
         for pair in timestamps:
