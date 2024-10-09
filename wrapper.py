@@ -45,19 +45,18 @@ def get_unix_times(granularity:str, days: int = None):
             timestamp_max_range = now - current_time_range_seconds
 
             # Append the pair (now, timestamp_max_range) to the results
-            results.append((now, timestamp_max_range))
+            results.append((timestamp_max_range, now))
 
             # Update 'now' and the remaining seconds
             now = timestamp_max_range
             remaining_seconds -= max_time_range_seconds
-
-        return results
+        return results[::-1]
 
     # If no days are specified, return a single pair of (now, timestamp_max_range)
-    return [(now, timestamp_max_range)]
+    return [(timestamp_max_range, now)]
 
 
-def fetch_data_with_retries(client, symbol, start, end, granularity, max_retries=5):
+def fetch_data_with_retries(client, symbol, start, end, granularity, max_retries=10000):
     from datetime import datetime, timedelta
 
     retry_count = 0
@@ -77,11 +76,14 @@ def fetch_data_with_retries(client, symbol, start, end, granularity, max_retries
             break  # Data found, exit the loop
         else:
             # Decrement the start date by one month (or any preferred interval)
-            start_datetime = datetime.fromisoformat(start)
-            new_start_datetime = start_datetime - timedelta(days=30)
-            start = new_start_datetime.isoformat()
-            retry_count += 1
-            print(f"No data for {symbol} between {start} and {end}. Retrying with earlier start date: {start}")
+            return df
+            # print(df)
+            # start_datetime = datetime.fromisoformat(str(start))
+            # print(type(start_datetime))
+            # new_start_datetime = start_datetime - timedelta(days=30)
+            # start = new_start_datetime.isoformat()
+            # retry_count += 1
+            # print(f"No data for {symbol} between {start} and {end}. Retrying with earlier start date: {start}")
 
     if df.empty:
         print(f"Unable to retrieve data for {symbol} after {max_retries} retries starting from {original_start}.")
@@ -97,8 +99,10 @@ def get_candles(client, symbols: list, timestamps, granularity: str):
         combined_df = pd.DataFrame()
 
         for pair in timestamps:
-            end, start = pair
+            start, end = pair
             df = fetch_data_with_retries(client, symbol, start, end, granularity)
+            if df.empty:
+                break
             combined_df = pd.concat([combined_df, df], ignore_index=True)
 
         if not combined_df.empty:
