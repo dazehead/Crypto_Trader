@@ -78,30 +78,22 @@ def get_data_from_db(symbol, granularity):
         combined_df = combined_df.sort_index()
     return combined_df
 
-def fetch_data_with_retries(client, symbol, start_unix, end_unix, granularity, max_retries=5):
-    retry_count = 0
+def fetch_data_with_retries(client, symbol, start_unix, end_unix, granularity):
     df = pd.DataFrame()
-    original_start = start_unix
 
-    while retry_count < max_retries:
-        btc_candles = client.get_candles(
-            product_id=symbol,
-            start=start_unix,
-            end=end_unix,
-            granularity=granularity
-        )
-        df = utils.to_df(btc_candles)
+    btc_candles = client.get_candles(
+        product_id=symbol,
+        start=start_unix,
+        end=end_unix,
+        granularity=granularity
+    )
+    df = utils.to_df(btc_candles)
 
-        if not df.empty:
-            break  # Data found, exit the loop
-        else:
-            print(pd.to_datetime(start_unix, unit='s'))
-            retry_count += 1
-            return df
-
-    if df.empty:
-        print(f"Unable to retrieve data for {symbol} after {max_retries} retries starting from {original_start}.")
-    return df
+    if not df.empty:
+        return df
+    else:
+        print(pd.to_datetime(start_unix, unit='s'))
+        return df
 
 
 def get_missing_unix_ranges(desired_start_unix, desired_end_unix, existing_start_unix, existing_end_unix):
