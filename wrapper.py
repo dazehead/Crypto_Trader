@@ -89,24 +89,27 @@ def fetch_data_with_retries(client, symbol, start_unix, end_unix, granularity):
     )
     df = utils.to_df(btc_candles)
 
-    if not df.empty:
-        return df
-    else:
-        print(pd.to_datetime(start_unix, unit='s'))
-        return df
+    return df
 
 
-def get_missing_unix_ranges(desired_start_unix, desired_end_unix, existing_start_unix, existing_end_unix):
+def get_missing_unix_ranges(desired_start_unix, desired_end_unix, existing_start_unix, existing_end_unix, fetch_older_data=False):
     """Compute missing UNIX time ranges that are not covered by existing data."""
     missing_ranges = []
 
-    if desired_end_unix <= existing_start_unix or desired_start_unix >= existing_end_unix:
-        # No overlap, entire desired range is missing
+    if desired_end_unix <= existing_start_unix:
+        # Entire desired range is before existing data
+        if fetch_older_data:
+            missing_ranges.append((desired_start_unix, existing_start_unix))
+        # Else, we assume no data exists before existing_start_unix and do not fetch
+    elif desired_start_unix >= existing_end_unix:
+        # Entire desired range is after existing data
         missing_ranges.append((desired_start_unix, desired_end_unix))
     else:
+        # Desired range overlaps with existing data
         if desired_start_unix < existing_start_unix:
             # Missing from desired_start to existing_start
-            missing_ranges.append((desired_start_unix, existing_start_unix))
+            if fetch_older_data:
+                missing_ranges.append((desired_start_unix, existing_start_unix))
         if desired_end_unix > existing_end_unix:
             # Missing from existing_end to desired_end
             missing_ranges.append((existing_end_unix, desired_end_unix))
@@ -114,20 +117,22 @@ def get_missing_unix_ranges(desired_start_unix, desired_end_unix, existing_start
 
     return missing_ranges
 
-
-def get_candles(client, symbols: list, timestamps, granularity: str):
+def get_candles(client, symbols: list, timestamps, granularity: str, fetch_older_data=False):
     """Function that gets candles for every pair of timestamps and combines them all, avoiding redundant data fetching."""
     combined_data = {}
+
     for symbol in symbols:
         print(f'...getting data for {symbol}')
         combined_df = pd.DataFrame()
 
         # Get existing data from the database
         existing_data = get_data_from_db(symbol, granularity)
-
+        #print(f"Timestamps: {timestamps[0]} to {timestamps[-1]}")
+        #print(f"Existing data for {symbol}:\n{existing_data.head()}")
         if not existing_data.empty:
             existing_start_unix = int(existing_data.index.min().timestamp())
             existing_end_unix = int(existing_data.index.max().timestamp())
+            #print(f"existing_start_unix: {existing_start_unix}")
         else:
             existing_start_unix = None
             existing_end_unix = None
@@ -138,33 +143,59 @@ def get_candles(client, symbols: list, timestamps, granularity: str):
             desired_start_unix, desired_end_unix = pair
 
             if existing_start_unix is not None and existing_end_unix is not None:
-                missing_ranges = get_missing_unix_ranges(desired_start_unix, desired_end_unix, existing_start_unix, existing_end_unix)
+                missing_ranges = get_missing_unix_ranges(
+                    desired_start_unix,
+                    desired_end_unix,
+                    existing_start_unix,
+                    existing_end_unix,
+                    fetch_older_data=fetch_older_data
+                )
             else:
                 missing_ranges = [(desired_start_unix, desired_end_unix)]
 
             missing_date_ranges.extend(missing_ranges)
 
+        # If the desired date ranges are fully covered by existing data, skip fetching
+        if not missing_date_ranges:
+            print(f"All data for {symbol} is already up to date.")
+            combined_data[symbol] = existing_data
+            continue
+
         # Now fetch data for missing date ranges
+        data_found = False
         for missing_range in missing_date_ranges:
             start_unix, end_unix = missing_range
+
+            # Attempt to fetch data for this range
             df = fetch_data_with_retries(client, symbol, start_unix, end_unix, granularity)
             if df.empty:
-                continue  # Or handle as needed
-            combined_df = pd.concat([combined_df, df], ignore_index=True)
+                print(f"No data available for {symbol} between {pd.to_datetime(start_unix, unit='s')} and {pd.to_datetime(end_unix, unit='s')}.")
+                continue
+            else:
+                data_found = True
+                combined_df = pd.concat([combined_df, df], ignore_index=True)
 
         # Combine with existing data
-        if not existing_data.empty:
-            combined_df = pd.concat([combined_df, existing_data.reset_index()], ignore_index=True)
+        if data_found:
+            if not existing_data.empty:
+                combined_df = pd.concat([combined_df, existing_data.reset_index()], ignore_index=True)
 
-        if not combined_df.empty:
-            sorted_df = combined_df.sort_values(by='date', ascending=True).reset_index(drop=True)
-            columns_to_convert = ['low', 'high', 'open', 'close', 'volume']
-            for col in columns_to_convert:
-                sorted_df[col] = pd.to_numeric(sorted_df[col], errors='coerce')
-            sorted_df.set_index('date', inplace=True)
-            combined_data[symbol] = sorted_df
+            if not combined_df.empty:
+                sorted_df = combined_df.sort_values(by='date', ascending=True).reset_index(drop=True)
+                columns_to_convert = ['low', 'high', 'open', 'close', 'volume']
+                for col in columns_to_convert:
+                    sorted_df[col] = pd.to_numeric(sorted_df[col], errors='coerce')
+                sorted_df.set_index('date', inplace=True)
+                # Remove duplicates based on index
+                sorted_df = sorted_df[~sorted_df.index.duplicated(keep='first')]
+                combined_data[symbol] = sorted_df
         else:
-            print(f"No data available for {symbol} in the specified date ranges.")
+            # If no new data was found, and existing data is empty, skip this symbol
+            if existing_data.empty:
+                print(f"No data available for {symbol} in the specified date ranges.")
+            else:
+                # Use existing data
+                combined_data[symbol] = existing_data
 
     return combined_data
 

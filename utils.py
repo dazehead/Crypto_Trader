@@ -21,7 +21,8 @@ def to_df(data_dict: dict):
             df.loc[:, df.columns != 'date'] = df.loc[:, df.columns != 'date'].apply(pd.to_numeric, errors='coerce')
             df = df.ffill()
         else:
-            print(f"No candle data available.")
+            pass
+            #print(f"No candle data available.")
     return df
  
 def get_historical_from_db(granularity):
@@ -57,21 +58,30 @@ def export_historical_to_db(dict_df, granularity):
     cursor = conn.cursor()
     
     for symbol, df in dict_df.items():
+        # Replace hyphens with underscores in symbol
+        symbol_pattern = symbol.replace('-', '_')
         # Construct the new table name with the updated date range.
         first_date = df.index[0].date()
         last_date = df.index[-1].date()
-        new_table_name = f'{symbol}_{first_date}_TO_{last_date}'.replace('-', '_')
+        new_table_name = f'{symbol_pattern}_{first_date}_TO_{last_date}'.replace('-', '_')
         
-        # Check if any table name contains the symbol.
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ?", (f'{symbol}_%',))
-        existing_table = cursor.fetchone()
+        # Escape underscores in the symbol pattern for the LIKE query
+        symbol_pattern_escaped = symbol_pattern.replace('_', r'\_')
+        pattern = f'{symbol_pattern_escaped}\\_%'
         
-        # If a table with the symbol exists, drop it.
-        if existing_table:
-            cursor.execute(f"DROP TABLE IF EXISTS \"{existing_table[0]}\"")
+        # Fetch all existing tables matching the pattern
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ? ESCAPE '\\'", (pattern,))
+        existing_tables = cursor.fetchall()
         
-        # Write the DataFrame to the new table.
+        # Drop all existing tables that match the pattern
+        for existing_table in existing_tables:
+            cursor.execute(f'DROP TABLE IF EXISTS \"{existing_table[0]}\"')
+            print(f"Dropped table: {existing_table[0]}")
+        
+        # Write the DataFrame to the new table
+        df.drop_duplicates(subset=None, keep='first', inplace=True, ignore_index=False)
         df.to_sql(new_table_name, conn, if_exists='replace', index=True)
+        print(f"Created table: {new_table_name}")
     
     conn.commit()
     conn.close()
