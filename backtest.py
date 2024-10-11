@@ -12,6 +12,7 @@ from strategies.rsi import RSI
 from strategies.atr import ATR
 from strategies.macd import MACD
 from strategies.combined_strategy import Combined_Strategy
+from strategies.kama import Kama
 from log import LinkedList
 from hyper import Hyper
 pd.set_option('display.max_rows', None)
@@ -28,28 +29,27 @@ client = RESTClient(api_key=api_key, api_secret=api_secret)
 
 
 symbols = ['BTC-USD', 'ETH-USD']
-symbol = ['BTC-USD']
+#symbol = ['BTC-USD']
 granularity = 'ONE_MINUTE'
 
 def test_multiple_strategy():
     logbook = LinkedList()
-    df_dict = utils.get_historical_from_db(granularity=granularity)
+    df_dict = utils.get_historical_from_db(granularity=granularity, symbols=symbols)
 
 
     for symbol, df in df_dict.items():
-        if symbol == 'BTC-USD':
-            current_dict_df = {symbol:df}
+        current_dict_df = {symbol:df}
 
-            rsi_vwap = Combined_Strategy(current_dict_df, RSI, Vwap)
-            rsi_vwap.generate_combined_signals()
-            #rsi_vwap.graph()
-            rsi_vwap.generate_backtest()
+        combined_strat = Combined_Strategy(current_dict_df, RSI, Kama)
+        combined_strat.generate_combined_signals()
+        combined_strat.graph()
+        combined_strat.generate_backtest()
 
-            logbook.insert_beginning(rsi_vwap)
+        logbook.insert_beginning(combined_strat)
     
     logbook.export_multiple_to_db(granularity=granularity)
 
-#test_multiple_strategy()
+test_multiple_strategy()
 
 
 def run_basic_backtest():
@@ -60,7 +60,7 @@ def run_basic_backtest():
                         timestamps=timestamps,
                         granularity=granularity)
 
-    strat = MACD(dict_df=dict_df)
+    strat = Kama(dict_df=dict_df)
     
     strat.custom_indicator()
     strat.graph()
@@ -81,7 +81,7 @@ def run_basic_backtest():
     # 'gross_exposure'])
     # fig.show()
 
-    # print(pf.stats())
+    print(pf.stats())
 #run_basic_backtest()
 
 
@@ -107,4 +107,4 @@ def run_hyper():
     utils.export_hyper_to_db(hyper.returns, strat, granularity)
 
     print(f"The maximum return was {hyper.returns.max()}\nfast_period: {hyper.returns.idxmax()[0]}\nslow_period: {hyper.returns.idxmax()[1]}\nsignal_perido: {hyper.returns.idxmax()[2]}")
-run_hyper()
+#run_hyper()

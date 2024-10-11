@@ -7,38 +7,61 @@ from strategies.efratio import EFratio
 class Kama(EFratio):
     def __init__(self, dict_df, efratio_window=15):
         super().__init__(dict_df=dict_df,)
-        
+
+        self.efratio_window = efratio_window 
         self.efratios = self.calculate_efratios(efratio_window)
 
-    def custom_indicator(self,close=None, fast_window=30, slow_window=3):
+    def custom_indicator(self,close=None, fast_window=2, slow_window=30):
         self.fast_window = fast_window
         self.slow_window = slow_window
-
-        kama = self.calculate_kama(self.efratios, self.close, fast_window, slow_window)
-        self.ti1_data = ("KAMA", kama)
         
+        self.kama = self.calculate_kama(self.fast_window, self.slow_window, self.efratio_window)
+        self.ti1_data = ("KAMA", self.kama)        
 
-    def calculate_kama(self, efratios, close, fast_window, slow_window):
+        buy_signal = self.kama > self.close
+        sell_signal = self.kama < self.close
 
-        fast_ma = ta.EMA(close, timeperiod=fast_window)
-        slow_ma = ta.EMA(close, timeperiod=slow_window)
+        signals = self.generate_signals(buy_signal, sell_signal)
 
-        kama = np.full_like(close, np.nan)
+        return signals
 
-        fastest = (2/ (fast_ma + 1))
-        slowest = (2/ (slow_ma + 1))
 
-        mapping = {i: 2- 0.043 * (i-1) for i in range(1, 21)}
-        keys = np.minimum(np.round(close), 20).astype(int)
-        n_values = np.array([mapping[key] for key in keys])
+    def calculate_sc(self, fast_window=2, slow_window=30):
 
-        k=60
-        x = k/ np.power(close, n_values)
+        """Calculate smoothing constants (SC) based on efficiency ratios."""
+        fastest_SC = 2 / (fast_window + 1)
+        slowest_SC = 2 / (slow_window + 1)
+        
+        sc = []
+        for er in self.efratios:
+            sc_value = (er * (fastest_SC - slowest_SC) + slowest_SC) ** 2
+            sc.append(sc_value)
+        return sc
 
-        smoothing_constant = (efratios * (fastest - slowest) + slowest) ** x
-        kama[fast_window -1] = close[fast_window - 1]
-
-        for i in range(fast_window, len(close)):
-            kama[i] = kama[i-1] + smoothing_constant[i] * close[i] - kama[i-1]
+    def calculate_kama(self, fast_window=2, slow_window=30, efratio_window=10):
+        """Calculate Kaufman's Adaptive Moving Average (KAMA)."""
+        sc = self.calculate_sc(fast_window, slow_window)
+        close = self.close
+        kama = []
+        
+        # Start index for valid KAMA calculation
+        start_index = efratio_window - 1
+        kama_length = len(close)
+        
+        # Initialize KAMA with zeros up to start_index
+        for _ in range(start_index):
+            kama.append(0)
+        
+        # Initial KAMA value is the price at start_index - 1
+        initial_kama = close[start_index - 1]
+        kama.append(initial_kama)
+        
+        # Calculate KAMA from start_index onwards
+        for i in range(start_index + 1, kama_length):
+            sc_i = sc[i]
+            kama_prev = kama[i - 1]
+            price_i = close[i]
+            kama_i = kama_prev + sc_i * (price_i - kama_prev)
+            kama.append(kama_i)
         
         return kama

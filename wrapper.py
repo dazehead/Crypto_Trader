@@ -169,7 +169,7 @@ def get_candles(client, symbols: list, timestamps, granularity: str, fetch_older
             # Attempt to fetch data for this range
             df = fetch_data_with_retries(client, symbol, start_unix, end_unix, granularity)
             if df.empty:
-                print(f"No data available for {symbol} between {pd.to_datetime(start_unix, unit='s')} and {pd.to_datetime(end_unix, unit='s')}.")
+                #print(f"No data available for {symbol} between {pd.to_datetime(start_unix, unit='s')} and {pd.to_datetime(end_unix, unit='s')}.")
                 continue
             else:
                 data_found = True
@@ -192,7 +192,8 @@ def get_candles(client, symbols: list, timestamps, granularity: str, fetch_older
         else:
             # If no new data was found, and existing data is empty, skip this symbol
             if existing_data.empty:
-                print(f"No data available for {symbol} in the specified date ranges.")
+                pass
+                #print(f"No data available for {symbol} in the specified date ranges.")
             else:
                 # Use existing data
                 combined_data[symbol] = existing_data
