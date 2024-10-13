@@ -33,7 +33,8 @@ def get_historical_from_db(granularity):
 
     for table in tables['name']:
         data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
-        data['date'] = pd.to_datetime(data['date'])
+
+        data['date'] = pd.to_datetime(data['date'], errors='coerce')
         data.set_index('date', inplace=True)
         clean_table_name = '-'.join(table.split('_')[:2])
         tables_data[clean_table_name] = data
