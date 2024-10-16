@@ -4,6 +4,7 @@ import utils
 import datetime as dt
 import wrapper
 import numpy as np
+from database_interaction import *
 from coinbase.rest import RESTClient
 from strategies.strategy import Strategy
 from strategies.efratio import EFratio
@@ -29,11 +30,13 @@ client = RESTClient(api_key=api_key, api_secret=api_secret)
 
 symbols = ['BTC-USD', 'ETH-USD']
 symbol = ['BTC-USD']
-granularity = 'ONE_MINUTE'
+granularities = ['ONE_MINUTE', 'FIVE_MINUTE', 'FIFTEEN_MINUTE', 'THIRTY_MINUTE', 
+                 'ONE_HOUR', 'TWO_HOUR', 'SIX_HOUR', 'ONE_DAY']
+
 
 def test_multiple_strategy():
     logbook = LinkedList()
-    df_dict = utils.get_historical_from_db(granularity=granularity)
+    df_dict = get_historical_from_db(granularity=granularity)
 
 
     for symbol, df in df_dict.items():
@@ -46,30 +49,25 @@ def test_multiple_strategy():
             rsi_vwap.generate_backtest()
 
             logbook.insert_beginning(rsi_vwap)
-    
+
     logbook.export_multiple_to_db(granularity=granularity)
 
 #test_multiple_strategy()
 
 
-def run_basic_backtest():
-    timestamps = wrapper.get_unix_times(granularity=granularity, days=3)
+def run_basic_backtest(strategy):
+    for granularity in granularities:
 
-    dict_df = wrapper.get_candles(client=client,
-                        symbols=symbol,
-                        timestamps=timestamps,
-                        granularity=granularity)
+        dict_df = get_historical_from_db(granularity=granularity, symbols=symbol)
 
-    strat = MACD(dict_df=dict_df)
-    
-    strat.custom_indicator()
-    strat.graph()
-    strat.generate_backtest()
-    pf = strat.portfolio
+        strat = strategy(dict_df=dict_df)
 
+        strat.custom_indicator()
+        strat.graph()
+        strat.generate_backtest()
 
-    utils.export_backtest_to_db(object=strat,
-                                granularity=granularity)
+        utils.export_backtest_to_db(object=strat,
+                                    granularity=granularity)
 
 
     # fig = pf.plot(subplots = [
@@ -82,7 +80,7 @@ def run_basic_backtest():
     # fig.show()
 
     # print(pf.stats())
-#run_basic_backtest()
+#run_basic_backtest(MACD)
 
 
 
@@ -94,7 +92,7 @@ def run_hyper():
                      symbols=symbol,
                      timestamps=timestamps,
                      granularity=granularity)
-    
+
     strat = MACD(dict_df)
 
     hyper = Hyper(strategy_object=strat,
@@ -107,4 +105,4 @@ def run_hyper():
     utils.export_hyper_to_db(hyper.returns, strat, granularity)
 
     print(f"The maximum return was {hyper.returns.max()}\nfast_period: {hyper.returns.idxmax()[0]}\nslow_period: {hyper.returns.idxmax()[1]}\nsignal_perido: {hyper.returns.idxmax()[2]}")
-run_hyper()
+#run_hyper()

@@ -4,6 +4,7 @@ import numpy as np
 import sqlite3 as sql
 import inspect
 import re
+import vectorbt as vbt
 pd.set_option('future.no_silent_downcasting', True)
 
 def to_df(data_dict: dict):
@@ -25,22 +26,6 @@ def to_df(data_dict: dict):
             #print(f"No candle data available.")
     return df
  
-def get_historical_from_db(granularity):
-    conn = sql.connect(f'database/{granularity}.db')
-    query = "SELECT name FROM sqlite_master WHERE type='table';"
-    tables = pd.read_sql_query(query, conn)
-    tables_data = {}
-
-    for table in tables['name']:
-        data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
-
-        data['date'] = pd.to_datetime(data['date'], errors='coerce')
-        data.set_index('date', inplace=True)
-        clean_table_name = '-'.join(table.split('_')[:2])
-        tables_data[clean_table_name] = data
-    conn.close()
-
-    return tables_data
 
 def export_hyper_to_db(data, strategy_object,granularity):
     symbol = strategy_object.symbol
@@ -105,10 +90,24 @@ def get_params_from_strategy(strategy_object):
     return backtest_dict
 
 
-def get_metrics_from_backtest(strategy_object, multiple=False, multiple_dict=None):
-
+def get_metrics_from_backtest(strategy_object, granularity, multiple=False, multiple_dict=None):
     symbol = strategy_object.symbol
     portfolio = strategy_object.portfolio
+
+    times_to_resample = {
+        'ONE_MINUTE': '1min',
+        'FIVE_MINUTE': '5min',
+        'FIFTEEN_MINUTE': '15min',
+        'THIRTY_MINUTE': '30min',
+        'ONE_HOUR': '1h',
+        'TWO_HOUR': '2h',
+        'SIX_HOUR': '6h',
+        'ONE_DAY': '1D'
+    }
+
+    freq = times_to_resample.get(granularity)  
+    vbt.settings.array_wrapper['freq'] = freq
+
     backtest_dict = {'symbol': symbol}
     if multiple_dict:
         backtest_dict = multiple_dict
@@ -118,6 +117,7 @@ def get_metrics_from_backtest(strategy_object, multiple=False, multiple_dict=Non
         value_list = []
 
         for param in params:
+            print(param)
             value = getattr(strategy_object, param, None)
             backtest_dict[param] = value
             value_list.append(value)
@@ -128,9 +128,10 @@ def get_metrics_from_backtest(strategy_object, multiple=False, multiple_dict=Non
         'annual_returns',
         'downside_risk',
         'value_at_risk'
-    ]
+    ] 
 
     for metric in functions_to_export:
+        print(metric)
         metric_value = getattr(portfolio, metric)()
         if isinstance(metric_value, (pd.Series, pd.DataFrame)):
              metric_value = metric_value.iloc[0]
@@ -197,7 +198,8 @@ def export_backtest_to_db(object, granularity, multiple_table_name = None):
 
     if not isinstance(object, pd.DataFrame):
         strategy_object = object
-        backtest_df, value_list, params = get_metrics_from_backtest(strategy_object)
+
+        backtest_df, value_list, params = get_metrics_from_backtest(strategy_object, granularity)
         symbol = backtest_df['symbol'].unique()[0]
         table_name = f"{strategy_object.__class__.__name__}_{granularity}"
 

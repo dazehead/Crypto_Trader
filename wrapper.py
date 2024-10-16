@@ -117,7 +117,7 @@ def get_missing_unix_ranges(desired_start_unix, desired_end_unix, existing_start
 
     return missing_ranges
 
-def get_candles(client, symbols: list, timestamps, granularity: str, fetch_older_data=False):
+def get_candles_for_database(client, symbols: list, timestamps, granularity: str, fetch_older_data=False):
     """Function that gets candles for every pair of timestamps and combines them all, avoiding redundant data fetching."""
     combined_data = {}
 
