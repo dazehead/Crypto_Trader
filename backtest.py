@@ -12,6 +12,7 @@ from strategies.rsi import RSI
 from strategies.atr import ATR
 from strategies.macd import MACD
 from strategies.combined_strategy import Combined_Strategy
+from database_interaction import *
 from log import LinkedList
 from hyper import Hyper
 pd.set_option('display.max_rows', None)
@@ -53,12 +54,14 @@ def test_multiple_strategy():
 
 
 def run_basic_backtest():
-    timestamps = wrapper.get_unix_times(granularity=granularity, days=3)
+    # timestamps = wrapper.get_unix_times(granularity=granularity, days=3)
 
-    dict_df = wrapper.get_candles(client=client,
-                        symbols=symbol,
-                        timestamps=timestamps,
-                        granularity=granularity)
+    # dict_df = wrapper.get_candles(client=client,
+    #                     symbols=symbol,
+    #                     timestamps=timestamps,
+    #                     granularity=granularity)
+    dict_df = get_historical_from_db()
+
 
     strat = MACD(dict_df=dict_df)
     
