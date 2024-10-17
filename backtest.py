@@ -30,7 +30,7 @@ client = RESTClient(api_key=api_key, api_secret=api_secret)
 
 
 symbols = ['BTC-USD', 'ETH-USD']
-#symbol = ['BTC-USD']
+symbol = ['BTC-USD']
 granularity = 'ONE_MINUTE'
 
 def test_multiple_strategy():
@@ -50,7 +50,7 @@ def test_multiple_strategy():
     
     logbook.export_multiple_to_db(granularity=granularity)
 
-test_multiple_strategy()
+#test_multiple_strategy()
 
 
 def run_basic_backtest():
@@ -60,19 +60,20 @@ def run_basic_backtest():
     #                     symbols=symbol,
     #                     timestamps=timestamps,
     #                     granularity=granularity)
-    dict_df = get_historical_from_db()
+    dict_df = get_historical_from_db(granularity=granularity)
+    print(dict_df)
 
 
-    strat = Kama(dict_df=dict_df)
+    # strat = Kama(dict_df=dict_df)
     
-    strat.custom_indicator()
-    strat.graph()
-    strat.generate_backtest()
-    pf = strat.portfolio
+    # strat.custom_indicator()
+    # strat.graph()
+    # strat.generate_backtest()
+    # pf = strat.portfolio
 
 
-    utils.export_backtest_to_db(object=strat,
-                                granularity=granularity)
+    # utils.export_backtest_to_db(object=strat,
+    #                             granularity=granularity)
 
 
     # fig = pf.plot(subplots = [
@@ -84,8 +85,8 @@ def run_basic_backtest():
     # 'gross_exposure'])
     # fig.show()
 
-    print(pf.stats())
-#run_basic_backtest()
+    # print(pf.stats())
+run_basic_backtest()
 
 
 

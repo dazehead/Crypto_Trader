@@ -6,6 +6,9 @@ import inspect
 import re
 pd.set_option('future.no_silent_downcasting', True)
 
+def transform_heikin_ashi(data_dict: dict):
+    pass
+
 def to_df(data_dict: dict):
     if not data_dict:
         return pd.DataFrame()  # Return empty DataFrame if data_dict is empty
