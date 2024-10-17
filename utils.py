@@ -25,33 +25,6 @@ def to_df(data_dict: dict):
             #print(f"No candle data available.")
     return df
  
-def get_historical_from_db(granularity, symbols=[]):
-    conn = sql.connect(f'database/{granularity}.db')
-    query = "SELECT name FROM sqlite_master WHERE type='table';"
-    tables = pd.read_sql_query(query, conn)
-    tables_data = {}
-
-    for table in tables['name']:
-        if symbols:
-            for symbol in symbols:
-                formatted_symbol = symbol.replace('-','_')
-                if formatted_symbol in table:
-                    data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
-                    data['date'] = pd.to_datetime(data['date'])
-                    data.set_index('date', inplace=True)
-                    clean_table_name = '-'.join(table.split('_')[:2])
-                    tables_data[clean_table_name] = data
-                    conn.close()
-                    return tables_data
-        else:
-            data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
-            data['date'] = pd.to_datetime(data['date'])
-            data.set_index('date', inplace=True)
-            clean_table_name = '-'.join(table.split('_')[:2])
-            tables_data[clean_table_name] = data
-    conn.close()
-
-    return tables_data
 
 def export_hyper_to_db(data, strategy_object,granularity):
     symbol = strategy_object.symbol
