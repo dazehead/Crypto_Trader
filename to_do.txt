@@ -1,23 +1,6 @@
 TO-DO:
+--- issue with volume format it is rounding example btc volume showing 4.5658 this should be millions but a lower volume coin shows 16.52 and it is only 1,652 this will be a problem later
+
 ---fix bug in WS where we recieve imcoming message but ignore until granualirty comes
 
 ---might be bug if we have more than 2 osc_data will have to test later specifically plotting entrys and exits on the graph
-
----create a new database for every granularity - this will stop us from having to name ONE_MINUTE in the table and split our data 
-    names should be like this
-        database names will be ONE_MINUTE_DATA
-        'BTC_USD_2024_09_26_TO_2024_09_28'
-        we will only have send it symbol and the database
-        then the other database will be named
-
-        'FIVE_MINUTE_DATA'
-        'FIFTEEN_MINUTE_DATA'
-        'THIRTY_MINUTE_DATA'
-        'ONE_HOUR_DATA'
-        'TWO_HOUR_DATA'
-        'SIX_HOUR_DATA'
-        'ONE_DAY_DATA'
-        then we can create a group folder named Historical Data
-
-        ---error in one of the data keyError 'start' aparently one of the data recieved back doesn't have start need
-        to program error handling for keyError

@@ -2,6 +2,24 @@ import pandas as pd
 import utils
 import sqlite3 as sql
 
+
+def get_historical_from_db(granularity):
+    conn = sql.connect(f'database/{granularity}.db')
+    query = "SELECT name FROM sqlite_master WHERE type='table';"
+    tables = pd.read_sql_query(query, conn)
+    tables_data = {}
+
+    for table in tables['name']:
+        data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
+
+        data['date'] = pd.to_datetime(data['date'], errors='coerce')
+        data.set_index('date', inplace=True)
+        clean_table_name = '-'.join(table.split('_')[:2])
+        tables_data[clean_table_name] = data
+    conn.close()
+
+    return tables_data
+
 def resample_dataframe_from_db(granularity='ONE_MINUTE'):
     """
     Resamples data from the database for different timeframes based on the granularity.
@@ -17,7 +35,7 @@ def resample_dataframe_from_db(granularity='ONE_MINUTE'):
     }
 
 
-    dict_df = utils.get_historical_from_db(granularity=granularity)
+    dict_df = get_historical_from_db(granularity=granularity)
 
     resampled_dict_df = {}
 
@@ -43,20 +61,3 @@ def resample_dataframe_from_db(granularity='ONE_MINUTE'):
     print("Resampling completed.")
 
 resample_dataframe_from_db()
-
-def get_historical_from_db(granularity):
-    conn = sql.connect(f'database/{granularity}.db')
-    query = "SELECT name FROM sqlite_master WHERE type='table';"
-    tables = pd.read_sql_query(query, conn)
-    tables_data = {}
-
-    for table in tables['name']:
-        data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
-
-        data['date'] = pd.to_datetime(data['date'], errors='coerce')
-        data.set_index('date', inplace=True)
-        clean_table_name = '-'.join(table.split('_')[:2])
-        tables_data[clean_table_name] = data
-    conn.close()
-
-    return tables_data

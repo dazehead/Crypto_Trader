@@ -11,6 +11,7 @@ from strategies.vwap import Vwap
 from strategies.rsi import RSI
 from strategies.atr import ATR
 from strategies.macd import MACD
+from strategies.kama import Kama
 from strategies.combined_strategy import Combined_Strategy
 from database_interaction import *
 from log import LinkedList
