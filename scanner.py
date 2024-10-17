@@ -1,5 +1,7 @@
 import utils
 import pandas as pd
+import wrapper
+import time
 
 class Scanner():
     def __init__(self, rest_client, granularity):
@@ -46,7 +48,25 @@ class Scanner():
             df = df[['product_id', 'price']].sort_values(by='price', ascending=False)
         return df
 
+    def get_candles_and_fill_db(self):
+        start_time = time.time()
+ 
+        self.filter_products(filter_type='SPOT')
 
+        timestamps = wrapper.get_unix_times(granularity=self.granularity, days= 365)
+        for symbol in self.symbols:
+            dict_df = wrapper.get_candles_for_db(client = self.client,
+                                    symbols = [symbol],
+                                    timestamps=timestamps,
+                                    granularity=self.granularity,
+                                    fetch_older_data=False)
+            try:
+                utils.export_historical_to_db(dict_df=dict_df,
+                                            granularity=self.granularity)
+            except KeyError:
+                print(dict_df.keys())
+        end_time = time.time()
+        print(f"Execution time: {(start_time - end_time) / 60} minutes")
 
     def get_best_bid_ask(self, product_id):
         """gets the best bid and ask"""
