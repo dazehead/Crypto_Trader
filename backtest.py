@@ -84,7 +84,7 @@ def run_basic_backtest():
     fig.show()
 
     print(pf.stats())
-run_basic_backtest()
+#run_basic_backtest()
 
 
 
@@ -110,3 +110,16 @@ def run_hyper():
 
     print(f"The maximum return was {hyper.returns.max()}\nfast_period: {hyper.returns.idxmax()[0]}\nslow_period: {hyper.returns.idxmax()[1]}\nsignal_perido: {hyper.returns.idxmax()[2]}")
 #run_hyper()
+
+def testing():
+    timestamps = wrapper.get_unix_times(granularity=granularity, days=3)
+
+    dict_df = wrapper.get_basic_candles(client=client,
+                     symbols=symbol,
+                     timestamps=timestamps,
+                     granularity=granularity)
+    
+    for key, value in dict_df.items():
+        print(key)
+        print(value)
+testing()

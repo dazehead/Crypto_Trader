@@ -78,8 +78,7 @@ def get_data_from_db(symbol, granularity):
         combined_df = combined_df.sort_index()
     return combined_df
 
-def fetch_data_with_retries(client, symbol, start_unix, end_unix, granularity):
-    df = pd.DataFrame()
+def fetch_data(client, symbol, start_unix, end_unix, granularity):
 
     btc_candles = client.get_candles(
         product_id=symbol,
@@ -167,7 +166,7 @@ def get_candles_for_db(client, symbols: list, timestamps, granularity: str, fetc
             start_unix, end_unix = missing_range
 
             # Attempt to fetch data for this range
-            df = fetch_data_with_retries(client, symbol, start_unix, end_unix, granularity)
+            df = fetch_data(client, symbol, start_unix, end_unix, granularity)
             if df.empty:
                 #print(f"No data available for {symbol} between {pd.to_datetime(start_unix, unit='s')} and {pd.to_datetime(end_unix, unit='s')}.")
                 continue
@@ -200,8 +199,28 @@ def get_candles_for_db(client, symbols: list, timestamps, granularity: str, fetc
 
     return combined_data
 
-    def get_basic_candles():
-        pass
+def get_basic_candles(client,symbols,timestamps,granularity):
+    combined_data = {}
+    for symbol in symbols:
+        combined_df = pd.DataFrame()
+
+        for start, end in timestamps:
+            df = fetch_data(client, symbol, start, end, granularity)
+
+            combined_df = pd.concat([combined_df, df])
+
+        combined_df = combined_df.sort_values(by='date', ascending=True).reset_index(drop=True)
+        columns_to_convert = ['low', 'high', 'open', 'close', 'volume']
+
+        for col in columns_to_convert:
+            combined_df[col] = pd.to_numeric(combined_df[col], errors='coerce')
+
+        combined_df.set_index('date', inplace=True)
+        combined_data[symbol] = combined_df
+    return combined_data
+            
+
+
 
 
 
