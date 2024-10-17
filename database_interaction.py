@@ -3,19 +3,30 @@ import utils
 import sqlite3 as sql
 
 
-def get_historical_from_db(granularity):
+def get_historical_from_db(granularity, symbols:list = []):
     conn = sql.connect(f'database/{granularity}.db')
     query = "SELECT name FROM sqlite_master WHERE type='table';"
     tables = pd.read_sql_query(query, conn)
     tables_data = {}
 
     for table in tables['name']:
-        data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
+        if not symbols:
+            data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
 
-        data['date'] = pd.to_datetime(data['date'], errors='coerce')
-        data.set_index('date', inplace=True)
-        clean_table_name = '-'.join(table.split('_')[:2])
-        tables_data[clean_table_name] = data
+            data['date'] = pd.to_datetime(data['date'], errors='coerce')
+            data.set_index('date', inplace=True)
+            clean_table_name = '-'.join(table.split('_')[:2])
+            tables_data[clean_table_name] = data
+        else:
+            for symbol in symbols:
+                clean_table_name = '-'.join(table.split('_')[:2])
+                
+                if symbol == clean_table_name:
+                    data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
+                    data['date'] = pd.to_datetime(data['date'], errors='coerce')
+                    data.set_index('date', inplace=True)
+                    
+                    tables_data[clean_table_name] = data    
     conn.close()
 
     return tables_data
