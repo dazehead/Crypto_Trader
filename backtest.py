@@ -57,33 +57,33 @@ def run_basic_backtest():
     dict_df = database_interaction.get_historical_from_db(granularity=granularity,
                                                           symbols=symbol,
                                                           num_days=5)
+    dict_df = utils.heikin_ashi_transform(dict_df)
+    #print(dict_df)
                                                    
-    for key, value in dict_df.items():
-        print(value)
 
 
-    # strat = Kama(dict_df=dict_df)
+    strat = RSI(dict_df=dict_df)
     
-    # strat.custom_indicator()
-    # strat.graph()
-    # strat.generate_backtest()
-    # pf = strat.portfolio
+    strat.custom_indicator()
+    strat.graph()
+    strat.generate_backtest()
+    pf = strat.portfolio
 
 
     # utils.export_backtest_to_db(object=strat,
     #                             granularity=granularity)
 
 
-    # fig = pf.plot(subplots = [
-    # 'orders',
-    # 'trade_pnl',
-    # 'cum_returns',
-    # 'drawdowns',
-    # 'underwater',
-    # 'gross_exposure'])
-    # fig.show()
+    fig = pf.plot(subplots = [
+    'orders',
+    'trade_pnl',
+    'cum_returns',
+    'drawdowns',
+    'underwater',
+    'gross_exposure'])
+    fig.show()
 
-    # print(pf.stats())
+    print(pf.stats())
 run_basic_backtest()
 
 
