@@ -3,32 +3,34 @@ import utils
 import sqlite3 as sql
 
 
-def get_historical_from_db(granularity, symbols:list = []):
+def get_historical_from_db(granularity, symbols: list = [], num_days: int = None):
     conn = sql.connect(f'database/{granularity}.db')
     query = "SELECT name FROM sqlite_master WHERE type='table';"
     tables = pd.read_sql_query(query, conn)
     tables_data = {}
-
+    
     for table in tables['name']:
-        if not symbols:
-            data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
+        clean_table_name = '-'.join(table.split('_')[:2])
 
-            data['date'] = pd.to_datetime(data['date'], errors='coerce')
-            data.set_index('date', inplace=True)
-            clean_table_name = '-'.join(table.split('_')[:2])
-            tables_data[clean_table_name] = data
-        else:
-            for symbol in symbols:
-                clean_table_name = '-'.join(table.split('_')[:2])
-                
-                if symbol == clean_table_name:
-                    data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
-                    data['date'] = pd.to_datetime(data['date'], errors='coerce')
-                    data.set_index('date', inplace=True)
-                    
-                    tables_data[clean_table_name] = data    
+        # If symbols are provided, skip tables that are not in the symbol list
+        if symbols and clean_table_name not in symbols:
+            continue
+
+        # Retrieve data from the table
+        data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
+        data['date'] = pd.to_datetime(data['date'], errors='coerce')
+        data.set_index('date', inplace=True)
+
+        # If num_days is provided, filter the data based on the most recent date
+        if num_days is not None:
+            last_date = data.index.max()  # Find the most recent date in the dataset
+            start_date = last_date - pd.Timedelta(days=num_days)
+            data = data.loc[data.index >= start_date]
+
+        # Store the data in the dictionary
+        tables_data[clean_table_name] = data
+    
     conn.close()
-
     return tables_data
 
 def resample_dataframe_from_db(granularity='ONE_MINUTE'):
@@ -71,4 +73,3 @@ def resample_dataframe_from_db(granularity='ONE_MINUTE'):
 
     print("Resampling completed.")
 
-resample_dataframe_from_db()

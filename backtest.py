@@ -4,6 +4,7 @@ import utils
 import datetime as dt
 import wrapper
 import numpy as np
+import database_interaction
 from coinbase.rest import RESTClient
 from strategies.strategy import Strategy
 from strategies.efratio import EFratio
@@ -13,12 +14,10 @@ from strategies.atr import ATR
 from strategies.macd import MACD
 from strategies.kama import Kama
 from strategies.combined_strategy import Combined_Strategy
-from database_interaction import *
 from log import LinkedList
 from hyper import Hyper
-pd.set_option('display.max_rows', None)
-pd.set_option('display.max_columns', None)
-import sqlite3
+#pd.set_option('display.max_rows', None)
+#pd.set_option('display.max_columns', None)
 
 
 api_key = os.getenv('API_ENV_KEY') #API_ENV_KEY | COINBASE_API_KEY
@@ -35,7 +34,7 @@ granularity = 'ONE_MINUTE'
 
 def test_multiple_strategy():
     logbook = LinkedList()
-    df_dict = utils.get_historical_from_db(granularity=granularity, symbols=symbols)
+    df_dict = database_interaction.get_historical_from_db(granularity=granularity, symbols=symbols)
 
 
     for symbol, df in df_dict.items():
@@ -54,14 +53,13 @@ def test_multiple_strategy():
 
 
 def run_basic_backtest():
-    # timestamps = wrapper.get_unix_times(granularity=granularity, days=3)
 
-    # dict_df = wrapper.get_candles(client=client,
-    #                     symbols=symbol,
-    #                     timestamps=timestamps,
-    #                     granularity=granularity)
-    dict_df = get_historical_from_db(granularity=granularity)
-    print(dict_df)
+    dict_df = database_interaction.get_historical_from_db(granularity=granularity,
+                                                          symbols=symbol,
+                                                          num_days=5)
+                                                   
+    for key, value in dict_df.items():
+        print(value)
 
 
     # strat = Kama(dict_df=dict_df)

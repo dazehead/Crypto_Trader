@@ -76,9 +76,6 @@ def export_historical_to_db(dict_df, granularity):
 
 
 
-
-
-
 def get_params_from_strategy(strategy_object):
     symbol = strategy_object.symbol
     backtest_dict = {'symbol': symbol}
@@ -255,4 +252,4 @@ def export_backtest_to_db(object, granularity, multiple_table_name = None):
         backtest_df.to_sql(table_name, conn, if_exists='append', index=False)
 
     conn.close()
-    pass
+    return
