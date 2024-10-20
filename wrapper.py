@@ -199,7 +199,7 @@ def get_candles_for_db(client, symbols: list, timestamps, granularity: str, fetc
 
     return combined_data
 
-def get_basic_candles(client,symbols,timestamps,granularity):
+def get_basic_candles(client,symbols:list,timestamps,granularity):
     combined_data = {}
     for symbol in symbols:
         combined_df = pd.DataFrame()
