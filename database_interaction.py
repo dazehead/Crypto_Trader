@@ -2,6 +2,23 @@ import pandas as pd
 import utils
 import sqlite3 as sql
 
+def volume_conversion():
+    times_to_resample = ['ONE_MINUTE', 'FIVE_MINUTE', 'THIRTY_MINUTE', 'ONE_HOUR', 'TWO_HOUR', 'SIX_HOUR', 'ONE_DAY']
+    for granularity in times_to_resample:
+        conn = sql.connect(f'database/{granularity}.db')
+        query = "SELECT name FROM sqlite_master WHERE type='table';"
+        tables = pd.read_sql_query(query, conn)
+        
+        for table in tables['name']:
+            clean_table_name = '-'.join(table.split('_')[:2])
+            data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
+            data['date'] = pd.to_datetime(data['date'], errors='coerce')
+            data.set_index('date', inplace=True)
+            move_decimal = lambda val: int(''.join(f"{val:.10f}".rstrip('0').split('.'))) if isinstance(val, float) else val
+            data['volume'] = data['volume'].apply(move_decimal)
+            utils.export_historical_to_db({clean_table_name: data}, granularity)
+
+
 
 def get_historical_from_db(granularity, symbols: list = [], num_days: int = None):
     conn = sql.connect(f'database/{granularity}.db')

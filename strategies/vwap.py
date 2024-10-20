@@ -30,6 +30,8 @@ class Vwap(Strategy):
         self.vwap_values = self.calculate_vwap()
         self.ti1_data = ('VWAP', self.vwap_values)
 
+        self.osc1_data = ('Volume', self.volume)
+
         buy_signal = (self.close > self.vwap_values)
         sell_signal = (self.close < self.vwap_values)   
 

@@ -34,12 +34,12 @@ def heikin_ashi_transform(dict_df):
             ha_df.loc[ha_df.index[i], 'low'] = min(df['low'].iloc[i], ha_df.loc[ha_df.index[i], 'open'], ha_df.loc[ha_df.index[i], 'close'])
 
         ha_df['volume'] = df['volume']
+        ha_df.dropna(inplace=True)
+
 
         ha_dict[symbol] = ha_df
 
     return ha_dict
-
-
 
 def to_df(data_dict: dict):
     if not data_dict:
@@ -55,6 +55,10 @@ def to_df(data_dict: dict):
             df = df.rename(columns={'start': 'date'})  # renames the start column to date
             df.loc[:, df.columns != 'date'] = df.loc[:, df.columns != 'date'].apply(pd.to_numeric, errors='coerce')
             df = df.ffill()
+
+            # convertts volume to full amount
+            move_decimal = lambda val: int(''.join(f"{val:.10f}".rstrip('0').split('.'))) if isinstance(val, float) else val
+            df['volume'] = df['volume'].apply(move_decimal)
         else:
             pass
             #print(f"No candle data available.")

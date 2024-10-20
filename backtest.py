@@ -28,7 +28,7 @@ sandbox_rest_url = "https://api-public.sandbox.exchange.coinbase.com"
 client = RESTClient(api_key=api_key, api_secret=api_secret)
 
 
-symbols = ['BTC-USD', 'ETH-USD']
+symbols = ['BTC-USD', 'ETH-USD', 'MATH-USD']
 symbol = ['BTC-USD']
 granularity = 'ONE_MINUTE'
 
@@ -55,36 +55,38 @@ def test_multiple_strategy():
 def run_basic_backtest():
 
     dict_df = database_interaction.get_historical_from_db(granularity=granularity,
-                                                          symbols=symbol,
+                                                          symbols=symbols,
                                                           num_days=5)
-    dict_df = utils.heikin_ashi_transform(dict_df)
-    #print(dict_df)
-                                                   
+    for key, value in dict_df.items():
+        current_dict = {key : value}
+        current_dict = utils.heikin_ashi_transform(current_dict)
+        #print(dict_df)
+                                                    
 
 
-    strat = RSI(dict_df=dict_df)
-    
-    strat.custom_indicator()
-    strat.graph()
-    strat.generate_backtest()
-    pf = strat.portfolio
+        strat = Vwap(dict_df=current_dict)
+        
+        strat.custom_indicator()
+        strat.graph()
+        #strat.generate_backtest()
+        #pf = strat.portfolio
 
 
-    # utils.export_backtest_to_db(object=strat,
-    #                             granularity=granularity)
+        # utils.export_backtest_to_db(object=strat,
+        #                             granularity=granularity)
 
 
-    fig = pf.plot(subplots = [
-    'orders',
-    'trade_pnl',
-    'cum_returns',
-    'drawdowns',
-    'underwater',
-    'gross_exposure'])
-    fig.show()
+        # fig = pf.plot(subplots = [
+        # 'orders',
+        # 'trade_pnl',
+        # 'cum_returns',
+        # 'drawdowns',
+        # 'underwater',
+        # 'gross_exposure'])
+        # fig.show()
 
-    print(pf.stats())
-#run_basic_backtest()
+        # print(pf.stats())
+run_basic_backtest()
 
 
 
