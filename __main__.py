@@ -10,6 +10,7 @@ from strategies.rsi import RSI
 from trade import Trade
 from log import LinkedList
 from scanner import Scanner
+from risk import Risk_Handler
 
 granularity = 'ONE_MINUTE'
 symbol = 'BTC-USD'
@@ -26,6 +27,7 @@ def on_message():
     global counter
     global df_manager
     global rest_client
+    global risk
     print(counter)
     
     df_manager.data_for_live_trade(update=True)
@@ -34,7 +36,8 @@ def on_message():
     strat.custom_indicator(strat.close)
     signals = [0,1,-1,0]
     
-    trade = Trade(strat_object=strat,
+    trade = Trade(risk = risk,
+                  strat_object=strat,
                   logbook=logbook,
                   rest_client=rest_client,
                   signals=[signals[counter]])
@@ -76,6 +79,8 @@ while not scanner.products_to_trade:
 df_manager = DF_Manager(scanner)
 
 logbook = LinkedList()
+risk = Risk_Handler(rest_client)
+
 
 
 async def main():

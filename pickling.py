@@ -1,8 +1,8 @@
 import pickle
 
-def to_pickle(data):
+def to_pickle(data_name, data):
     try:
-        with open('pickle_data/orders.pickle', 'rb') as file:
+        with open(f'pickle_data/{data_name}', 'rb') as file:
             existing_data = pickle.load(file)
     except (FileNotFoundError, EOFError):
         existing_data = [] 
@@ -12,9 +12,9 @@ def to_pickle(data):
     with open('pickle_data/orders.pickle', 'wb') as file:
         pickle.dump(existing_data, file)
 
-def from_pickle():
+def from_pickle(data_name):
     try:
-        with open('pickle_data/orders.pickle', 'rb') as file:
+        with open(f'pickle_data/{data_name}', 'rb') as file:
             return pickle.load(file)
     except (FileNotFoundError, EOFError):
         return []  
