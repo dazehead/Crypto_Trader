@@ -1,11 +1,12 @@
 import time
 import os
 import wrapper
+import asyncio
 from coinbase.websocket import WSClient, WSClientConnectionClosedException
 from coinbase.rest import RESTClient
 from dataframe_manager import DF_Manager
 from strategies.strategy import Strategy
-from strategies.strategy import Strategy
+from strategies.rsi import RSI
 from trade import Trade
 from log import LinkedList
 from scanner import Scanner
@@ -13,35 +14,49 @@ from scanner import Scanner
 granularity = 'ONE_MINUTE'
 symbol = 'BTC-USD'
 counter = 0
+granularity_mapping = {
+    'ONE_MINUTE': 60,
+    'FIVE_MINUTES': 300,
+    'FIFTEEN_MINUTES': 900,
+    'ONE_HOUR': 3600,
+    'ONE_DAY': 86400
+}
 
-def on_message(msg):
-    """
-    function that gets called everytime a new message appears
-    we will need only send msg to a our Trade function so it can montior the trade
-    for any issues during execution
+def on_message():
+    global counter
+    global df_manager
+    global rest_client
+    print(counter)
     
-    """
-    
-    df_manager.process_message(msg)
-    print(df_manager.dict_df.items())
+    df_manager.data_for_live_trade(update=True)
 
-    # ma_strat = Strategy(df_manager.dict_df) # slow ma data
-
-    # signals = ma_strat.custom_indicator(ma_strat.close,
-    #                                     fast_window=2,
-    #                                     slow_window=66)
-    signals = [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0,0,0,0,0,0,0,0,0]
+    strat = RSI(df_manager.dict_df) # slow ma data
+    strat.custom_indicator(strat.close)
+    signals = [0,1,-1,0]
     
-    trade = Trade(signals=[signals[counter]],
+    trade = Trade(strat_object=strat,
                   logbook=logbook,
-                  rest_client=rest_client)
+                  rest_client=rest_client,
+                  signals=[signals[counter]])
+    
     counter += 1
 
 
+async def fetch_data_periodically():
+    while True:
+        start_time = time.time()
+
+        on_message()
+
+        execution_time = time.time() - start_time
+        sleep_time = max(0, granularity_mapping[granularity] - execution_time)
+
+        print(f"Execution time: {execution_time:.2f} seconds. Sleeping for {sleep_time:.2f} seconds.")
+
+        await asyncio.sleep(sleep_time)
+
 
 """---------------start of program-----------------"""
-global df_manager
-global rest_client
 api_key = os.getenv('API_ENV_KEY')
 api_secret = os.getenv('API_SECRET_ENV_KEY')
 
@@ -63,23 +78,8 @@ df_manager = DF_Manager(scanner)
 logbook = LinkedList()
 
 
+async def main():
+    await fetch_data_periodically()
 
-def connect_and_subscribe():
-    "function to connect subscribe and then reconnect after 20 seconds"
-    try:
-        ws_client.open()
-        ws_client.subscribe(product_ids=scanner.products_to_trade, channels=['candles', 'heartbeats'])
-        ws_client.run_forever_with_exception_check()
-
-    except WSClientConnectionClosedException as e:
-        print("Connection closed! Sleeping for 20 seconds before reconnecting...")
-        time.sleep(20)
-        connect_and_subscribe()
-
-    except Exception as e:
-        """suppose to catch any error and stop the program but it still runs"""
-        print(f"An error occured:\n{e}")
-        print("Stopping the program.")
-        raise
-connect_and_subscribe()
-
+if __name__ == "__main__":
+    asyncio.run(main())

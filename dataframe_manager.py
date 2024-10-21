@@ -74,20 +74,23 @@ class DF_Manager():
             #print(order_data)
         
 
-    def data_for_live_trade(self):
+    def data_for_live_trade(self, update=False):
         """dataframe needs to be indexed by symbol"""
         for symbol in self.products_to_trade:
-            timestamps = wrapper.get_unix_times(granularity=self.granularity, days=2)
+            if update:
+                timestamps = wrapper.get_unix_times(granularity=self.granularity)
+            else:
+                timestamps = wrapper.get_unix_times(granularity=self.granularity, days=2)
 
             dict_df = wrapper.get_basic_candles(client=self.scanner.client,
                             symbols=[symbol],
                             timestamps=timestamps,
                             granularity=self.granularity)
-            self.dict_df = dict_df
+            
+            if symbol in self.dict_df:
+                last_row = dict_df[symbol].iloc[[-1]]
+                self.dict_df[symbol] = pd.concat([self.dict_df[symbol], last_row]).drop_duplicates()
+            else: 
+                self.dict_df = dict_df
 
-        
-
-    def update_df(self, df):
-        """this will update the dataframe with the new candles"""
-        for key, value in self.dict_df.items():
-            new_dict = {key: df}
+    

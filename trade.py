@@ -1,13 +1,16 @@
 """This class will have all logic for executing trades"""
 class Trade():
 
-    def __init__(self, strat_object, logbook, rest_client):
+    def __init__(self, strat_object, logbook, rest_client, signals: list=None):
         self.logbook = logbook
         self.client = rest_client
         self.strat = strat_object
-        self.signals = self.strat.signals
         self.symbol = self.strat.symbol
-        # 
+        if signals:
+            self.signals = signals
+        else:
+            self.signals = self.strat.signals
+
 
         if self.signals[-1] == 1:
             self.buy()
