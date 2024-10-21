@@ -5,11 +5,14 @@ from coinbase.websocket import WSClient, WSClientConnectionClosedException
 from coinbase.rest import RESTClient
 from dataframe_manager import DF_Manager
 from strategies.strategy import Strategy
+from strategies.strategy import Strategy
 from trade import Trade
 from log import LinkedList
 from scanner import Scanner
 
 granularity = 'ONE_MINUTE'
+symbol = 'BTC-USD'
+counter = 0
 
 def on_message(msg):
     """
@@ -20,16 +23,19 @@ def on_message(msg):
     """
     
     df_manager.process_message(msg)
+    print(df_manager.dict_df.items())
 
-    ma_strat = Strategy(df_manager.df) # slow ma data
+    # ma_strat = Strategy(df_manager.dict_df) # slow ma data
 
-    signals = ma_strat.custom_indicator(ma_strat.close,
-                                        fast_window=2,
-                                        slow_window=66)
+    # signals = ma_strat.custom_indicator(ma_strat.close,
+    #                                     fast_window=2,
+    #                                     slow_window=66)
+    signals = [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0,0,0,0,0,0,0,0,0]
     
-    trade = Trade(signals=signals,
+    trade = Trade(signals=[signals[counter]],
                   logbook=logbook,
                   rest_client=rest_client)
+    counter += 1
 
 
 
@@ -50,7 +56,8 @@ scanner = Scanner(rest_client=rest_client,
 
 """Loops through the scanner until a product gets returned from our defined filter parameters"""
 while not scanner.products_to_trade:
-    scanner.filter_products()
+    scanner.filter_products('SPOT')
+
 df_manager = DF_Manager(scanner)
 
 logbook = LinkedList()
@@ -61,7 +68,7 @@ def connect_and_subscribe():
     "function to connect subscribe and then reconnect after 20 seconds"
     try:
         ws_client.open()
-        ws_client.subscribe(product_ids=[scanner.products_to_trade], channels=['candles', 'heartbeats', 'user'])
+        ws_client.subscribe(product_ids=scanner.products_to_trade, channels=['candles', 'heartbeats'])
         ws_client.run_forever_with_exception_check()
 
     except WSClientConnectionClosedException as e:

@@ -21,9 +21,9 @@ class Kama(EFratio):
         buy_signal = self.kama > self.close
         sell_signal = self.kama < self.close
 
-        signals = self.generate_signals(buy_signal, sell_signal)
+        self.signals = self.generate_signals(buy_signal, sell_signal)
 
-        return signals
+        return self.signals
 
 
     def calculate_sc(self, fast_window=2, slow_window=30):

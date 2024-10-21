@@ -59,8 +59,9 @@ class Strategy:
         signals =np.zeros_like(close)
         signals[self.entries] = 1
         signals[self.exits] = -1
+        self.signals = signals
 
-        return signals
+        return self.signals
 
     def generate_signals(self, buy_signal, sell_signal, with_formating=True):
         """Common method to generate and format buy/sell signals"""
