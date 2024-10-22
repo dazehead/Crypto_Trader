@@ -3,6 +3,7 @@ import vectorbt as vbt
 import pandas as pd
 import numpy as np
 import plotly.subplots as sp
+import plotly.graph_objects as go
 import sys
 
 class Strategy:
@@ -134,7 +135,13 @@ class Strategy:
  
         # Start by plotting the first figure (Close price)
         param_number = 0
-        fig1 = self.close.vbt.plot(trace_kwargs=dict(name='Close'))
+        #fig1 = self.close.vbt.plot(trace_kwargs=dict(name='Close'))
+        fig1 = go.Figure(data=[go.Candlestick(x=self.close.index,
+                                             open=self.open,
+                                             high=self.high,
+                                             low=self.low,
+                                             close=self.close)])
+
         fig2 = None
         osc_data = None
 
@@ -167,12 +174,12 @@ class Strategy:
 
         # Plot entry and exit markers on the first figure (fig1)
         if self.entries is not None:
-            fig1 = self.entries.vbt.signals.plot_as_entry_markers(self.close, fig=fig1)
+            fig1 = self.entries.vbt.signals.plot_as_entry_markers(self.open, fig=fig1)
             if osc_data is not None:  # Only plot if osc_data exists
                 fig2 = self.entries.vbt.signals.plot_as_entry_markers(osc_data, fig=fig2)
 
         if self.exits is not None:
-            fig1 = self.exits.vbt.signals.plot_as_exit_markers(self.close, fig=fig1)
+            fig1 = self.exits.vbt.signals.plot_as_exit_markers(self.open, fig=fig1)
             if osc_data is not None:  # Only plot if osc_data exists
                 fig2 = self.exits.vbt.signals.plot_as_exit_markers(osc_data, fig=fig2)
 
@@ -195,13 +202,13 @@ class Strategy:
             fig_combined.add_hline(y=self.sell_threshold, line_color='red', line_width=1.5, row=2, col=1)
 
         # Optionally, update the layout of the combined figure
-        fig_combined.update_layout(height=800, title_text="Combined Plot: Close Price and Oscillator Data")
+        fig_combined.update_layout(height=800, title_text="Combined Plot: Close Price and Oscillator Data", xaxis_rangeslider_visible=False)
 
         # Display the combined figure
         fig_combined.show()
 
     def generate_backtest(self):
         """Performs backtest and returns the stats"""
-        self.portfolio = vbt.Portfolio.from_signals(self.close, self.entries, self.exits)
+        self.portfolio = vbt.Portfolio.from_signals(self.open, self.entries, self.exits,sl_stop = .02, fees=.02)
 
         return self.portfolio

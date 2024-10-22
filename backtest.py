@@ -30,7 +30,7 @@ client = RESTClient(api_key=api_key, api_secret=api_secret)
 
 symbols = ['BTC-USD', 'ETH-USD', 'MATH-USD']
 symbol = ['BTC-USD']
-granularity = 'ONE_MINUTE'
+granularity = 'THIRTY_MINUTE'
 
 def test_multiple_strategy():
     logbook = LinkedList()
@@ -55,61 +55,65 @@ def test_multiple_strategy():
 def run_basic_backtest():
 
     dict_df = database_interaction.get_historical_from_db(granularity=granularity,
-                                                          symbols=symbols,
-                                                          num_days=5)
+                                                          symbols=symbol,
+                                                          num_days=30)
     for key, value in dict_df.items():
         current_dict = {key : value}
-        current_dict = utils.heikin_ashi_transform(current_dict)
-        #print(dict_df)
-                                                    
-
-
-        strat = Vwap(dict_df=current_dict)
+        #current_dict = utils.heikin_ashi_transform(current_dict)
         
-        strat.custom_indicator()
+        strat = RSI(dict_df=current_dict)
+        
+        strat.custom_indicator(rsi_window=53, buy_threshold=38, sell_threshold=64)
         strat.graph()
-        #strat.generate_backtest()
-        #pf = strat.portfolio
+        strat.generate_backtest()
+        pf = strat.portfolio
 
 
-        # utils.export_backtest_to_db(object=strat,
-        #                             granularity=granularity)
+        utils.export_backtest_to_db(object=strat,
+                                    granularity=granularity)
 
 
-        # fig = pf.plot(subplots = [
-        # 'orders',
-        # 'trade_pnl',
-        # 'cum_returns',
-        # 'drawdowns',
-        # 'underwater',
-        # 'gross_exposure'])
-        # fig.show()
+        fig = pf.plot(subplots = [
+        'orders',
+        'trade_pnl',
+        'cum_returns',
+        'drawdowns',
+        'underwater',
+        'gross_exposure'])
+        fig.show()
 
-        # print(pf.stats())
+        print(pf.stats())
 run_basic_backtest()
 
 
 
 
 def run_hyper():
-    timestamps = wrapper.get_unix_times(granularity=granularity, days=3)
+    dict_df = database_interaction.get_historical_from_db(granularity=granularity,
+                                                          symbols=symbol,
+                                                          num_days=30)
 
-    dict_df = wrapper.get_candles(client=client,
-                     symbols=symbol,
-                     timestamps=timestamps,
-                     granularity=granularity)
+    #dict_df = utils.heikin_ashi_transform(dict_df)
     
-    strat = MACD(dict_df)
+    
+    strat = RSI(dict_df)
+    strat.custom_indicator()
 
     hyper = Hyper(strategy_object=strat,
                   close=strat.close,
-                  fast_period=np.arange(5, 50, step=5),
-                  slow_period=np.arange(50, 100, step=5),
-                  signal_period=np.arange(3, 50, step=5))
+                  rsi_window=np.arange(5, 70, step=1),
+                  buy_threshold=np.arange(4, 50, step=2),
+                  sell_threshold=np.arange(60, 98, step=2))
     print(hyper.returns.to_string())
-    print(type(hyper.returns))
+    #print(type(hyper.returns))
+    fig = hyper.returns.vbt.volume(# this line is now volume for a 3D
+        x_level = 'cust_rsi_window',
+        y_level = 'cust_buy_threshold',
+        z_level = 'cust_sell_threshold',
+    )
+    fig.show()
     utils.export_hyper_to_db(hyper.returns, strat, granularity)
 
-    print(f"The maximum return was {hyper.returns.max()}\nfast_period: {hyper.returns.idxmax()[0]}\nslow_period: {hyper.returns.idxmax()[1]}\nsignal_perido: {hyper.returns.idxmax()[2]}")
+    print(f"The maximum return was {hyper.returns.max()}\nrsi_window: {hyper.returns.idxmax()[0]}\nbuy_threshold: {hyper.returns.idxmax()[1]}\nsell_threshold: {hyper.returns.idxmax()[2]}")
 #run_hyper()
 
