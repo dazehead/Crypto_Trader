@@ -16,8 +16,8 @@ class Kraken():
             'API-Key': self.api_key,
             'API-Sign': self.api_secret
         }
-
         self.intervals = [1,5,15,30,60,240,1440,10080,21600]
+        self.symbols_to_trade = None
 
 
     def get_historical_data(self,pair=None, interval=None, since=None):
@@ -52,3 +52,12 @@ class Kraken():
         return dict_df
 
 
+    def get_tradable_asset_pairs(self):
+        url = self.base_url + '/public/AssetPairs'
+        payload = {}
+
+        response = requests.request("GET", url, headers=self.headers,data=payload )
+
+        data = response.json()
+        result = data.get('result', {})
+        self.symbols_to_trade = list(result.keys())
