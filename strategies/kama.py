@@ -5,25 +5,27 @@ from strategies.efratio import EFratio
 
 
 class Kama(EFratio):
-    def __init__(self, dict_df, efratio_window=15):
+    def __init__(self, dict_df):
         super().__init__(dict_df=dict_df,)
 
-        self.efratio_window = efratio_window 
-        self.efratios = self.calculate_efratios(efratio_window)
+    def custom_indicator(self,close=None, fast_window=2, slow_window=30, efratio_window=15):
+        self.efratio_window = efratio_window
+        self.efratios = self.calculate_efratios(self.efratio_window)
+        self.osc1_data = ("Effiecency Ratio", self.efratios)
 
-    def custom_indicator(self,close=None, fast_window=2, slow_window=30):
         self.fast_window = fast_window
         self.slow_window = slow_window
         
         self.kama = self.calculate_kama(self.fast_window, self.slow_window, self.efratio_window)
+        self.kama = [np.nan if x == 0 else x for x in self.kama]
         self.ti1_data = ("KAMA", self.kama)        
 
         buy_signal = self.kama > self.close
         sell_signal = self.kama < self.close
 
-        signals = self.generate_signals(buy_signal, sell_signal)
+        self.signals = self.generate_signals(buy_signal, sell_signal)
 
-        return signals
+        return self.signals
 
 
     def calculate_sc(self, fast_window=2, slow_window=30):

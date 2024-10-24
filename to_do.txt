@@ -1,5 +1,6 @@
 TO-DO:
---- issue with volume format it is rounding example btc volume showing 4.5658 this should be millions but a lower volume coin shows 16.52 and it is only 1,652 this will be a problem later
+--- error with some very big int, too big for sqlite might need to put them into string format and then when we
+    retrieve them conver them into integers
 
 ---fix bug in WS where we recieve imcoming message but ignore until granualirty comes
 

@@ -23,11 +23,11 @@ class Combined_Strategy(Strategy):
 
     def generate_combined_signals(self):
         signals = [strategy.custom_indicator(self) for strategy in self.strategies] # have we seen list comprehension before???
-        combined_signals = self.combine_signals(*signals)
+        self.signals = self.combine_signals(*signals)
 
         self.assign_strategy_attributes()
 
-        return combined_signals
+        return self.signals
     
 
     def assign_strategy_attributes(self):

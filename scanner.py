@@ -10,7 +10,7 @@ class Scanner():
 
         self.products = self.get_products(filter_type='SPOT')
         self.symbols = None
-        #self.products_to_trade = ['BTC-USD']#self.filter_products()
+        self.products_to_trade = ['BTC-USD']#self.filter_products()
 
 
 

@@ -1,18 +1,21 @@
 import pandas as pd
 import json
 import wrapper
+import utils
 from pickling import to_pickle, from_pickle
+
 
 class DF_Manager():
     """this only needs to be instansiated during WSClient"""
-    def __init__(self,scanner: object, df=None):
+    def __init__(self,scanner: object, data=None):
+        self.scanner = scanner
         self.granularity = scanner.granularity
         self.products_to_trade = scanner.products_to_trade
-        if not df:
-            self.df = pd.DataFrame()
-            #self.data_for_live_trade()
+        if not data:
+            self.dict_df = {}
+            self.data_for_live_trade()
         else:
-            self.df = df
+            self.dict_df = data
             #self.update(self.df)
 
 
@@ -47,8 +50,10 @@ class DF_Manager():
                     to_pickle(candles_data)      
                 candles_data = {'candles': candles_data} #rename to work with _to_df
                 self.new_df = self._to_df(candles_data)
-                self.df = pd.concat([self.df, self.new_df], ignore_index = True)
-                print(self.df.tail())
+                df = self.dict_df.value()
+                df = pd.concat([df, self.new_df], ignore_index = True)
+                self.update_df()
+                #print(self.df.tail())
 
         if pickle:
             if msg_data.get('channel') == 'user':
@@ -66,19 +71,26 @@ class DF_Manager():
                         pickle_data = order_info[key]
                         to_pickle(pickle_data)
 
-            print(order_data)
+            #print(order_data)
         
 
-    def data_for_live_trade(self):
+    def data_for_live_trade(self, update=False):
         """dataframe needs to be indexed by symbol"""
         for symbol in self.products_to_trade:
-            timestamps = wrapper.get_unix_times(granularity=self.granularity, days=2)
+            if update:
+                timestamps = wrapper.get_unix_times(granularity=self.granularity)
+            else:
+                timestamps = wrapper.get_unix_times(granularity=self.granularity, days=2)
 
-            df = wrapper.get_candles(client=self.scanner.client,
-                            symbol=symbol,
+            dict_df = wrapper.get_basic_candles(client=self.scanner.client,
+                            symbols=[symbol],
                             timestamps=timestamps,
                             granularity=self.granularity)
-        
+            
+            if symbol in self.dict_df:
+                last_row = dict_df[symbol].iloc[[-1]]
+                self.dict_df[symbol] = pd.concat([self.dict_df[symbol], last_row]).drop_duplicates()
+            else: 
+                self.dict_df = dict_df
 
-    def update_df(self, df):
-        """this will update the dataframe with the new candles"""
+    

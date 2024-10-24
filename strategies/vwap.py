@@ -35,7 +35,7 @@ class Vwap(Strategy):
         buy_signal = (self.close > self.vwap_values)
         sell_signal = (self.close < self.vwap_values)   
 
-        signals = self.generate_signals(buy_signal, sell_signal, with_formating=False) 
+        self.signals = self.generate_signals(buy_signal, sell_signal, with_formating=False) 
 
-        return signals
+        return self.signals
     

@@ -30,7 +30,7 @@ client = RESTClient(api_key=api_key, api_secret=api_secret)
 
 symbols = ['BTC-USD', 'ETH-USD', 'MATH-USD']
 symbol = ['BTC-USD']
-granularity = 'ONE_MINUTE'
+granularity = 'FIVE_MINUTE'
 
 def test_multiple_strategy():
     logbook = LinkedList()
@@ -55,61 +55,73 @@ def test_multiple_strategy():
 def run_basic_backtest():
 
     dict_df = database_interaction.get_historical_from_db(granularity=granularity,
-                                                          symbols=symbols,
-                                                          num_days=5)
+                                                          symbols=symbol,
+                                                          num_days=30)
     for key, value in dict_df.items():
         current_dict = {key : value}
-        current_dict = utils.heikin_ashi_transform(current_dict)
-        #print(dict_df)
-                                                    
-
-
-        strat = Vwap(dict_df=current_dict)
+        #current_dict = utils.heikin_ashi_transform(current_dict)
         
-        strat.custom_indicator()
+        strat = Kama(dict_df=current_dict)
+        vwap = Vwap(dict_df=current_dict)
+        vwap.custom_indicator()
+        vwap.graph()
+        
+        strat.custom_indicator(fast_window=2, slow_window=30)
         strat.graph()
-        #strat.generate_backtest()
-        #pf = strat.portfolio
+        strat.generate_backtest()
+        pf = strat.portfolio
 
 
-        # utils.export_backtest_to_db(object=strat,
-        #                             granularity=granularity)
+        utils.export_backtest_to_db(object=strat,
+                                    granularity=granularity)
 
 
-        # fig = pf.plot(subplots = [
-        # 'orders',
-        # 'trade_pnl',
-        # 'cum_returns',
-        # 'drawdowns',
-        # 'underwater',
-        # 'gross_exposure'])
-        # fig.show()
+        fig = pf.plot(subplots = [
+        'orders',
+        'trade_pnl',
+        'cum_returns',
+        'drawdowns',
+        'underwater',
+        'gross_exposure'])
+        fig.show()
 
-        # print(pf.stats())
-run_basic_backtest()
+        print(pf.stats())
+#run_basic_backtest()
 
 
 
 
 def run_hyper():
-    timestamps = wrapper.get_unix_times(granularity=granularity, days=3)
+    dict_df = database_interaction.get_historical_from_db(granularity=granularity,
+                                                          symbols=symbol,
+                                                          num_days=30)
 
-    dict_df = wrapper.get_candles(client=client,
-                     symbols=symbol,
-                     timestamps=timestamps,
-                     granularity=granularity)
+    #dict_df = utils.heikin_ashi_transform(dict_df)
     
-    strat = MACD(dict_df)
+    
+    strat = Kama(dict_df)
+    strat.custom_indicator()
 
     hyper = Hyper(strategy_object=strat,
                   close=strat.close,
-                  fast_period=np.arange(5, 50, step=5),
-                  slow_period=np.arange(50, 100, step=5),
-                  signal_period=np.arange(3, 50, step=5))
+                  fast_window=np.arange(2, 30, step=1),
+                  slow_window=np.arange(16, 100, step=2),
+                  efratio_window = np.arange(5, 30, step=1))
     print(hyper.returns.to_string())
-    print(type(hyper.returns))
+    #print(type(hyper.returns))
+
+    fig = hyper.returns.vbt.volume(# this line is now volume for a 3D
+        x_level = 'cust_fast_window',
+        y_level = 'cust_slow_window',
+        z_level = 'cust_efrato_window',
+    )
+
+    # fig = hyper.returns.vbt.heatmap(
+    # x_level = 'cust_fast_window',
+    # y_level = 'cust_slow_window')
+    fig.show()
     utils.export_hyper_to_db(hyper.returns, strat, granularity)
 
-    print(f"The maximum return was {hyper.returns.max()}\nfast_period: {hyper.returns.idxmax()[0]}\nslow_period: {hyper.returns.idxmax()[1]}\nsignal_perido: {hyper.returns.idxmax()[2]}")
-#run_hyper()
+    print(f"The maximum return was {hyper.returns.max()}\nfast_window: {hyper.returns.idxmax()[0]}\nslow_window: {hyper.returns.idxmax()[1]}\nefratio_window: {hyper.returns.idxmax()[2]}")
+run_hyper()
 

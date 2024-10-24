@@ -21,9 +21,9 @@ class EFratio(Strategy):
         buy_signal = efratios > buy_threshold
         sell_signal = efratios < sell_threshold
 
-        signals = self.generate_signals(buy_signal, sell_signal)
+        self.signals = self.generate_signals(buy_signal, sell_signal)
 
-        return signals
+        return self.signals
  
     
     def calculate_efratios(self, efratio_window):

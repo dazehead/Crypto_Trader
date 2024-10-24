@@ -71,8 +71,9 @@ class Hyper(Strategy):
     def run_portfolio(self):
         """performing backtest"""
         close_data = getattr(self, 'close', self.close)
+        open_data = getattr(self, 'open', self.open )
         pf = vbt.Portfolio.from_signals(
-            close_data, 
+            open_data, 
             self.entries,
             self.exits
         )

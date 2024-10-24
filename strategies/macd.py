@@ -20,9 +20,9 @@ class MACD(Strategy):
         buy_signal = macd > macd_signal  # MACD crosses above signal line
         sell_signal = macd < macd_signal  # MACD crosses below signal line
 
-        signals = self.generate_signals(buy_signal, sell_signal)
+        self.signals = self.generate_signals(buy_signal, sell_signal)
 
-        return signals
+        return self.signals
 
     def calculate_macd(self, fastperiod, slowperiod, signalperiod):
         # Calculate MACD, signal line and MACD histogram
