@@ -3,6 +3,7 @@ import pandas as pd
 import datetime as dt
 import sys
 import requests
+import utils
 
 class Kraken():
 
@@ -16,19 +17,31 @@ class Kraken():
             'API-Key': self.api_key,
             'API-Sign': self.api_secret
         }
-        self.intervals = [1,5,15,30,60,240,1440,10080,21600]
+        self.interval_map = {
+            "ONE_MINUTE": 1,
+            "FIVE_MINUTE": 5,
+            "FIFTEEN_MINUTE": 15,
+            "THIRTY_MINUTE": 30,
+            "ONE_HOUR": 60,
+            "FOUR_HOUR": 240,
+            "ONE_DAY": 1440,
+            "ONE_WEEK": 10080,
+            "FIFTEEN_DAYS": 21600
+        }
         self.symbols_to_trade = None
 
 
-    def get_historical_data(self,pair=None, interval=None, since=None):
+    def get_historical_data(self,pair: str, interval: str=None, since=None):
         function_url = self.base_url + '/public/OHLC?'
+        if interval is None:
+            interval = 'ONE_MINUTE'
 
-        if interval not in self.intervals:
-            print(f'interval must be one of the following: {[str(x) for x in self.intervals]}')
+        if interval not in self.interval_map.keys():
+            print(f'interval must be one of the following: {[k for k in self.interval_map.keys()]}')
             sys.exit()
             
         parameters = '&'.join([f'pair={pair}' if pair else '',
-                            f'interval={interval}' if interval else '',
+                            f'interval={self.interval_map[interval]}' if interval else '',
                             f'since={since}' if since else '']).strip('&')
         
         url = function_url + parameters
@@ -61,3 +74,19 @@ class Kraken():
         data = response.json()
         result = data.get('result', {})
         self.symbols_to_trade = list(result.keys())
+        return self.symbols_to_trade
+
+    def fill_db(self, days_ago):
+        start = utils.find_unix(days_ago=days_ago)
+        symbols = self.get_tradable_asset_pairs()
+        for i, symbol in enumerate(symbols):
+            if i in [0,1,2]:
+                dict_df = self.get_historical_data(pair=symbol, interval='ONE_MINUTE', since=start)
+                for k,v in dict_df:
+                    print(v.head())
+                    print(v.tail())
+                    print('-------------------------------------------------\n')
+
+
+            
+

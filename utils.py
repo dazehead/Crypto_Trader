@@ -9,6 +9,12 @@ pd.set_option('future.no_silent_downcasting', True)
 
 import pandas as pd
 
+def find_unix(days_ago: int):
+    now = dt.datetime.now()
+    start = now - dt.timedelta(days=days_ago)
+    unix_start_time = int(round(start.timestamp(),0))
+    return unix_start_time
+
 def heikin_ashi_transform(dict_df):
     ha_dict = {}
 
