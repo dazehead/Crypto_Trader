@@ -209,6 +209,6 @@ class Strategy:
 
     def generate_backtest(self):
         """Performs backtest and returns the stats"""
-        self.portfolio = vbt.Portfolio.from_signals(self.open, self.entries, self.exits,sl_stop = .02, fees=.02)
+        self.portfolio = vbt.Portfolio.from_signals(self.open, self.entries, self.exits)
 
         return self.portfolio

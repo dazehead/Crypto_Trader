@@ -32,7 +32,7 @@ def on_message():
     
     df_manager.data_for_live_trade(update=True)
 
-    strat = RSI(df_manager.dict_df) # slow ma data
+    strat = RSI(df_manager.dict_df)
     strat.custom_indicator(strat.close)
     signals = [0,1,-1,0]
     

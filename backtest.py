@@ -30,7 +30,7 @@ client = RESTClient(api_key=api_key, api_secret=api_secret)
 
 symbols = ['BTC-USD', 'ETH-USD', 'MATH-USD']
 symbol = ['BTC-USD']
-granularity = 'THIRTY_MINUTE'
+granularity = 'FIVE_MINUTE'
 
 def test_multiple_strategy():
     logbook = LinkedList()
@@ -61,9 +61,12 @@ def run_basic_backtest():
         current_dict = {key : value}
         #current_dict = utils.heikin_ashi_transform(current_dict)
         
-        strat = RSI(dict_df=current_dict)
+        strat = Kama(dict_df=current_dict)
+        vwap = Vwap(dict_df=current_dict)
+        vwap.custom_indicator()
+        vwap.graph()
         
-        strat.custom_indicator(rsi_window=53, buy_threshold=38, sell_threshold=64)
+        strat.custom_indicator(fast_window=2, slow_window=30)
         strat.graph()
         strat.generate_backtest()
         pf = strat.portfolio
@@ -83,7 +86,7 @@ def run_basic_backtest():
         fig.show()
 
         print(pf.stats())
-run_basic_backtest()
+#run_basic_backtest()
 
 
 
@@ -96,24 +99,29 @@ def run_hyper():
     #dict_df = utils.heikin_ashi_transform(dict_df)
     
     
-    strat = RSI(dict_df)
+    strat = Kama(dict_df)
     strat.custom_indicator()
 
     hyper = Hyper(strategy_object=strat,
                   close=strat.close,
-                  rsi_window=np.arange(5, 70, step=1),
-                  buy_threshold=np.arange(4, 50, step=2),
-                  sell_threshold=np.arange(60, 98, step=2))
+                  fast_window=np.arange(2, 30, step=1),
+                  slow_window=np.arange(16, 100, step=2),
+                  efratio_window = np.arange(5, 30, step=1))
     print(hyper.returns.to_string())
     #print(type(hyper.returns))
+
     fig = hyper.returns.vbt.volume(# this line is now volume for a 3D
-        x_level = 'cust_rsi_window',
-        y_level = 'cust_buy_threshold',
-        z_level = 'cust_sell_threshold',
+        x_level = 'cust_fast_window',
+        y_level = 'cust_slow_window',
+        z_level = 'cust_efrato_window',
     )
+
+    # fig = hyper.returns.vbt.heatmap(
+    # x_level = 'cust_fast_window',
+    # y_level = 'cust_slow_window')
     fig.show()
     utils.export_hyper_to_db(hyper.returns, strat, granularity)
 
-    print(f"The maximum return was {hyper.returns.max()}\nrsi_window: {hyper.returns.idxmax()[0]}\nbuy_threshold: {hyper.returns.idxmax()[1]}\nsell_threshold: {hyper.returns.idxmax()[2]}")
-#run_hyper()
+    print(f"The maximum return was {hyper.returns.max()}\nfast_window: {hyper.returns.idxmax()[0]}\nslow_window: {hyper.returns.idxmax()[1]}\nefratio_window: {hyper.returns.idxmax()[2]}")
+run_hyper()
 
