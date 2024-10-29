@@ -11,22 +11,16 @@ from trade import Trade
 from log import LinkedList
 from scanner import Scanner
 from risk import Risk_Handler
+from kraken_wrapper import Kraken
 
-granularity = 'ONE_MINUTE'
-symbol = 'BTC-USD'
+interval = 'ONE_MINUTE'
+symbol = 'XBTUSD'
 counter = 0
-granularity_mapping = {
-    'ONE_MINUTE': 60,
-    'FIVE_MINUTES': 300,
-    'FIFTEEN_MINUTES': 900,
-    'ONE_HOUR': 3600,
-    'ONE_DAY': 86400
-}
+
 
 def on_message():
     global counter
-    global df_manager
-    global rest_client
+    global kraken
     global risk
     print(counter)
     
@@ -39,7 +33,6 @@ def on_message():
     trade = Trade(risk = risk,
                   strat_object=strat,
                   logbook=logbook,
-                  rest_client=rest_client,
                   signals=[signals[counter]])
     
     counter += 1
@@ -52,7 +45,7 @@ async def fetch_data_periodically():
         on_message()
 
         execution_time = time.time() - start_time
-        sleep_time = max(0, granularity_mapping[granularity] - execution_time)
+        sleep_time = max(0, kraken.time_to_wait - execution_time)
 
         print(f"Execution time: {execution_time:.2f} seconds. Sleeping for {sleep_time:.2f} seconds.")
 
@@ -60,26 +53,17 @@ async def fetch_data_periodically():
 
 
 """---------------start of program-----------------"""
-api_key = os.getenv('API_ENV_KEY')
-api_secret = os.getenv('API_SECRET_ENV_KEY')
-
-granularity = 'ONE_MINUTE'
-
-
-ws_client = WSClient(api_key=api_key, api_secret=api_secret, on_message=on_message, retry=False)
-rest_client = RESTClient(api_key=api_key, api_secret=api_secret)
-
-scanner = Scanner(rest_client=rest_client,
-                  granularity=granularity)
+kraken = Kraken()
+scanner = Scanner(client=kraken)
 
 """Loops through the scanner until a product gets returned from our defined filter parameters"""
 while not scanner.products_to_trade:
-    scanner.filter_products('SPOT')
+    scanner.filter_products()
 
 df_manager = DF_Manager(scanner)
 
 logbook = LinkedList()
-risk = Risk_Handler(rest_client)
+risk = Risk_Handler(kraken)
 
 
 

@@ -9,7 +9,8 @@ class DF_Manager():
     """this only needs to be instansiated during WSClient"""
     def __init__(self,scanner: object, data=None):
         self.scanner = scanner
-        self.granularity = scanner.granularity
+        self.client = self.scanner.client
+        self.interval = self.scanner.interval
         self.products_to_trade = scanner.products_to_trade
         if not data:
             self.dict_df = {}
@@ -77,20 +78,16 @@ class DF_Manager():
     def data_for_live_trade(self, update=False):
         """dataframe needs to be indexed by symbol"""
         for symbol in self.products_to_trade:
-            if update:
-                timestamps = wrapper.get_unix_times(granularity=self.granularity)
-            else:
-                timestamps = wrapper.get_unix_times(granularity=self.granularity, days=2)
-
-            dict_df = wrapper.get_basic_candles(client=self.scanner.client,
-                            symbols=[symbol],
-                            timestamps=timestamps,
-                            granularity=self.granularity)
+            # Get the historical data
+            days_ago = 1 if update else 2
+            historical_data = self.client.get_historical_data(symbol, days_ago=days_ago)
+            updated_symbol = list(historical_data.keys())[0]
             
-            if symbol in self.dict_df:
-                last_row = dict_df[symbol].iloc[[-1]]
-                self.dict_df[symbol] = pd.concat([self.dict_df[symbol], last_row]).drop_duplicates()
-            else: 
-                self.dict_df = dict_df
+            # If updating, add only the last row if symbol exists
+            if update:
+                last_row = historical_data[updated_symbol].iloc[[-1]]
+                self.dict_df[updated_symbol] = pd.concat([self.dict_df[updated_symbol], last_row]).drop_duplicates()
+            else:
+                self.dict_df[updated_symbol] = historical_data[updated_symbol]
 
     

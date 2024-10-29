@@ -3,3 +3,4 @@ __pycache__
 rest_testbed.py
 ws_testbed.py
 database
+historical_data
