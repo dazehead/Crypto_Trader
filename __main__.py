@@ -30,10 +30,10 @@ def on_message():
     strat.custom_indicator(strat.close)
     signals = [0,1,-1,0]
     
-    trade = Trade(risk = risk,
-                  strat_object=strat,
-                  logbook=logbook,
-                  signals=[signals[counter]])
+    # trade = Trade(risk = risk,
+    #               strat_object=strat,
+    #               logbook=logbook,
+    #               signals=[signals[counter]])
     
     counter += 1
 

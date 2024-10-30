@@ -6,13 +6,18 @@ import requests
 import utils
 import time
 import json
+import urllib.parse
+import hashlib
+import hmac
+import base64
 
 class Kraken():
 
     def __init__(self, interval: str=None):
-        self.api_key = os.getenv('API_KEY_KRAKEN') #API_ENV_KEY | KRAKEN
+        self.api_key = os.getenv('API_ENV_KEY_KRAKEN') #API_ENV_KEY | KRAKEN
         self.api_secret = os.getenv('API_PRIVATE_KEY_KRAKEN') #API_SECRET_ENV_KEY | KRAKEN
-        self.base_url = 'https://api.kraken.com/0'
+        print(self.api_secret == None)
+        self.base_url = 'https://api.kraken.com'
         self.headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
@@ -42,6 +47,13 @@ class Kraken():
         self.all_products = self.get_tradable_asset_pairs()
         self.time_to_wait = self.interval_map[self.interval] * 60
 
+    def get_kraken_signature(self, urlpath, data, secret):
+        postdata = urllib.parse.urlencode(data)
+        encoded = (str(data['nonce']) + postdata).encode('utf-8')
+        message = urlpath.encode('utf-8') + hashlib.sha256(encoded).digest()
+        mac = hmac.new(base64.b64decode(secret), message, hashlib.sha512)
+        sigdigest = base64.b64encode(mac.digest())
+        return sigdigest.decode()
 
     def get_historical_data(self,pair: str, days_ago=None):
         if days_ago is not None:
@@ -51,7 +63,7 @@ class Kraken():
         else:
             since = days_ago
 
-        function_url = self.base_url + '/public/OHLC?'
+        function_url = self.base_url + '/0/public/OHLC?'
             
         parameters = '&'.join([f'pair={pair}' if pair else '',
                             f'interval={self.interval_map[self.interval]}' if self.interval else '',
@@ -79,7 +91,7 @@ class Kraken():
 
 
     def get_tradable_asset_pairs(self):
-        url = self.base_url + '/public/AssetPairs'
+        url = self.base_url + '/0/public/AssetPairs'
         payload = {}
 
         response = requests.request("GET", url, headers=self.headers,data=payload )
@@ -90,16 +102,30 @@ class Kraken():
         return self.symbols_to_trade
     
     def get_account_balance(self):
-        print('getting account balance')
-        url = self.base_url + '/private/Balance'
+        urlpath = '/0/private/Balance'
+        url = self.base_url + urlpath
+        nonce = str(int(time.time() * 1000))
+        data = {'nonce': nonce}
 
-        payload = json.dumps({
-            "nonce": str(int(time.time()* 1000))})
-        
-        response = requests.request("POST", url, headers=self.headers, data=payload)
-        print(response)
+        # Compute signature
+        api_sign = self.get_kraken_signature(urlpath, data, self.api_secret)
 
-        print(response.text)
+        headers = {
+            'API-Key': self.api_key,
+            'API-Sign': api_sign,
+            'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'
+        }
+
+        response = requests.post(url, headers=headers, data=data)
+        print(f"Response Status Code: {response.status_code}")
+        print(f"Response Text: {response.text}")
+
+        response_data = response.json()
+        if response_data['error']:
+            print(f"Error: {response_data['error']}")
+        else:
+            balance = response_data['result']
+            print(f"Account Balance: {balance}")
 
 
 
