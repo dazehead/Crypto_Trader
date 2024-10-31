@@ -124,7 +124,79 @@ class Kraken():
             zusd_balance = balance.get('ZUSD', '0')
             return zusd_balance
 
+    def get_trade_balance(self, asset:str):
+        urlpath = '/0/private/TradeBalance'
+        url = self.base_url + urlpath
+        nonce = str(int(time.time() * 1000))
 
+        data = {'nonce': nonce,
+                'asset': asset}
+
+        api_sign = self.get_kraken_signature(urlpath, data, self.api_secret)
+
+        headers = {
+            # 'Content-Type': 'application/json',
+            # 'Accept': 'application/json',
+            'API-Key': self.api_key,
+            'API-Sign': api_sign,
+            'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'
+            
+        }
+
+        response = requests.request("POST", url, headers=headers, data=data)
+
+        print(f'Trade Balance: {response.text}')
+
+    def get_open_orders(self):
+        urlpath = '/0/private/OpenOrders'
+        url = self.base_url + urlpath
+        nonce = str(int(time.time() * 1000))
+
+        data = {'nonce': nonce,
+                'trades': True}
+
+        api_sign = self.get_kraken_signature(urlpath, data, self.api_secret)
+
+        headers = {
+            'API-Key': self.api_key,
+            'API-Sign': api_sign,
+            'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'
+            
+        }
+        response = requests.request("POST", url, headers=headers, data=data)
+
+        print(f'Open Orders: {response.text}')
+
+    def get_open_postions(self):
+        urlpath = '/0/private/OpenPositions'
+        url = self.base_url + urlpath
+        nonce = str(int(time.time() * 1000))
+
+        data = {'nonce': nonce,
+                'trades': True,
+                'txid': 'string',
+                'docalcs': False,
+                'consolidation': 'market'
+            }
+
+        api_sign = self.get_kraken_signature(urlpath, data, self.api_secret)
+
+        headers = {
+            'API-Key': self.api_key,
+            'API-Sign': api_sign,
+            'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'
+            
+        }
+        response = requests.request("POST", url, headers=headers, data=data)
+
+        print(f'Open Positions: {response.text}')
+
+
+testing_kraken = Kraken()
+testing_kraken.get_trade_balance("ZUSD")
+testing_kraken.get_account_balance()
+testing_kraken.get_open_orders()
+testing_kraken.get_open_postions()
 
             
 
