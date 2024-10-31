@@ -95,7 +95,7 @@ run_basic_backtest()
 def run_hyper():
     dict_df = database_interaction.get_historical_from_db(granularity=granularity,
                                                           symbols=product,
-                                                          num_days=30)
+                                                          num_days=100)
 
     #dict_df = utils.heikin_ashi_transform(dict_df)
     
@@ -110,7 +110,7 @@ def run_hyper():
                   sell_threshold = np.arange(50, 96, step=5),
                   adx_buy_threshold = np.arange(20, 81, step=10),
                   adx_time_period=np.arange(10, 30, step=5))
-    print(hyper.returns.to_string())
+    #print(hyper.returns.to_string())
     #print(type(hyper.returns))
 
     # fig = hyper.returns.vbt.volume(# this line is now volume for a 3D
