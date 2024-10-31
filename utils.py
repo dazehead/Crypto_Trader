@@ -184,7 +184,7 @@ def get_metrics_from_backtest(strategy_object, multiple=False, multiple_dict=Non
     return backtest_df
 
 
-def export_backtest_to_db(object, granularity, multiple_table_name = None):
+def export_backtest_to_db(object, multiple_table_name = None):
     """ object can either be a Strategy Class or a pd.Dataframe"""
     conn = sql.connect('database/backtest.db')
 
@@ -222,7 +222,9 @@ def export_backtest_to_db(object, granularity, multiple_table_name = None):
 
 
     if not isinstance(object, pd.DataFrame):
+        
         strategy_object = object
+        granularity = strategy_object.granularity
         backtest_df, value_list, params = get_metrics_from_backtest(strategy_object)
         symbol = backtest_df['symbol'].unique()[0]
         table_name = f"{strategy_object.__class__.__name__}_{granularity}"
@@ -247,6 +249,7 @@ def export_backtest_to_db(object, granularity, multiple_table_name = None):
         # print(f"delete_query: {delete_query}")
 
     else:
+        print('********* Might be missing granularity at this point ***********')
         backtest_df = object
         table_name = f"{multiple_table_name}_{granularity}"
 

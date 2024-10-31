@@ -13,6 +13,7 @@ from strategies.rsi import RSI
 from strategies.atr import ATR
 from strategies.macd import MACD
 from strategies.kama import Kama
+from strategies.adx import ADX
 from strategies.combined_strategy import Combined_Strategy
 from log import LinkedList
 from hyper import Hyper
@@ -29,63 +30,62 @@ client = RESTClient(api_key=api_key, api_secret=api_secret)
 
 
 symbols = ['BTC-USD', 'ETH-USD', 'MATH-USD']
-symbol = ['BTC-USD']
+product = ['BTC-USD']
 granularity = 'FIVE_MINUTE'
 
 def test_multiple_strategy():
     logbook = LinkedList()
-    df_dict = database_interaction.get_historical_from_db(granularity=granularity, symbols=symbols)
+    df_dict = database_interaction.get_historical_from_db(granularity=granularity, symbols=product, num_days=40)
 
 
     for symbol, df in df_dict.items():
         current_dict_df = {symbol:df}
 
-        combined_strat = Combined_Strategy(current_dict_df, RSI, Kama)
+        combined_strat = Combined_Strategy(current_dict_df, RSI, ADX)
         combined_strat.generate_combined_signals()
         combined_strat.graph()
         combined_strat.generate_backtest()
+        print(combined_strat.portfolio.stats())
 
-        logbook.insert_beginning(combined_strat)
+
+    #     logbook.insert_beginning(combined_strat)
     
-    logbook.export_multiple_to_db(granularity=granularity)
+    # logbook.export_multiple_pf_to_db()
 
-#test_multiple_strategy()
+test_multiple_strategy()
 
 
 def run_basic_backtest():
 
     dict_df = database_interaction.get_historical_from_db(granularity=granularity,
-                                                          symbols=symbol,
+                                                          symbols=product,
                                                           num_days=30)
     for key, value in dict_df.items():
         current_dict = {key : value}
         #current_dict = utils.heikin_ashi_transform(current_dict)
         
-        strat = Kama(dict_df=current_dict)
-        vwap = Vwap(dict_df=current_dict)
-        vwap.custom_indicator()
-        vwap.graph()
+        strat = ADX(dict_df=current_dict)
         
-        strat.custom_indicator(fast_window=2, slow_window=30)
+        strat.custom_indicator()
         strat.graph()
-        strat.generate_backtest()
-        pf = strat.portfolio
+        # strat.generate_backtest()
+        # pf = strat.portfolio
 
 
-        utils.export_backtest_to_db(object=strat,
-                                    granularity=granularity)
+        # utils.export_backtest_to_db(object=strat,
+        #                             granularity=granularity)
 
 
-        fig = pf.plot(subplots = [
-        'orders',
-        'trade_pnl',
-        'cum_returns',
-        'drawdowns',
-        'underwater',
-        'gross_exposure'])
-        fig.show()
+        # fig = pf.plot(subplots = [
+        # 'orders',
+        # 'trade_pnl',
+        # 'cum_returns',
+        # 'drawdowns',
+        # 'underwater',
+        # 'gross_exposure'])
+        # fig.show()
 
-        print(pf.stats())
+        # print(pf.stats())
 #run_basic_backtest()
 
 
@@ -123,5 +123,5 @@ def run_hyper():
     utils.export_hyper_to_db(hyper.returns, strat, granularity)
 
     print(f"The maximum return was {hyper.returns.max()}\nfast_window: {hyper.returns.idxmax()[0]}\nslow_window: {hyper.returns.idxmax()[1]}\nefratio_window: {hyper.returns.idxmax()[2]}")
-run_hyper()
+#run_hyper()
 

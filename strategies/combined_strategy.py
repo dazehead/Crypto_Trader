@@ -1,6 +1,8 @@
 import vectorbt as vbt
 import numpy as np
 import plotly.subplots as sp
+import plotly.subplots as sp
+import plotly.graph_objects as go
 import pandas as pd
 import sys
 from strategies.strategy import Strategy
@@ -17,6 +19,8 @@ class Combined_Strategy(Strategy):
         if choice == 'N':
             sys.exit(1)
         self.strategies = [strategy(dict_df) for strategy in strategies]
+        self.granularity = None
+        self.set_granularity()
 
             # we are initializing the strategies saved in self.strategies
             # even though we having manually done it the strategies saved in self.strategies are now initialized and available for use
@@ -57,7 +61,12 @@ class Combined_Strategy(Strategy):
         Dynamically graphs ti_data, osc_data, buy_threshold, and sell_threshold for each strategy in Combined_Strategy.
         """
         # Start by plotting the first figure (Close price)
-        fig1 = self.close.vbt.plot(trace_kwargs=dict(name='Close'))
+        #fig1 = self.close.vbt.plot(trace_kwargs=dict(name='Close'))
+        fig1 = go.Figure(data=[go.Candlestick(x=self.close.index,
+                                        open=self.open,
+                                        high=self.high,
+                                        low=self.low,
+                                        close=self.close)])
         fig2 = None
 
         # Temporary storage for buy/sell thresholds

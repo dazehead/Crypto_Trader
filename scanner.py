@@ -15,7 +15,7 @@ class Scanner():
 
     def filter_products(self, filter_type: str=None):
         #print(self.products)
-        print('This is where we filter the products')
+        print('This is where we filter the products.\n Currently only using XBTUSD\n')
         self.products_to_trade = ['XBTUSD']
 
 

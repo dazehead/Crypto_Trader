@@ -14,9 +14,8 @@ import base64
 class Kraken():
 
     def __init__(self, interval: str=None):
-        self.api_key = os.getenv('API_ENV_KEY_KRAKEN') #API_ENV_KEY | KRAKEN
+        self.api_key = os.getenv('API_KEY_KRAKEN') #API_ENV_KEY | KRAKEN
         self.api_secret = os.getenv('API_PRIVATE_KEY_KRAKEN') #API_SECRET_ENV_KEY | KRAKEN
-        print(self.api_secret == None)
         self.base_url = 'https://api.kraken.com'
         self.headers = {
             'Content-Type': 'application/json',
@@ -70,7 +69,6 @@ class Kraken():
                             f'since={since}' if since else '']).strip('&')
         
         url = function_url + parameters
-        print(url)
         
         payload = {}
         response = requests.request("GET", url, headers=self.headers, data=payload)
@@ -117,15 +115,14 @@ class Kraken():
         }
 
         response = requests.post(url, headers=headers, data=data)
-        print(f"Response Status Code: {response.status_code}")
-        print(f"Response Text: {response.text}")
 
         response_data = response.json()
         if response_data['error']:
             print(f"Error: {response_data['error']}")
         else:
             balance = response_data['result']
-            print(f"Account Balance: {balance}")
+            zusd_balance = balance.get('ZUSD', '0')
+            return zusd_balance
 
 
 

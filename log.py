@@ -68,6 +68,6 @@ class LinkedList:
         while current_node:
             strat = current_node.get_value()
             # this is where we are going to call the util function for exporting
-            utils.export_combined_strat(strat)
+            utils.export_backtest_to_db(strat)
 
             current_node = current_node.get_next_node()

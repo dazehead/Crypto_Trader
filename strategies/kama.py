@@ -23,7 +23,7 @@ class Kama(EFratio):
         buy_signal = self.kama > self.close
         sell_signal = self.kama < self.close
 
-        self.signals = self.generate_signals(buy_signal, sell_signal)
+        self.signals = self.generate_signals(buy_signal, sell_signal, with_formating=False)
 
         return self.signals
 

@@ -22,7 +22,7 @@ def on_message():
     global counter
     global kraken
     global risk
-    print(counter)
+    print(f'counter: {counter}')
     
     df_manager.data_for_live_trade(update=True)
 
@@ -47,7 +47,7 @@ async def fetch_data_periodically():
         execution_time = time.time() - start_time
         sleep_time = max(0, kraken.time_to_wait - execution_time)
 
-        print(f"Execution time: {execution_time:.2f} seconds. Sleeping for {sleep_time:.2f} seconds.")
+        print(f"Execution time: {execution_time:.2f} seconds. Sleeping for {sleep_time:.2f} seconds.\n")
 
         await asyncio.sleep(sleep_time)
 

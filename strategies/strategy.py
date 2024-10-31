@@ -22,6 +22,9 @@ class Strategy:
         self.close = self.df['close']
         self.volume = self.df['volume']
 
+        self.granularity = None
+        self.set_granularity()
+
         self.entries = None
         self.exits = None
 
@@ -212,3 +215,20 @@ class Strategy:
         self.portfolio = vbt.Portfolio.from_signals(self.open, self.entries, self.exits)
 
         return self.portfolio
+    
+    def set_granularity(self):
+        # Retrieve the first DataFrame in the dictionary
+        time_diff = self.df.index[1] - self.df.index[0]
+        time_map = {
+            pd.Timedelta(minutes=1): 'ONE_MINUTE',
+            pd.Timedelta(minutes=5): 'FIVE_MINUTE',
+            pd.Timedelta(minutes=15): 'FIFTEEN_MINUTE',
+            pd.Timedelta(minutes=30): 'THIRTY_MINUTE',
+            pd.Timedelta(hours=1): 'ONE_HOUR',
+            pd.Timedelta(hours=2): 'TWO_HOUR',
+            pd.Timedelta(hours=6): 'SIX_HOUR',
+            pd.Timedelta(days=1): 'ONE_DAY'
+        }
+        # Return the corresponding string or 'Unknown' if not found
+        self.granularity = time_map.get(time_diff, 'Unknown')
+
