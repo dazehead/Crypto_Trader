@@ -5,6 +5,7 @@ import numpy as np
 import plotly.subplots as sp
 import plotly.graph_objects as go
 import sys
+import talib as ta
 
 class Strategy:
     """Class to store strategy resources"""
@@ -233,4 +234,14 @@ class Strategy:
         }
         # Return the corresponding string or 'Unknown' if not found
         self.granularity = time_map.get(time_diff, 'Unknown')
+
+    def add_adx(self, buy_threshold, time_period):
+        adx = ta.ADX(self.high, self.low, self.close, time_period)
+
+        buy_signal = adx > self.buy_threshold
+        sell_signal = ~buy_signal
+
+        adx_signals = self.generate_signals(buy_signal, sell_signal, with_formating=False)
+
+        return adx_signals
 
