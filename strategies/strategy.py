@@ -108,13 +108,15 @@ class Strategy:
         signal_length = len(signals[0])  # Assuming all signals have the same length
         try:
             for i in range(signal_length):
-                combined = 1  # Start with the most optimistic signal
-                for signal in signals:
-                    if signal[i] == -1:
-                        combined = -1  # If any signal is -1, set combined to -1 and break
-                        break
-                    elif signal[i] == 0 and combined != -1:
-                        combined = 0  # If any signal is 0 and no -1 encountered, set combined to 0
+                # Get all the signals at the current index across the provided lists
+                current_signals = [signal[i] for signal in signals]
+                
+                if all(s == 1 for s in current_signals):
+                    combined = 1  # Set to 1 only if all signals are 1
+                elif all(s == -1 for s in current_signals):
+                    combined = -1  # Set to -1 only if all signals are -1
+                else:
+                    combined = 0  # Set to 0 if there's any mix of values
                 combined_signals.append(combined)
         except Exception as e:
             print(f"Invalid signals: {e}")
