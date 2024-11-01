@@ -7,13 +7,13 @@ import numpy as np
 import database_interaction
 from coinbase.rest import RESTClient
 from strategies.strategy import Strategy
-from strategies.efratio import EFratio
-from strategies.vwap import Vwap
-from strategies.rsi import RSI
-from strategies.atr import ATR
-from strategies.macd import MACD
-from strategies.kama import Kama
-from strategies.adx import ADX
+from strategies.single.efratio import EFratio
+from strategies.single.vwap import Vwap
+from strategies.single.rsi import RSI
+from strategies.single.atr import ATR
+from strategies.single.macd import MACD
+from strategies.single.kama import Kama
+from strategies.single.adx import ADX
 from strategies.combined_strategy import Combined_Strategy
 from log import LinkedList
 from hyper import Hyper
