@@ -2,8 +2,8 @@ import talib as ta
 from strategies.strategy import Strategy
 
 class RSI_ADX(Strategy):
-    def __init__(self, dict_df):
-        super().__init__(dict_df=dict_df)
+    def __init__(self, dict_df, add_to_position=False):
+        super().__init__(dict_df=dict_df, add_to_position=add_to_position)
 
     def custom_indicator(self, close=None, rsi_window=10, buy_threshold=30, sell_threshold=80, adx_buy_threshold=20, adx_time_period=10):
 
@@ -20,7 +20,9 @@ class RSI_ADX(Strategy):
         self.signals = self.generate_signals(buy_signal, sell_signal)
 
         #testing
-        adx_signals = self.add_adx(buy_threshold=adx_buy_threshold, time_period=adx_time_period)
+        adx_signals = self.add_adx(adx_buy_threshold=adx_buy_threshold, time_period=adx_time_period)
+        print(self.signals == None)
+        print(adx_signals == None)
         self.signals = self.combine_signals(self.signals, adx_signals)
         #Done
         return self.signals        

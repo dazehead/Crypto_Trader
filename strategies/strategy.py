@@ -16,6 +16,7 @@ class Strategy:
         for key, value in dict_df.items():
             self.symbol = key
             self.df = value
+        self.add_to_position = add_to_position
 
         self.open = self.df['open']
         self.high = self.df['high']
@@ -76,6 +77,8 @@ class Strategy:
 
         if with_formating:
             signals = self.format_signals(signals)
+            if self.add_to_position:
+                signals = self.calculate_add_to_position(signals)
 
         # For graphing
         self.entries = np.zeros_like(signals, dtype=bool)
@@ -86,8 +89,46 @@ class Strategy:
 
         self.entries = pd.Series(self.entries, index=self.close.index)
         self.exits = pd.Series(self.exits, index=self.close.index)
-
         return signals
+    
+    def calculate_add_to_position(self, signals):
+        #convert signals to pandas series
+        date_with_signals = pd.DataFrame({'signal': signals,
+                                          'close': self.close}, index=self.close.index)
+        # Copy of the original DataFrame to avoid modifying it directly
+        df = date_with_signals.copy()
+
+        # Initialize variables to hold the saved close price and a flag to check if we are in a tracking phase
+        saved_close = None
+        tracking = False
+
+        # Iterate through each row in the DataFrame
+        for i in range(len(df)):
+            # Check if the signal is 1 and we are not already tracking
+            if df['signal'].iloc[i] == 1 and not tracking:
+                # Save the close price and start tracking
+                saved_close = df['close'].iloc[i]
+                tracking = True
+
+            # If tracking, compare each subsequent close price
+            elif tracking:
+                # Calculate the 2% threshold
+                target_close = saved_close * 1.02
+                
+                # Check if the close price has increased by 2% or more from the saved close price
+                if df['close'].iloc[i] >= target_close and df['signal'].iloc[i] != -1:
+                    # Update the signal to 1
+                    df.at[df.index[i], 'signal'] = 1
+                    saved_close = df['close'].iloc[i]
+                
+                # Stop tracking if a -1 signal is encountered
+                if df['signal'].iloc[i] == -1:
+                    tracking = False
+                    saved_close = None  # Reset saved close
+        signals = df['signal'].to_numpy()
+        return signals
+
+        
     
     def format_signals(self, signals):
         """formats signals so no double buy or double sells"""

@@ -1,7 +1,7 @@
 import talib as ta
 import numpy as np
 import pandas as pd
-from strategies.efratio import EFratio
+from strategies.single.efratio import EFratio
 
 
 class Kama(EFratio):

@@ -14,6 +14,7 @@ from strategies.single.atr import ATR
 from strategies.single.macd import MACD
 from strategies.single.kama import Kama
 from strategies.single.adx import ADX
+from strategies.double.rsi_adx import RSI_ADX
 from strategies.combined_strategy import Combined_Strategy
 from log import LinkedList
 from hyper import Hyper
@@ -64,7 +65,7 @@ def run_basic_backtest():
         current_dict = {key : value}
         #current_dict = utils.heikin_ashi_transform(current_dict)
         
-        strat = RSI(dict_df=current_dict)
+        strat = RSI_ADX(dict_df=current_dict, add_to_position=False)
         
         strat.custom_indicator()
         strat.graph()
