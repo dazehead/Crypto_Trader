@@ -65,7 +65,7 @@ def run_basic_backtest():
         current_dict = {key : value}
         #current_dict = utils.heikin_ashi_transform(current_dict)
         
-        strat = RSI_ADX(dict_df=current_dict, add_to_position=False)
+        strat = RSI_ADX(dict_df=current_dict, add_to_position=True)
         
         strat.custom_indicator()
         strat.graph()
