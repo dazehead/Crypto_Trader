@@ -9,7 +9,7 @@ import talib as ta
 
 class Strategy:
     """Class to store strategy resources"""
-    def __init__(self, dict_df):
+    def __init__(self, dict_df, add_to_position=False):
         if not isinstance(dict_df, dict):
             print('You have passed a Dataframe. This Class needs to be dictionary with key as symbol and value as DataFrame')
             sys.exit(1)
@@ -235,10 +235,10 @@ class Strategy:
         # Return the corresponding string or 'Unknown' if not found
         self.granularity = time_map.get(time_diff, 'Unknown')
 
-    def add_adx(self, buy_threshold, time_period):
+    def add_adx(self, adx_buy_threshold, time_period):
         adx = ta.ADX(self.high, self.low, self.close, time_period)
 
-        buy_signal = adx > self.buy_threshold
+        buy_signal = adx > adx_buy_threshold
         sell_signal = ~buy_signal
 
         adx_signals = self.generate_signals(buy_signal, sell_signal, with_formating=False)
