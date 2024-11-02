@@ -281,30 +281,6 @@ class Strategy:
 
         return self.portfolio
     
-    def from_orders(self,init_cash=100):
-        """Performs backtest and returns the stats"""
-        # Create an empty DataFrame to hold orders
-        order_size = pd.Series(index=self.close.index, dtype='float')
-        direction = pd.Series(index=self.close.index, dtype='int')
-
-        # Set order sizes and directions
-        order_size[self.entries] = 0.1  # 10% of cash on entries
-        direction[self.entries] = 1     # 1 for buy
-
-        # On exits, set order size to 1.0 (100% of position) to sell all
-        order_size[self.exits] = 1.0
-        direction[self.exits] = -1      # -1 for sell
-
-        self.portfolio = vbt.Portfolio.from_orders(
-            close=self.open,
-            size=order_size,
-            size_type='percent',          # Size is a percentage
-            direction=direction,
-            accumulate=True,              # Allow accumulation
-            init_cash=init_cash
-        )
-
-        return self.portfolio
     
     def set_granularity(self):
         # Retrieve the first DataFrame in the dictionary
