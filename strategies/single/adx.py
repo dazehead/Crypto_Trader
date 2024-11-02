@@ -6,7 +6,7 @@ class ADX(Strategy):
     def __init__(self, dict_df, with_sizing = False):
         super().__init__(dict_df=dict_df, with_sizing = with_sizing)
 
-    def custom_indicator(self,close =None,buy_threshold= 45, time_period=14):
+    def custom_indicator(self,close =None,buy_threshold= 50, time_period=14):
 
         self.signal_period = time_period
         self.buy_threshold = buy_threshold

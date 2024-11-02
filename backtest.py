@@ -16,6 +16,7 @@ from strategies.single.kama import Kama
 from strategies.single.adx import ADX
 from strategies.double.rsi_adx import RSI_ADX
 from strategies.combined_strategy import Combined_Strategy
+from risk import Risk_Handler
 from log import LinkedList
 from hyper import Hyper
 #pd.set_option('display.max_rows', None)
@@ -60,18 +61,20 @@ def run_basic_backtest():
 
     dict_df = database_interaction.get_historical_from_db(granularity=granularity,
                                                           symbols=product,
-                                                          num_days=100)
+                                                          num_days=300)
     for key, value in dict_df.items():
         current_dict = {key : value}
         #current_dict = utils.heikin_ashi_transform(current_dict)
+        risk = Risk_Handler()
         
         strat = RSI_ADX(
             dict_df=current_dict,
-            with_sizing=True)
+            with_sizing=True,
+            risk_object=risk)
         
         strat.custom_indicator()
         strat.graph()
-        strat.generate_backtest(init_cash=100)
+        strat.generate_backtest()
         #strat.from_orders(init_cash=100)
         pf = strat.portfolio
         print(pf.stats())
@@ -99,13 +102,13 @@ run_basic_backtest()
 def run_hyper():
     dict_df = database_interaction.get_historical_from_db(granularity=granularity,
                                                           symbols=product,
-                                                          num_days=100)
+                                                          num_days=300)
 
     #dict_df = utils.heikin_ashi_transform(dict_df)
     
     
-    strat = RSI(dict_df)
-    strat.custom_indicator()
+    strat = RSI_ADX(dict_df)
+    #strat.custom_indicator()
 
     hyper = Hyper(strategy_object=strat,
                   close=strat.close,

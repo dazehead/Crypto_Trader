@@ -9,7 +9,7 @@ import talib as ta
 
 class Strategy:
     """Class to store strategy resources"""
-    def __init__(self, dict_df, with_sizing=False):
+    def __init__(self, dict_df, with_sizing=False, risk_object=None):
         if not isinstance(dict_df, dict):
             print('You have passed a Dataframe. This Class needs to be dictionary with key as symbol and value as DataFrame')
             sys.exit(1)
@@ -17,6 +17,7 @@ class Strategy:
             self.symbol = key
             self.df = value
         self.with_sizing = with_sizing
+        self.risk_object = risk_object
 
         self.open = self.df['open']
         self.high = self.df['high']
@@ -113,12 +114,15 @@ class Strategy:
             # If tracking, compare each subsequent close price
             elif tracking:
                 # Calculate the 2% threshold
-                target_close = saved_close * 1.02 # this value will be calculated through the risk class
+                target_close = saved_close * (1 + self.risk_object.percent_to_size) # this value will be calculated through the risk class
                 
                 # Check if the close price has increased by 2% or more from the saved close price
                 if df['close'].iloc[i] >= target_close and df['signal'].iloc[i] == 0:
                     # Update the signal to 1
                     df.at[df.index[i], 'signal'] = 1
+                    saved_close = df['close'].iloc[i]
+                
+                if df['close'].iloc[i] <= (target_close * (1 - (self.risk_object.percent_to_size * 2))) and df['signal'].iloc[i] ==0:
                     saved_close = df['close'].iloc[i]
                 
                 # Stop tracking if a -1 signal is encountered
@@ -256,8 +260,9 @@ class Strategy:
         # Display the combined figure
         fig_combined.show()
 
-    def generate_backtest(self, init_cash = 100):
+    def generate_backtest(self):
         """Performs backtest and returns the stats"""
+        init_cash = self.risk_object.balance
         size = None
         size_type = None
         accumulate = False
