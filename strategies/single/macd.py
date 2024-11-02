@@ -2,8 +2,8 @@ import talib as ta
 from strategies.strategy import Strategy
 
 class MACD(Strategy):
-    def __init__(self, dict_df):
-        super().__init__(dict_df=dict_df)
+    def __init__(self, dict_df, with_sizing=False):
+        super().__init__(dict_df=dict_df, with_sizing=with_sizing)
 
     def custom_indicator(self,close =None, fast_period=35, slow_period=70, signal_period=33):
 

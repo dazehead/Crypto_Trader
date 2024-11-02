@@ -5,8 +5,8 @@ from strategies.single.efratio import EFratio
 
 
 class Kama(EFratio):
-    def __init__(self, dict_df):
-        super().__init__(dict_df=dict_df,)
+    def __init__(self, dict_df, with_sizing=False):
+        super().__init__(dict_df=dict_df,with_sizing=with_sizing)
 
     def custom_indicator(self,close=None, fast_window=2, slow_window=30, efratio_window=15):
         self.efratio_window = efratio_window

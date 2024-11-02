@@ -3,8 +3,8 @@ from strategies.strategy import Strategy
 import pandas as pd
 
 class ADX(Strategy):
-    def __init__(self, dict_df):
-        super().__init__(dict_df=dict_df)
+    def __init__(self, dict_df, with_sizing = False):
+        super().__init__(dict_df=dict_df, with_sizing = with_sizing)
 
     def custom_indicator(self,close =None,buy_threshold= 45, time_period=14):
 

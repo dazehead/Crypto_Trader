@@ -65,11 +65,14 @@ def run_basic_backtest():
         current_dict = {key : value}
         #current_dict = utils.heikin_ashi_transform(current_dict)
         
-        strat = RSI_ADX(dict_df=current_dict, add_to_position=True)
+        strat = RSI_ADX(
+            dict_df=current_dict,
+            with_sizing=True)
         
         strat.custom_indicator()
         strat.graph()
-        strat.generate_backtest()
+        strat.generate_backtest(init_cash=100)
+        #strat.from_orders(init_cash=100)
         pf = strat.portfolio
         print(pf.stats())
 

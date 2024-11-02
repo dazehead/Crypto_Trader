@@ -9,14 +9,14 @@ import talib as ta
 
 class Strategy:
     """Class to store strategy resources"""
-    def __init__(self, dict_df, add_to_position=False):
+    def __init__(self, dict_df, with_sizing=False):
         if not isinstance(dict_df, dict):
             print('You have passed a Dataframe. This Class needs to be dictionary with key as symbol and value as DataFrame')
             sys.exit(1)
         for key, value in dict_df.items():
             self.symbol = key
             self.df = value
-        self.add_to_position = add_to_position
+        self.with_sizing = with_sizing
 
         self.open = self.df['open']
         self.high = self.df['high']
@@ -77,8 +77,8 @@ class Strategy:
 
         if with_formating:
             signals = self.format_signals(signals)
-            if self.add_to_position:
-                signals = self.calculate_add_to_position(signals)
+            # if self.with_sizing:
+            #     signals = self.calculate_with_sizing(signals)##########################################################################
 
         # For graphing
         self.entries = np.zeros_like(signals, dtype=bool)
@@ -91,7 +91,7 @@ class Strategy:
         self.exits = pd.Series(self.exits, index=self.close.index)
         return signals
     
-    def calculate_add_to_position(self, signals):
+    def calculate_with_sizing(self, signals):
         #convert signals to pandas series
         date_with_signals = pd.DataFrame({'signal': signals,
                                           'close': self.close}, index=self.close.index)
@@ -113,10 +113,10 @@ class Strategy:
             # If tracking, compare each subsequent close price
             elif tracking:
                 # Calculate the 2% threshold
-                target_close = saved_close * 1.02
+                target_close = saved_close * 1.02 # this value will be calculated through the risk class
                 
                 # Check if the close price has increased by 2% or more from the saved close price
-                if df['close'].iloc[i] >= target_close and df['signal'].iloc[i] != -1:
+                if df['close'].iloc[i] >= target_close and df['signal'].iloc[i] == 0:
                     # Update the signal to 1
                     df.at[df.index[i], 'signal'] = 1
                     saved_close = df['close'].iloc[i]
@@ -164,6 +164,8 @@ class Strategy:
             print(f"Invalid signals: {e}")
         
         combined_signals = self.format_signals(combined_signals)
+        if self.with_sizing:
+            combined_signals = self.calculate_with_sizing(combined_signals)
 
         self.entries = np.zeros_like(self.close, dtype=bool) #from signal to signal_length
         self.exits = np.zeros_like(self.close, dtype=bool)#from signal to signal_length
@@ -254,9 +256,53 @@ class Strategy:
         # Display the combined figure
         fig_combined.show()
 
-    def generate_backtest(self):
+    def generate_backtest(self, init_cash = 100):
         """Performs backtest and returns the stats"""
-        self.portfolio = vbt.Portfolio.from_signals(self.open, self.entries, self.exits)
+        size = None
+        size_type = None
+        accumulate = False
+
+        if self.with_sizing:
+            size = pd.Series(index=self.close.index, dtype='float')
+            size[self.entries] = 10 #this sizing will be calculated through risk class
+            size[self.exits] = np.inf
+
+            size_type = 'value'
+            accumulate = True
+
+        self.portfolio = vbt.Portfolio.from_signals(
+            close = self.open,
+            entries = self.entries,
+            exits = self.exits,
+            size = size,
+            size_type= size_type,
+            accumulate= accumulate,
+            init_cash= init_cash)
+
+        return self.portfolio
+    
+    def from_orders(self,init_cash=100):
+        """Performs backtest and returns the stats"""
+        # Create an empty DataFrame to hold orders
+        order_size = pd.Series(index=self.close.index, dtype='float')
+        direction = pd.Series(index=self.close.index, dtype='int')
+
+        # Set order sizes and directions
+        order_size[self.entries] = 0.1  # 10% of cash on entries
+        direction[self.entries] = 1     # 1 for buy
+
+        # On exits, set order size to 1.0 (100% of position) to sell all
+        order_size[self.exits] = 1.0
+        direction[self.exits] = -1      # -1 for sell
+
+        self.portfolio = vbt.Portfolio.from_orders(
+            close=self.open,
+            size=order_size,
+            size_type='percent',          # Size is a percentage
+            direction=direction,
+            accumulate=True,              # Allow accumulation
+            init_cash=init_cash
+        )
 
         return self.portfolio
     
