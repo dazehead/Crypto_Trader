@@ -192,11 +192,8 @@ class Kraken():
         print(f'Open Positions: {response.text}')
 
 
-testing_kraken = Kraken()
-testing_kraken.get_trade_balance("ZUSD")
-testing_kraken.get_account_balance()
-testing_kraken.get_open_orders()
-testing_kraken.get_open_postions()
-
-            
-
+# testing_kraken = Kraken()
+# testing_kraken.get_trade_balance("ZUSD")
+# testing_kraken.get_account_balance()
+# testing_kraken.get_open_orders()
+# testing_kraken.get_open_postions()

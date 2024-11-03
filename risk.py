@@ -1,5 +1,5 @@
 class Risk_Handler:
-    def __init__(self):
+    def __init__(self, client=None):
         self.percent_to_size = self.kelly_criterion()
         self.balance = self.get_portoflio_balance()
 
@@ -8,5 +8,5 @@ class Risk_Handler:
         return .02
 
     def get_portoflio_balance(self):
-        #get balance from exchange
+        #get balance from client
         return 100

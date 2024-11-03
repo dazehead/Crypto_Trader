@@ -11,8 +11,8 @@ class Combined_Strategy(Strategy):
     """
     THE DEFAULT VALUES WILL BE RAN YOU MUST SET DEFAULT VALUES
     """
-    def __init__(self, dict_df,with_sizing=False, *strategies):
-        super().__init__(dict_df=dict_df, with_sizing=with_sizing)
+    def __init__(self, dict_df,risk_object=None, with_sizing=False, *strategies):
+        super().__init__(dict_df=dict_df,risk_object=risk_object, with_sizing=with_sizing)
         choice = 'N'
         if choice != 'Y':
             choice = input("\nThe Combined_Strategy class uses the default values assigned in the custom indicator function for the respective strategies being used.\nHave you set your desired values?\nY or N: ").upper()

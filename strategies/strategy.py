@@ -9,7 +9,7 @@ import talib as ta
 
 class Strategy:
     """Class to store strategy resources"""
-    def __init__(self, dict_df, with_sizing=False, risk_object=None):
+    def __init__(self, dict_df, risk_object=None, with_sizing=False):
         if not isinstance(dict_df, dict):
             print('You have passed a Dataframe. This Class needs to be dictionary with key as symbol and value as DataFrame')
             sys.exit(1)
