@@ -80,7 +80,7 @@ def run_basic_backtest():
         print(pf.stats())
 
 
-        # utils.export_backtest_to_db(object=strat,
+        # database_interaction.export_backtest_to_db(object=strat,
         #                             granularity=granularity)
 
 
@@ -130,7 +130,7 @@ def run_hyper():
     # x_level = 'cust_fast_window',
     # y_level = 'cust_slow_window')
     #fig.show()
-    #utils.export_hyper_to_db(hyper.returns, strat, granularity)
+    #database_interaction.export_hyper_to_db(hyper.returns, strat, granularity)
 
     print(f"The maximum return was {hyper.returns.max()}")
     params = ['rsi_window','buy_threshold','sell_threshold','adx_buy_threshold','adx_time_period']
