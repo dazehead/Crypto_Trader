@@ -2,6 +2,7 @@ import pandas as pd
 import utils
 import sqlite3 as sql
 import inspect
+import numpy as np
 
 def volume_conversion():
     times_to_resample = ['ONE_MINUTE', 'FIVE_MINUTE', 'THIRTY_MINUTE', 'ONE_HOUR', 'TWO_HOUR', 'SIX_HOUR', 'ONE_DAY']
