@@ -3,15 +3,17 @@ import pickling
 class Trade():
     """This class will have all logic for executing trades"""
 
-    def __init__(self,risk,strat_object, logbook):
+    def __init__(self,risk,strat_object, logbook, signals = None):
         self.risk = risk
         self.strat = strat_object
         self.logbook = logbook
         self.client = self.risk.client
         self.symbol = self.strat.symbol
-        self.quote_size = self.risk.quote_size
 
-        self.signals = self.strat.symbols
+        self.signals = self.strat.signals     
+        if signals:
+            self.signals = signals
+
 
 
         if self.signals[-1] == 1:
@@ -25,13 +27,11 @@ class Trade():
 
 
     def buy(self):
-        print('BUY')
-        
 
-
+        print(f'BUY: {self.risk.amount_to_purchase}')
 
     def sell(self):
-        print('SELL')
+        print(f'SELL: all open positions from client.get_open_positions(self.symbol)')
 
     def monitor_trade(self):
         """

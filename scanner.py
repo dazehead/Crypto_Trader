@@ -17,6 +17,8 @@ class Scanner():
         #print(self.products)
         print('This is where we filter the products.\n Currently only using XBTUSD\n')
         self.products_to_trade = ['XBTUSD']
+        """iterate over all available symbols and only go with volume that is above the average"""
+        """iterate overal all availabel symbols and filter by only market cap greater than a value"""
 
 
     # def get_product_book(self, product_id):

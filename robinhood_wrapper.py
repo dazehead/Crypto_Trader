@@ -7,13 +7,14 @@ import requests
 from nacl.signing import SigningKey
 import os
 
+PUBLIC_KEY = os.getenv('PUBLIC_KEY_ROBIN')
+PRIVATE_KEY = os.getenv('PRIVATE_KEY_ROBIN')
 API_KEY = os.getenv('API_KEY_ROBIN')
-BASE64_PRIVATE_KEY = os.getenv('API_PRIVATE_KEY_ROBIN')
 
 class CryptoAPITrading:
     def __init__(self):
         self.api_key = API_KEY
-        private_key_seed = base64.b64decode(BASE64_PRIVATE_KEY)
+        private_key_seed = base64.b64decode(PRIVATE_KEY)
         self.private_key = SigningKey(private_key_seed)
         self.base_url = "https://trading.robinhood.com"
 
@@ -126,6 +127,10 @@ class CryptoAPITrading:
 def main():
     api_trading_client = CryptoAPITrading()
     print(api_trading_client.get_account())
+    print('-------------------------------------------------------')
+    print(api_trading_client.get_trading_pairs("BTC-USD"))
+    print('-------------------------------------------------------')
+    print(api_trading_client.get_holdings('BTC'))
 
     """
     BUILD YOUR TRADING STRATEGY HERE
@@ -138,3 +143,4 @@ def main():
           {"asset_quantity": "0.0001"}
     )
     """
+main()

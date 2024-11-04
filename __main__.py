@@ -6,7 +6,7 @@ from coinbase.websocket import WSClient, WSClientConnectionClosedException
 from coinbase.rest import RESTClient
 from dataframe_manager import DF_Manager
 from strategies.strategy import Strategy
-from strategies.rsi import RSI
+from strategies.single.rsi import RSI
 from trade import Trade
 from log import LinkedList
 from scanner import Scanner
@@ -23,17 +23,17 @@ def on_message():
     global kraken
     global risk
     print(f'counter: {counter}')
-    
     df_manager.data_for_live_trade(update=True)
+
 
     strat = RSI(df_manager.dict_df)
     strat.custom_indicator(strat.close)
     signals = [0,1,-1,0]
     
-    # trade = Trade(risk = risk,
-    #               strat_object=strat,
-    #               logbook=logbook,
-    #               signals=[signals[counter]])
+    trade = Trade(risk = risk,
+                  strat_object=strat,
+                  logbook=logbook,
+                  signals=[signals[counter]])
     
     counter += 1
 
