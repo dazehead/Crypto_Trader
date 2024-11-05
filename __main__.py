@@ -22,6 +22,8 @@ def on_message():
     global counter
     global kraken
     global risk
+    kraken.get_trade_volume()
+
     print(f'counter: {counter}')
     df_manager.data_for_live_trade(update=True)
 
