@@ -22,7 +22,7 @@ def on_message():
     global counter
     global kraken
     global risk
-    kraken.get_trade_volume()
+    kraken.get_order_book()
 
     print(f'counter: {counter}')
     df_manager.data_for_live_trade(update=True)
@@ -57,12 +57,16 @@ async def fetch_data_periodically():
 """---------------start of program-----------------"""
 kraken = Kraken()
 scanner = Scanner(client=kraken)
+df_manager = DF_Manager(scanner)
+
+scanner.assign_attribute(df_manager=df_manager)
+scanner.populate_manager(days_ago=2)
 
 """Loops through the scanner until a product gets returned from our defined filter parameters"""
+print('starting filter')
 while not scanner.products_to_trade:
     scanner.filter_products()
 
-df_manager = DF_Manager(scanner)
 
 logbook = LinkedList()
 risk = Risk_Handler(kraken)

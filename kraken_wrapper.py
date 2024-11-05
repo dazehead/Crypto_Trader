@@ -11,6 +11,7 @@ import hashlib
 import hmac
 import base64
 import database_interaction
+import pickling
 
 class Kraken():
 
@@ -47,7 +48,16 @@ class Kraken():
         self.all_products = self.get_tradable_asset_pairs()
         self.time_to_wait = self.interval_map[self.interval] * 60
 
+
     def get_kraken_signature(self, urlpath, data, secret):
+        if 'public' in urlpath:
+            self.headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'API-Key': self.api_key,
+                'API-Sign': self.api_secret
+            }
+            return
         postdata = urllib.parse.urlencode(data)
         encoded = (str(data['nonce']) + postdata).encode('utf-8')
         message = urlpath.encode('utf-8') + hashlib.sha256(encoded).digest()
@@ -58,8 +68,6 @@ class Kraken():
 
         if 'private' in urlpath:
             self.headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=utf-8'
-        else:
-            self.headers['Content-Type'] = 'Content-Type'= 'application/json'
         return #sigdigest.decode()
 
     def get_historical_data(self,pair: str, days_ago=None):
@@ -135,7 +143,7 @@ class Kraken():
 
         self.get_kraken_signature(urlpath, data, self.api_secret)
 
-        response = requests.request("POST", url, headers=headers, data=data)
+        response = requests.request("POST", url, headers=self.headers, data=data)
 
         print(f'Trade Balance: {response.text}')
 
@@ -149,7 +157,7 @@ class Kraken():
 
         self.get_kraken_signature(urlpath, data, self.api_secret)
 
-        response = requests.request("POST", url, headers=headers, data=data)
+        response = requests.request("POST", url, headers=self.headers, data=data)
         response_data = response.json()
         print(response_data['result']['open'])
 
@@ -167,10 +175,12 @@ class Kraken():
                 'docalcs': False,
                 'consolidation': 'market'
             }
+        
         self.get_kraken_signature(urlpath=urlpath, data=data, secret=self.api_secret)
         response = requests.request("POST", url, headers=self.headers, data=data)
+        print(response.text)
 
-    def add_order(self, type_of_order, symbol, price):
+    def add_order(self, type_of_order, symbol, price,pickle=True):
         if type_of_order not in ['buy', 'sell']:
             print('needs to be "buy" or "sell"')
         urlpath = '/0/private/AddOrder'
@@ -183,17 +193,19 @@ class Kraken():
                 'pair': symbol,
                 'price': price,
                 'cl_ord_id': "generated order id from database"}
+        
         self.get_kraken_signature(urlpath=urlpath, data=data, secret=self.api_secret)
 
         response = requests.request("POST",url, headers=self.headers, data=data)
         response_data = response.json()
-        order_description = response_data['result']['descr']
-        tranaction_id = response_data['result']['txid']
+        if pickle:
+            pickling.to_pickle(f'{type_of_order}_order', response_data)
+
 
     def get_closed_orders(self):
         urlpath = '/0/private/ClosedOrders'
         url = self.base_url + urlpath
-        nonce = str(int(time.time())*1000)
+        nonce = str(int(time.time() * 1000))
         data = {'nonce': nonce,
                 'trades': True}
         
@@ -213,6 +225,17 @@ class Kraken():
             response = requests.request("POST", url, headers=self.headers, data=data)
 
             print(f'Volume: {response.text}')
+
+    def get_order_book(self):
+        url_path = '/0/public/Depth'
+        url = self.base_url + url_path
+        nonce = str(int(time.time() * 1000))
+        data = {}
+
+        self.get_kraken_signature(urlpath=url_path, data=data, secret=self.api_secret)
+
+        response = requests.request('GET', url=url, headers=self.headers, data=data)
+        print(response.text)
 
 # testing_kraken = Kraken()
 # testing_kraken.get_trade_balance("ZUSD")
