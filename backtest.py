@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import utils
 import datetime as dt
-import wrapper
+import coinbase_wrapper
 import numpy as np
 import database_interaction
 from coinbase.rest import RESTClient
@@ -31,7 +31,7 @@ sandbox_rest_url = "https://api-public.sandbox.exchange.coinbase.com"
 client = RESTClient(api_key=api_key, api_secret=api_secret)
 
 
-symbols = ['BTC-USD', 'ETH-USD', 'MATH-USD']
+symbols = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
 product = ['BTC-USD']
 granularity = 'FIVE_MINUTE'
 
@@ -60,39 +60,40 @@ def test_multiple_strategy():
 def run_basic_backtest():
 
     dict_df = database_interaction.get_historical_from_db(granularity=granularity,
-                                                          symbols=product,
-                                                          num_days=300)
+                                                          symbols=symbols,
+                                                          num_days=1)
     for key, value in dict_df.items():
         current_dict = {key : value}
+        print(key)
         #current_dict = utils.heikin_ashi_transform(current_dict)
-        risk = Risk_Handler()
+        # risk = Risk_Handler()
         
-        strat = RSI_ADX(
-            dict_df=current_dict,
-            with_sizing=True,
-            risk_object=risk)
+        # strat = RSI_ADX(
+        #     dict_df=current_dict,
+        #     with_sizing=True,
+        #     risk_object=risk)
         
-        strat.custom_indicator()
-        strat.graph()
-        strat.generate_backtest()
-        #strat.from_orders(init_cash=100)
-        pf = strat.portfolio
-        print(pf.stats())
+        # strat.custom_indicator()
+        # strat.graph()
+        # strat.generate_backtest()
+        # pf = strat.portfolio
+        # print(pf.stats())
+
 
 
         # database_interaction.export_backtest_to_db(object=strat)
 
 
-        fig = pf.plot(subplots = [
-        'orders',
-        'trade_pnl',
-        'cum_returns',
-        'drawdowns',
-        'underwater',
-        'gross_exposure'])
-        fig.show()
+        # fig = pf.plot(subplots = [
+        # 'orders',
+        # 'trade_pnl',
+        # 'cum_returns',
+        # 'drawdowns',
+        # 'underwater',
+        # 'gross_exposure'])
+        # fig.show()
 
-        print(pf.stats())
+        # print(pf.stats())
 run_basic_backtest()
 
 

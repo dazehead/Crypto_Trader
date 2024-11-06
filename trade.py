@@ -28,7 +28,7 @@ class Trade():
 
     def buy(self):
 
-        print(f'BUY: {self.risk.amount_to_purchase}')
+        print(f'BUY: {self.risk.balance_to_risk}')
 
     def sell(self):
         print(f'SELL: all open positions from client.get_open_positions(self.symbol)')

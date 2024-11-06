@@ -92,7 +92,6 @@ class Kraken():
         data = response.json()
         error = data.get("error",[])
         result = data.get('result',{})
-        #print(result.keys())
         symbol = list(result.keys())[0]
         symbol_data = result[symbol]
 
@@ -116,6 +115,7 @@ class Kraken():
         return self.symbols_to_trade
     
     def get_account_balance(self):
+        """This function does not get our actual account blance it is get_trade_balance that get the portfolio balanace"""
         urlpath = '/0/private/Balance'
         url = self.base_url + urlpath
         nonce = str(int(time.time() * 1000))
@@ -133,19 +133,21 @@ class Kraken():
             zusd_balance = balance.get('ZUSD', '0')
             return zusd_balance
 
-    def get_trade_balance(self, asset:str):
+    def get_trade_balance(self):
+        """note this can also get unrealized profit/loss"""
         urlpath = '/0/private/TradeBalance'
         url = self.base_url + urlpath
         nonce = str(int(time.time() * 1000))
 
         data = {'nonce': nonce,
-                'asset': asset}
+                'asset': 'ZUSD'}
 
         self.get_kraken_signature(urlpath, data, self.api_secret)
 
         response = requests.request("POST", url, headers=self.headers, data=data)
+        response_data = response.json()
 
-        print(f'Trade Balance: {response.text}')
+        return float(response_data['result']['eb'])
 
     def get_open_orders(self):
         urlpath = '/0/private/OpenOrders'

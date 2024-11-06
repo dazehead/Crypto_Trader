@@ -1,11 +1,12 @@
 class Risk_Handler:
     def __init__(self, client=None):
         self.client = client
-        self.percent_to_size = self.kelly_criterion()
-        self.balance = self.client.get_account_balance()
+        self.percent_to_size = .02
+        self.balance = self.client.get_trade_balance()
+        self.balance_to_risk = self.kelly_criterion()
         print(f"Balance: {self.balance}")
-        #self.amount_to_purchase = self.balance * self.percent_to_size
+        print(f"Balance to risk: {self.balance_to_risk}")
 
     def kelly_criterion(self):
-        #calculate percent_to_size
-        return .02
+        """Calculates balance to risk based off of backtests"""
+        return self.balance * .10

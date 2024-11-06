@@ -1,6 +1,6 @@
 import utils
 import pandas as pd
-import wrapper
+import coinbase_wrapper
 import time
 import sys
 class Scanner():
@@ -11,43 +11,26 @@ class Scanner():
         self.products = self.client.all_products
         self.products_to_trade = None
         self.df_manager = None
+        self.robinhood_crypto = ['BTC', 'ETH', 'DOGE', 'SHIB', 'AVAX', 'BCH', 'LINK', 'UNI', 'LTC', 'XLM', 'ETC', 'AAVE', 'XTZ', 'COMP']
+        self.kraken_robinhood_crypto = ['XBTUSD', 'XETHZUSD', 'XDGUSD', 'SHIBUSD', 'AVAXUSD', 'BCHUSD', 'LINKUSD', 'UNIUSD', 'LTCUSD', 'XLMUSD', 'ETCUSD', 'AAVEUSD', 'XTZUSD', 'COMPUSD']
 
 
     def assign_attribute(self, df_manager):
         self.df_manager = df_manager
 
-    def progress_bar_with_eta(self, progress, total, start_time, bar_length=50):
-        elapsed_time = time.time() - start_time  # Time passed since start
-        avg_time_per_item = elapsed_time / progress if progress > 0 else 0
-        eta = avg_time_per_item * (total - progress)  # Estimate remaining time in seconds
-        
-        # Format ETA as minutes and seconds
-        eta_minutes = int(eta // 60)
-        eta_seconds = int(eta % 60)
-        
-        # Calculate percentage and progress bar
-        percent = int((progress / total) * 100)
-        bar = ('#' * int(bar_length * (progress / total))).ljust(bar_length)
-        
-        # Display the progress bar and ETA
-        sys.stdout.write(f'\r|{bar}| {percent}% Complete | ETA: {eta_minutes:02d}:{eta_seconds:02d} remaining')
-        sys.stdout.flush()
-
     def populate_manager(self, days_ago=None):
+        """currently only using robinhood symbols"""
+
         start_time = time.time()
         print('Populating DF Manager')
-        for i, symbol in enumerate(self.products):
+        for i, symbol in enumerate(self.kraken_robinhood_crypto):
             self.df_manager.add_to_manager(self.client.get_historical_data(symbol, days_ago=days_ago))
-            self.progress_bar_with_eta(i, len(self.products), start_time)
+            utils.progress_bar_with_eta(i, len(self.products), start_time)
 
     def filter_products(self, filter_type: str=None):
-        #print(self.products)
-        print('This is where we filter the products.\n Currently only using XBTUSD\n')
-        for k, v in self.df_manager.dict_df.items():
-            print(v['volume'].head())
-            
-
-        self.products_to_trade = ['XBTUSD']
+        print('Starting filter')
+        self.products_to_trade = self.kraken_robinhood_crypto
+        self.df_manager.products_to_trade = self.kraken_robinhood_crypto
         """iterate over all available symbols and only go with volume that is above the average"""
         """iterate overal all availabel symbols and filter by only market cap greater than a value"""
 

@@ -3,22 +3,8 @@ import utils
 import sqlite3 as sql
 import inspect
 import numpy as np
-
-def volume_conversion():
-    times_to_resample = ['ONE_MINUTE', 'FIVE_MINUTE', 'THIRTY_MINUTE', 'ONE_HOUR', 'TWO_HOUR', 'SIX_HOUR', 'ONE_DAY']
-    for granularity in times_to_resample:
-        conn = sql.connect(f'database/{granularity}.db')
-        query = "SELECT name FROM sqlite_master WHERE type='table';"
-        tables = pd.read_sql_query(query, conn)
-        
-        for table in tables['name']:
-            clean_table_name = '-'.join(table.split('_')[:2])
-            data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
-            data['date'] = pd.to_datetime(data['date'], errors='coerce')
-            data.set_index('date', inplace=True)
-            move_decimal = lambda val: int(''.join(f"{val:.10f}".rstrip('0').split('.'))) if isinstance(val, float) else val
-            data['volume'] = data['volume'].apply(move_decimal)
-            utils.export_historical_to_db({clean_table_name: data}, granularity)
+import sys
+import time
 
 
 def get_historical_from_db(granularity, symbols: list = [], num_days: int = None):
@@ -94,7 +80,7 @@ def export_historical_to_db(dict_df, granularity):
         # Write the DataFrame to the new table
         df.drop_duplicates(subset=None, keep='first', inplace=True, ignore_index=False)
         df.to_sql(new_table_name, conn, if_exists='replace', index=True)
-        print(f"Created table: {new_table_name}")
+        print(f"\nCreated table: {new_table_name}")
     
     conn.commit()
     conn.close()
@@ -318,3 +304,22 @@ def export_backtest_to_db(object, multiple_table_name = None):
 
     conn.close()
     return
+
+def delete_all_tables_in_historical_data():
+    choice = input('*****WARNING****\n This will delete all historical data tables is this what you want??\nY or N\n').upper()
+    if choice != 'Y':
+        sys.exit()
+    elif choice == 'Y':
+        print('...Deleting tables in Historical Data')
+        databases = ['ONE_MINUTE', 'FIVE_MINUTE', 'FIFTEEN_MINUTE','THIRTY_MINUTE', 'ONE_HOUR', 'TWO_HOUR', 'SIX_HOUR', 'ONE_DAY']
+        for db in databases:
+            if len(db) > 0:
+                print(f'Deleting tables in databse {db}')
+                conn = sql.connect(f'database/{db}.db')
+                cursor = conn.cursor()
+                query = "SELECT name FROM sqlite_master WHERE type='table';"
+                tables = pd.read_sql_query(query, conn)
+                for table_name in tables['name']:
+                    cursor.execute(f'DROP TABLE IF EXISTS "{table_name}"')
+
+#delete_all_tables_in_historical_data()

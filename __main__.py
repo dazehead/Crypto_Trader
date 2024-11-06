@@ -1,6 +1,6 @@
 import time
 import os
-import wrapper
+import coinbase_wrapper
 import asyncio
 from coinbase.websocket import WSClient, WSClientConnectionClosedException
 from coinbase.rest import RESTClient
@@ -22,20 +22,20 @@ def on_message():
     global counter
     global kraken
     global risk
-    kraken.get_order_book()
-
     print(f'counter: {counter}')
     df_manager.data_for_live_trade(update=True)
 
+    for k, v in df_manager.dict_df.items():
+        current_dict = {k:v}
 
-    strat = RSI(df_manager.dict_df)
-    strat.custom_indicator(strat.close)
-    signals = [0,1,-1,0]
-    
-    trade = Trade(risk = risk,
-                  strat_object=strat,
-                  logbook=logbook,
-                  signals=[signals[counter]])
+        strat = RSI(current_dict)
+        strat.custom_indicator(strat.close)
+        signals = [0,1,-1,0]
+        
+        trade = Trade(risk = risk,
+                    strat_object=strat,
+                    logbook=logbook,
+                    signals=[signals[counter]])
     
     counter += 1
 
@@ -63,7 +63,6 @@ scanner.assign_attribute(df_manager=df_manager)
 scanner.populate_manager(days_ago=2)
 
 """Loops through the scanner until a product gets returned from our defined filter parameters"""
-print('starting filter')
 while not scanner.products_to_trade:
     scanner.filter_products()
 

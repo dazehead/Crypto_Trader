@@ -4,10 +4,30 @@ import numpy as np
 import sqlite3 as sql
 import inspect
 import re
+import sys
+import time
 pd.set_option('future.no_silent_downcasting', True)
 
 
 import pandas as pd
+
+
+def progress_bar_with_eta(progress, total, start_time, bar_length=50):
+    elapsed_time = time.time() - start_time  # Time passed since start
+    avg_time_per_item = elapsed_time / progress if progress > 0 else 0
+    eta = avg_time_per_item * (total - progress)  # Estimate remaining time in seconds
+    
+    # Format ETA as minutes and seconds
+    eta_minutes = int(eta // 60)
+    eta_seconds = int(eta % 60)
+    
+    # Calculate percentage and progress bar
+    percent = int((progress / total) * 100)
+    bar = ('#' * int(bar_length * (progress / total))).ljust(bar_length)
+    
+    # Display the progress bar and ETA
+    sys.stdout.write(f'\r|{bar}| {percent}% Complete | ETA: {eta_minutes:02d}:{eta_seconds:02d} remaining')
+    sys.stdout.flush()
 
 def find_unix(days_ago: int):
     now = dt.datetime.now()

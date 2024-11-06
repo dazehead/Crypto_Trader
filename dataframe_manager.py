@@ -1,6 +1,6 @@
 import pandas as pd
 import json
-import wrapper
+import coinbase_wrapper
 import utils
 from pickling import to_pickle, from_pickle
 
@@ -39,6 +39,7 @@ class DF_Manager():
             if update:
                 last_row = historical_data[updated_symbol].iloc[[-1]]
                 self.dict_df[updated_symbol] = pd.concat([self.dict_df[updated_symbol], last_row]).drop_duplicates()
+                print(f"Updated {updated_symbol}")
             else:
                 self.dict_df[updated_symbol] = historical_data[updated_symbol]
 
