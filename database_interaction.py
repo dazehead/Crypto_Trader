@@ -75,12 +75,12 @@ def export_historical_to_db(dict_df, granularity):
         # Drop all existing tables that match the pattern
         for existing_table in existing_tables:
             cursor.execute(f'DROP TABLE IF EXISTS \"{existing_table[0]}\"')
-            print(f"Dropped table: {existing_table[0]}")
+            #print(f"Dropped table: {existing_table[0]}")
         
         # Write the DataFrame to the new table
         df.drop_duplicates(subset=None, keep='first', inplace=True, ignore_index=False)
         df.to_sql(new_table_name, conn, if_exists='replace', index=True)
-        print(f"\nCreated table: {new_table_name}")
+        #print(f"\nCreated table: {new_table_name}")
     
     conn.commit()
     conn.close()

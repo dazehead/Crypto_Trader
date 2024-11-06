@@ -242,11 +242,11 @@ class Coinbase_Wrapper():
 
 
 
-granularity = 'ONE_MINUTE'
-coinbase = Coinbase_Wrapper()
+# granularity = 'ONE_MINUTE'
+# coinbase = Coinbase_Wrapper()
 
-coinbase.get_candles_for_db(
-    symbols=coinbase.coinbase_robin_crypto,
-    granularity=granularity,
-    days=365
-    )
+# coinbase.get_candles_for_db(
+#     symbols=coinbase.coinbase_robin_crypto,
+#     granularity=granularity,
+#     days=365
+#     )
