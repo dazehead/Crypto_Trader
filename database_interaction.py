@@ -90,6 +90,7 @@ def resample_dataframe_from_db(granularity='ONE_MINUTE'):
     """
     Resamples data from the database for different timeframes based on the granularity.
     """
+    print("\n...Resampling all tables in Historical_Data database")
     times_to_resample = {
         'FIVE_MINUTE': '5min',
         'FIFTEEN_MINUTE': '15min',
@@ -124,7 +125,7 @@ def resample_dataframe_from_db(granularity='ONE_MINUTE'):
 
         export_historical_to_db(resampled_dict_df, granularity=key)
 
-    print("Resampling completed.")
+    print("\nResampling completed.")
 
 
 def get_params_from_strategy(strategy_object):
