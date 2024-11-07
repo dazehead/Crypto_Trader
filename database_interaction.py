@@ -119,7 +119,7 @@ def resample_dataframe_from_db(granularity='ONE_MINUTE'):
 
             df_resampled.dropna(inplace=True)
 
-            print(f"Resampled {symbol} to {key}")
+            #print(f"Resampled {symbol} to {key}")
             resampled_dict_df[symbol] = df_resampled
 
         export_historical_to_db(resampled_dict_df, granularity=key)

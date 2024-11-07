@@ -12,19 +12,28 @@ pd.set_option('future.no_silent_downcasting', True)
 import pandas as pd
 
 
-def progress_bar_with_eta(progress, total, start_time, bar_length=50):
+def progress_bar_with_eta(progress, data, start_time, bar_length=50):
+    total = len(data)
+    progress +=1
+
     elapsed_time = time.time() - start_time  # Time passed since start
     avg_time_per_item = elapsed_time / progress if progress > 0 else 0
     eta = avg_time_per_item * (total - progress)  # Estimate remaining time in seconds
-    
+
     # Format ETA as minutes and seconds
     eta_minutes = int(eta // 60)
     eta_seconds = int(eta % 60)
-    
+
     # Calculate percentage and progress bar
-    percent = int((progress / total) * 100)
-    bar = ('#' * int(bar_length * (progress / total))).ljust(bar_length)
-    
+    if progress >= total:
+        percent = 100
+        bar = '#' * bar_length
+        eta_minutes = 0
+        eta_seconds = 0
+    else:
+        percent = int((progress / total) * 100)
+        bar = ('#' * int(bar_length * (progress / total))).ljust(bar_length)
+
     # Display the progress bar and ETA
     sys.stdout.write(f'\r|{bar}| {percent}% Complete | ETA: {eta_minutes:02d}:{eta_seconds:02d} remaining')
     sys.stdout.flush()

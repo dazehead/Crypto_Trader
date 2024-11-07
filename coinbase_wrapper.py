@@ -16,8 +16,8 @@ class Coinbase_Wrapper():
         self.client = RESTClient(api_key=self.api_key, api_secret=self.api_secret)
         self.coinbase_robin_crypto = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
 
- 
-    def _get_unix_times(self, granularity:str, days: int = None):
+    
+    def _get_unix_times(self, granularity: str, days: int = None):
         # Mapping each timeframe to its equivalent seconds value
         timeframe_seconds = {
             'ONE_MINUTE': 60,
@@ -41,7 +41,6 @@ class Coinbase_Wrapper():
 
         # Calculate max time range for the given granularity
         max_time_range_seconds = limit * granularity_seconds
-        timestamp_max_range = now - max_time_range_seconds
 
         # If days are specified, we need to generate pairs of (now, timestamp_max_range) until the number of days is covered
         if days:
@@ -58,15 +57,17 @@ class Coinbase_Wrapper():
                 # Calculate the new timestamp range
                 timestamp_max_range = now - current_time_range_seconds
 
-                # Append the pair (now, timestamp_max_range) to the results
+                # Append the pair (timestamp_max_range, now) to the results
                 results.append((timestamp_max_range, now))
 
                 # Update 'now' and the remaining seconds
                 now = timestamp_max_range
-                remaining_seconds -= max_time_range_seconds
+                remaining_seconds -= current_time_range_seconds  # Corrected decrement
+
             return results[::-1]
 
-        # If no days are specified, return a single pair of (now, timestamp_max_range)
+        # If no days are specified, return a single pair of (now - max_time_range_seconds, now)
+        timestamp_max_range = now - max_time_range_seconds
         return [(timestamp_max_range, now)]
 
 
@@ -104,67 +105,57 @@ class Coinbase_Wrapper():
         return df
 
 
-    def _get_missing_unix_range(self, desired_start_unix, desired_end_unix, existing_start_unix, existing_end_unix, fetch_older_data=False):
-        """Compute missing UNIX time ranges that are not covered by existing data."""
+    def _get_missing_unix_range(self, desired_start_unix, desired_end_unix, existing_start_unix, existing_end_unix):
+        """Determine missing unix time ranges not covered by existing data."""
         missing_ranges = []
 
-        if desired_end_unix <= existing_start_unix:
-            # Entire desired range is before existing data
-            if fetch_older_data:
-                missing_ranges.append((desired_start_unix, existing_start_unix))
-            # Else, we assume no data exists before existing_start_unix and do not fetch
-        elif desired_start_unix >= existing_end_unix:
-            # Entire desired range is after existing data
+        # If desired range is entirely before existing data
+        if desired_end_unix < existing_start_unix:
             missing_ranges.append((desired_start_unix, desired_end_unix))
+
+        # If desired range is entirely after existing data
+        elif desired_start_unix > existing_end_unix:
+            missing_ranges.append((desired_start_unix, desired_end_unix))
+
         else:
-            # Desired range overlaps with existing data
+            # Missing range before existing data
             if desired_start_unix < existing_start_unix:
-                # Missing from desired_start to existing_start
-                if fetch_older_data:
-                    missing_ranges.append((desired_start_unix, existing_start_unix))
+                missing_ranges.append((desired_start_unix, existing_start_unix - 1))
+
+            # Missing range after existing data
             if desired_end_unix > existing_end_unix:
-                # Missing from existing_end to desired_end
-                missing_ranges.append((existing_end_unix, desired_end_unix))
-            # If desired_range is within existing_range, no missing ranges
+                missing_ranges.append((existing_end_unix + 1, desired_end_unix))
 
         return missing_ranges
 
-    def get_candles_for_db(self, symbols: list, granularity: str, days: int=None, fetch_older_data=False):
+    def get_candles_for_db(self, symbols: list, granularity: str, days: int=None):
         """Function that gets candles for every pair of timestamps and combines them all, avoiding redundant data fetching."""
 
         timestamps = self._get_unix_times(granularity, days=days)
-
-        combined_data = {}
         print(f'Getting Data For {len(symbols)} Symbols')
 
         for symbol in symbols:
-            print(f'...getting data for {symbol}')
+            print(f'\n...getting data for {symbol}')
             combined_df = pd.DataFrame()
 
             # Get existing data from the database
             existing_data = self._get_data_from_db(symbol, granularity)
-            #print(f"Timestamps: {timestamps[0]} to {timestamps[-1]}")
-            #print(f"Existing data for {symbol}:\n{existing_data.head()}")
             if not existing_data.empty:
                 existing_start_unix = int(existing_data.index.min().timestamp())
                 existing_end_unix = int(existing_data.index.max().timestamp())
-                #print(f"existing_start_unix: {existing_start_unix}")
             else:
                 existing_start_unix = None
                 existing_end_unix = None
 
             # For each desired date range, adjust the range to exclude existing data
             missing_date_ranges = []
-            for pair in timestamps:
-                desired_start_unix, desired_end_unix = pair
-
+            for desired_start_unix, desired_end_unix in timestamps:
                 if existing_start_unix is not None and existing_end_unix is not None:
                     missing_ranges = self._get_missing_unix_range(
                         desired_start_unix,
                         desired_end_unix,
                         existing_start_unix,
-                        existing_end_unix,
-                        fetch_older_data=fetch_older_data
+                        existing_end_unix
                     )
                 else:
                     missing_ranges = [(desired_start_unix, desired_end_unix)]
@@ -174,7 +165,6 @@ class Coinbase_Wrapper():
             # If the desired date ranges are fully covered by existing data, skip fetching
             if not missing_date_ranges:
                 print(f"All data for {symbol} is already up to date.")
-                combined_data[symbol] = existing_data
                 continue
 
             # Now fetch data for missing date ranges
@@ -185,13 +175,11 @@ class Coinbase_Wrapper():
 
                 # Attempt to fetch data for this range
                 df = self._fetch_data(symbol, start_unix, end_unix, granularity)
-                if df.empty:
-                    #print(f"No data available for {symbol} between {pd.to_datetime(start_unix, unit='s')} and {pd.to_datetime(end_unix, unit='s')}.")
-                    continue
-                else:
+                if not df.empty:
                     data_found = True
                     combined_df = pd.concat([combined_df, df], ignore_index=True)
-                utils.progress_bar_with_eta(i,len(missing_date_ranges), start_time=start_time)
+                utils.progress_bar_with_eta(i, missing_date_ranges, start_time=start_time)
+
             # Combine with existing data
             if data_found:
                 if not existing_data.empty:
@@ -205,19 +193,88 @@ class Coinbase_Wrapper():
                     sorted_df.set_index('date', inplace=True)
                     # Remove duplicates based on index
                     sorted_df = sorted_df[~sorted_df.index.duplicated(keep='first')]
-                    combined_data[symbol] = sorted_df
+                    combined_data = {symbol: sorted_df}
+
+                    # Export data to the database
+                    database_interaction.export_historical_to_db(combined_data, granularity=granularity)
             else:
-                # If no new data was found, and existing data is empty, skip this symbol
-                if existing_data.empty:
-                    pass
-                    #print(f"No data available for {symbol} in the specified date ranges.")
-                else:
-                    # Use existing data
-                    combined_data[symbol] = existing_data
-            database_interaction.export_historical_to_db(combined_data, granularity=granularity)
-            combined_data = {}
+                print(f"No new data available for {symbol} in the specified date ranges.")
+
+        # Resample data in the database
         database_interaction.resample_dataframe_from_db(granularity=granularity)
-        return
+
+    def _get_existing_data(self, symbol: str, granularity: str):
+        """Retrieve existing data from the database and get its date range."""
+        existing_data = self._get_data_from_db(symbol, granularity)
+        if not existing_data.empty:
+            existing_start_unix = int(existing_data.index.min().timestamp())
+            existing_end_unix = int(existing_data.index.max().timestamp())
+        else:
+            existing_start_unix = None
+            existing_end_unix = None
+        return existing_data, existing_start_unix, existing_end_unix
+
+    def _determine_missing_date_ranges(self, timestamps, existing_start_unix, existing_end_unix, fetch_older_data):
+        """Determine which date ranges are missing from the existing data."""
+        missing_date_ranges = []
+        for desired_start_unix, desired_end_unix in timestamps:
+            if existing_start_unix is not None and existing_end_unix is not None:
+                missing_ranges = self._get_missing_unix_range(
+                    desired_start_unix,
+                    desired_end_unix,
+                    existing_start_unix,
+                    existing_end_unix,
+                    fetch_older_data=fetch_older_data
+                )
+            else:
+                missing_ranges = [(desired_start_unix, desired_end_unix)]
+            missing_date_ranges.extend(missing_ranges)
+        return missing_date_ranges
+
+    def _fetch_missing_data(self, symbol: str, missing_date_ranges: list, granularity: str):
+        """Fetch data for the missing date ranges."""
+        combined_df = pd.DataFrame()
+        data_found = False
+        start_time = time.time()
+        for i, (start_unix, end_unix) in enumerate(missing_date_ranges):
+            df = self._fetch_data(symbol, start_unix, end_unix, granularity)
+            if not df.empty:
+                data_found = True
+                combined_df = pd.concat([combined_df, df], ignore_index=True)
+            utils.progress_bar_with_eta(
+                progress=i,
+                data=missing_date_ranges,
+                start_time=start_time)
+        if data_found:
+            return combined_df
+        else:
+            return pd.DataFrame()
+
+    def _combine_and_process_data(self, existing_data: pd.DataFrame, new_data: pd.DataFrame):
+        """Combine existing and new data, sort, clean, and remove duplicates."""
+        if not new_data.empty:
+            if not existing_data.empty:
+                combined_df = pd.concat([new_data, existing_data.reset_index()], ignore_index=True)
+            else:
+                combined_df = new_data
+            sorted_df = combined_df.sort_values(by='date', ascending=True).reset_index(drop=True)
+            columns_to_convert = ['low', 'high', 'open', 'close', 'volume']
+            for col in columns_to_convert:
+                sorted_df[col] = pd.to_numeric(sorted_df[col], errors='coerce')
+            sorted_df.set_index('date', inplace=True)
+            # Remove duplicates based on index
+            sorted_df = sorted_df[~sorted_df.index.duplicated(keep='first')]
+            return sorted_df
+        else:
+            return existing_data
+
+    def _export_data_to_db(self, combined_data: dict, granularity: str):
+        """Export the combined data to the database."""
+        database_interaction.export_historical_to_db(combined_data, granularity=granularity)
+
+    def _resample_data_in_db(self, granularity: str):
+        """Resample data in the database."""
+        database_interaction.resample_dataframe_from_db(granularity=granularity)
 
     def get_basic_candles(self, symbols:list,timestamps,granularity):
         combined_data = {}
@@ -242,11 +299,11 @@ class Coinbase_Wrapper():
 
 
 
-# granularity = 'ONE_MINUTE'
-# coinbase = Coinbase_Wrapper()
+granularity = 'ONE_MINUTE'
+coinbase = Coinbase_Wrapper()
 
-# coinbase.get_candles_for_db(
-#     symbols=coinbase.coinbase_robin_crypto,
-#     granularity=granularity,
-#     days=365
-#     )
+coinbase.get_candles_for_db(
+    symbols=coinbase.coinbase_robin_crypto,
+    granularity=granularity,
+    days=365
+    )
