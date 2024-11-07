@@ -322,5 +322,3 @@ def delete_all_tables_in_historical_data():
                 tables = pd.read_sql_query(query, conn)
                 for table_name in tables['name']:
                     cursor.execute(f'DROP TABLE IF EXISTS "{table_name}"')
-
-#delete_all_tables_in_historical_data()

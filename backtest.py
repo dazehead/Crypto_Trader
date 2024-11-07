@@ -23,14 +23,6 @@ from hyper import Hyper
 #pd.set_option('display.max_columns', None)
 
 
-api_key = os.getenv('API_ENV_KEY') #API_ENV_KEY | COINBASE_API_KEY
-api_secret = os.getenv('API_SECRET_ENV_KEY') #API_SECRET_ENV_KEY | COINBASE_API_SECRET
-sandbox_key = os.getenv('SANDBOX_KEY')
-sandbox_rest_url = "https://api-public.sandbox.exchange.coinbase.com"
-
-client = RESTClient(api_key=api_key, api_secret=api_secret)
-
-
 symbols = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
 product = ['BTC-USD']
 granularity = 'FIVE_MINUTE'
