@@ -38,17 +38,38 @@ def get_historical_from_db(granularity, symbols: list = [], num_days: int = None
     return tables_data
 
 
-def export_hyper_to_db(data, strategy_object):
+def export_hyper_to_db(strategy_object, data):
+    conn = sql.connect('database/hyper.db')
+
     symbol = strategy_object.symbol
     granularity = strategy_object.granularity
-    df = data.to_frame().reset_index()
-    df.columns = df.columns.str.replace('cust_', '')
-    df = df.rename(columns={df.columns[-1]: 'return_percentage'})
-    df['symbol'] = symbol
-    #print(df)
+    params = inspect.signature(strategy_object.custom_indicator)
+    params = list(dict(params.parameters).keys())[1:]
 
-    conn = sql.connect('database/hyper.db')
-    df.to_sql(f'{strategy_object.__class__.__name__}_{granularity}', conn, if_exists='append', index=False)
+    for i in range(len(data)):
+        stats = data.iloc[i]
+        backtest_dict = {'symbol': symbol}
+        for j,param in enumerate(params):
+            backtest_dict[param] = stats.name[j]
+        stats_to_export = [
+            'Total Return [%]',
+            'Total Trades',
+            'Win Rate [%]',
+            'Best Trade [%]',
+            'Worst Trade [%]',
+            'Avg Winning Trade [%]',
+            'Avg Losing Trade [%]',
+            'Sharpe Ratio',
+        ]
+
+        for key, value in stats.items():
+            if key in stats_to_export:
+                backtest_dict[key] = value
+        backtest_df = pd.DataFrame([backtest_dict])
+        table_name = f"{strategy_object.__class__.__name__}_{granularity}"
+        """somewhere right here need to check if it exist we have a funciton"""
+
+        backtest_df.to_sql(table_name, conn, if_exists='append', index=False)
     conn.close()
 
 
