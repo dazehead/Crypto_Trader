@@ -71,6 +71,7 @@ class Kraken():
         return #sigdigest.decode()
 
     def get_historical_data(self,pair: str, days_ago=None):
+        """days_ago using kraken for some reason only gets 1 days worth datat"""
         if days_ago is not None:
             now = dt.datetime.now()
             since = now - dt.timedelta(days=days_ago)

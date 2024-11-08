@@ -92,12 +92,12 @@ def export_historical_to_db(dict_df, granularity):
         # Drop all existing tables that match the pattern
         for existing_table in existing_tables:
             cursor.execute(f'DROP TABLE IF EXISTS \"{existing_table[0]}\"')
-            print(f"Dropped table: {existing_table[0]}")
+            #print(f"Dropped table: {existing_table[0]}")
         
         # Write the DataFrame to the new table
         df.drop_duplicates(subset=None, keep='first', inplace=True, ignore_index=False)
         df.to_sql(new_table_name, conn, if_exists='replace', index=True)
-        print(f"\nCreated table: {new_table_name}")
+        #print(f"\nCreated table: {new_table_name}")
     
     conn.commit()
     conn.close()
@@ -107,6 +107,7 @@ def resample_dataframe_from_db(granularity='ONE_MINUTE'):
     """
     Resamples data from the database for different timeframes based on the granularity.
     """
+    print("\n...Resampling all tables in Historical_Data database")
     times_to_resample = {
         'FIVE_MINUTE': '5min',
         'FIFTEEN_MINUTE': '15min',
@@ -136,12 +137,12 @@ def resample_dataframe_from_db(granularity='ONE_MINUTE'):
 
             df_resampled.dropna(inplace=True)
 
-            print(f"Resampled {symbol} to {key}")
+            #print(f"Resampled {symbol} to {key}")
             resampled_dict_df[symbol] = df_resampled
 
         export_historical_to_db(resampled_dict_df, granularity=key)
 
-    print("Resampling completed.")
+    print("\nResampling completed.")
 
 
 def get_params_from_strategy(strategy_object):

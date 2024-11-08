@@ -27,7 +27,8 @@ def on_message():
 
     for k, v in df_manager.dict_df.items():
         current_dict = {k:v}
-
+        
+        """grab best parameters for symbols and run the strategy with those parametrs"""
         strat = RSI(current_dict)
         strat.custom_indicator(strat.close)
         signals = [0,1,-1,0]
