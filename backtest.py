@@ -6,6 +6,7 @@ import coinbase_wrapper
 import numpy as np
 import database_interaction
 import time
+import gc
 from coinbase.rest import RESTClient
 from strategies.strategy import Strategy
 from strategies.single.efratio import EFratio
@@ -93,47 +94,67 @@ def run_basic_backtest():
 
 
 def run_hyper():
-    dict_df = database_interaction.get_historical_from_db(granularity=granularity,
-                                                        symbols=symbols,
-                                                        num_days=365)
     print(f'...Running hyper on {len(symbols)} symbols')
+    for symbol in symbols:
+        time.sleep(10)
+        dict_df = database_interaction.get_historical_from_db(
+            granularity=granularity,
+            symbols=[symbol],
+            num_days=100,
+            page_size=1000
+        )
 
-    #dict_df = utils.heikin_ashi_transform(dict_df)
+        print(f'Current symbol = {symbol}')
+        start_time = time.time()
 
-    start_time = time.time()
-    for i,items in enumerate(dict_df.items()):
-        key, value = items
-        current_dict = {key:value}
-        
-        strat = RSI_ADX(current_dict)
+        # Iterate over items in dict_df
+        for i, items in enumerate(dict_df.items()):
+            key, value = items
+            current_dict = {key: value}
+            
+            # Initialize and use strategy
+            strat = RSI_ADX(current_dict)
+            hyper = Hyper(
+                strategy_object=strat,
+                close=strat.close,
+                rsi_window=np.arange(10, 30, step=5),
+                buy_threshold=np.arange(5, 51, step=5),
+                sell_threshold=np.arange(50, 96, step=5),
+                adx_buy_threshold=np.arange(20, 81, step=10),
+                adx_time_period=np.arange(10, 30, step=5)
+            )
 
-        hyper = Hyper(
-            strategy_object=strat,
-            close=strat.close,
-            rsi_window=np.arange(10, 30, step=5),
-            buy_threshold=np.arange(5, 51, step=5),
-            sell_threshold = np.arange(50, 96, step=5),
-            adx_buy_threshold = np.arange(20, 81, step=10),
-            adx_time_period=np.arange(10, 30, step=5))
+            # Export results to DB
+            database_interaction.export_hyper_to_db(
+                strategy=strat,
+                hyper=hyper
+            )
 
-        database_interaction.export_hyper_to_db(
-            strategy=strat,
-            hyper=hyper)
-        
-        utils.progress_bar_with_eta(
-            progress=i,
-            data=dict_df.keys(),
-            start_time=start_time)
-        
-        # fig = hyper.returns.vbt.volume(# this line is now volume for a 3D
-        #     x_level = 'cust_fast_window',
-        #     y_level = 'cust_slow_window',
-        #     z_level = 'cust_efrato_window',
-        # )
+            # Update progress
+            utils.progress_bar_with_eta(
+                progress=i + 1,
+                data=dict_df.keys(),
+                start_time=start_time
+            )
 
-        # fig = hyper.returns.vbt.heatmap(
-        # x_level = 'cust_fast_window',
-        # y_level = 'cust_slow_window')
-        # fig.show()
+            # Remove variables to free up memory
+            del strat, hyper, current_dict
+            gc.collect()
+
+        # Free up memory from dict_df after each symbol is processed
+        del dict_df
+        gc.collect()
+
+            
+            # fig = hyper.returns.vbt.volume(# this line is now volume for a 3D
+            #     x_level = 'cust_fast_window',
+            #     y_level = 'cust_slow_window',
+            #     z_level = 'cust_efrato_window',
+            # )
+
+            # fig = hyper.returns.vbt.heatmap(
+            # x_level = 'cust_fast_window',
+            # y_level = 'cust_slow_window')
+            # fig.show()
 run_hyper()
 
