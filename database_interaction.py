@@ -37,14 +37,47 @@ def get_historical_from_db(granularity, symbols: list = [], num_days: int = None
     conn.close()
     return tables_data
 
+def _create_table_if_not_exists(table_name, df, conn):
+    """ Helper function to create table if it doesn't exist """
+    # Check if the table exists
+    table_exists_query = f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';"
+    table_exists = pd.read_sql(table_exists_query, conn)
+    
+    if table_exists.empty:
+        # Create table if it does not exist
+        print(f"Table {table_name} doesn't exist. Creating table...")
+        columns = df.columns
+        dtypes = df.dtypes  
+        sql_dtypes = []
+        for col in columns:
+            dtype = dtypes[col]
+            if pd.api.types.is_integer_dtype(dtype):
+                sql_dtype = 'INTEGER'
+            elif pd.api.types.is_float_dtype(dtype):
+                sql_dtype = 'REAL'
+            else:
+                sql_dtype = 'TEXT'
+            sql_dtypes.append(f'"{col}" {sql_dtype}')
+        create_table_query = f"CREATE TABLE {table_name} ("
+        create_table_query += ', '.join(sql_dtypes)
+        create_table_query += ");"
+        print(create_table_query)
+        
+        cursor = conn.cursor()
+        cursor.execute(create_table_query)
+        conn.commit()
+        print(f"Table {table_name} created successfully.")
+        return
 
-def export_hyper_to_db(strategy_object, data):
+def export_hyper_to_db(strategy: object, hyper: object):
+    data = hyper.pf.stats()
     conn = sql.connect('database/hyper.db')
 
-    symbol = strategy_object.symbol
-    granularity = strategy_object.granularity
-    params = inspect.signature(strategy_object.custom_indicator)
+    symbol = strategy.symbol
+    granularity = strategy.granularity
+    params = inspect.signature(strategy.custom_indicator)
     params = list(dict(params.parameters).keys())[1:]
+    combined_df = pd.DataFrame()
 
     for i in range(len(data)):
         stats = data.iloc[i]
@@ -65,12 +98,29 @@ def export_hyper_to_db(strategy_object, data):
         for key, value in stats.items():
             if key in stats_to_export:
                 backtest_dict[key] = value
-        backtest_df = pd.DataFrame([backtest_dict])
-        table_name = f"{strategy_object.__class__.__name__}_{granularity}"
-        """somewhere right here need to check if it exist we have a funciton"""
 
-        backtest_df.to_sql(table_name, conn, if_exists='append', index=False)
+        combined_df = pd.concat([combined_df,pd.DataFrame([backtest_dict])])
+
+    table_name = f"{strategy.__class__.__name__}_{granularity}"
+
+    _create_table_if_not_exists(table_name, combined_df, conn=conn) 
+
+    query = f'SELECT * FROM "{table_name}" WHERE symbol = "{symbol}";'
+    delete_query = f'DELETE FROM "{table_name}" WHERE symbol = "{symbol}";'
+
+    existing_data = pd.read_sql(query, conn)
+    
+    if not existing_data.empty:
+        cursor = conn.cursor()
+        cursor.execute(delete_query)
+        conn.commit()
+
+        combined_df.to_sql(table_name, conn, if_exists='append', index=False)
+
+    else:
+        combined_df.to_sql(table_name, conn, if_exists='append', index=False)
     conn.close()
+    return
 
 
 def export_historical_to_db(dict_df, granularity):
@@ -217,39 +267,8 @@ def get_metrics_from_backtest(strategy_object, multiple=False, multiple_dict=Non
 
 def export_backtest_to_db(object, multiple_table_name = None):
     """ object can either be a Strategy Class or a pd.Dataframe"""
-    conn = sql.connect('database/backtest.db')
 
-    def _create_table_if_not_exists(table_name, df, conn):
-        """ Helper function to create table if it doesn't exist """
-        # Check if the table exists
-        table_exists_query = f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';"
-        table_exists = pd.read_sql(table_exists_query, conn)
-        
-        if table_exists.empty:
-            # Create table if it does not exist
-            print(f"Table {table_name} doesn't exist. Creating table...")
-            columns = df.columns
-            dtypes = df.dtypes  
-            sql_dtypes = []
-            for col in columns:
-                dtype = dtypes[col]
-                if pd.api.types.is_integer_dtype(dtype):
-                    sql_dtype = 'INTEGER'
-                elif pd.api.types.is_float_dtype(dtype):
-                    sql_dtype = 'REAL'
-                else:
-                    sql_dtype = 'TEXT'
-                sql_dtypes.append(f'"{col}" {sql_dtype}')
-            create_table_query = f"CREATE TABLE {table_name} ("
-            create_table_query += ', '.join(sql_dtypes)
-            create_table_query += ");"
-            print(create_table_query)
-            
-            cursor = conn.cursor()
-            cursor.execute(create_table_query)
-            conn.commit()
-            print(f"Table {table_name} created successfully.")
-            return
+    conn = sql.connect('database/backtest.db')
 
     if not isinstance(object, pd.DataFrame):
         
