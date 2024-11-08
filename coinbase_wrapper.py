@@ -295,3 +295,15 @@ class Coinbase_Wrapper():
             combined_df.set_index('date', inplace=True)
             combined_data[symbol] = combined_df
         return combined_data
+                
+
+
+
+# granularity = 'ONE_MINUTE'
+# coinbase = Coinbase_Wrapper()
+
+# coinbase.get_candles_for_db(
+#     symbols=coinbase.coinbase_robin_crypto,
+#     granularity=granularity,
+#     days=365
+#     )

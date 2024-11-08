@@ -37,6 +37,23 @@ def get_historical_from_db(granularity, symbols: list = [], num_days: int = None
     conn.close()
     return tables_data
 
+def get_hyper_from_db(strategy_object):
+    conn = sql.connect(f'database/hyper.db')
+    query = "SELECT name FROM sqlite_master WHERE type='table';"
+    tables = pd.read_sql_query(query, conn)
+    tables_data = {}
+    
+    for table in tables['name']:
+        clean_table_name = '-'.join(table.split('_')[:2])
+        table_granularity = '-'.join(table.split('_')[:2])
+        if table_granularity == strategy_object.granularity and clean_table_name == strategy_object.__class__.__name__:
+            query = f"SELECT symbol FROM {table} WHERE MAX(return_percentage)"
+        result = pd.read_sql_query(query, conn)
+        print(result)
+    conn.close()
+    return tables_data
+
+
 def _create_table_if_not_exists(table_name, df, conn):
     """ Helper function to create table if it doesn't exist """
     # Check if the table exists
