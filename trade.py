@@ -9,6 +9,8 @@ class Trade():
         self.logbook = logbook
         self.client = self.risk.client
         self.symbol = self.strat.symbol
+        self.current_asset_price = float(self.strat.close[-1])
+        self.volume_to_risk = self.get_balance_to_risk()
 
         self.signals = self.strat.signals     
         if signals:
@@ -27,16 +29,54 @@ class Trade():
 
 
     def buy(self):
-
-        print(f'BUY: {self.risk.balance_to_risk}')
+        buy_order = self.client.add_order(
+            type_of_order= 'buy',
+            symbol = self.symbol,
+            volume= self.risk.balance_to_risk,
+            pickle=True)
+        print(buy_order)
 
     def sell(self):
-        print(f'SELL: all open positions from client.get_open_positions(self.symbol)')
+        sell_order = self.client.add_order(
+            type_of_order= 'buy',
+            symbol = self.symbol,
+            pickle=True)
+        print(sell_order)
+        
 
     def monitor_trade(self):
+        print(f'...monitoring trade for {self.symbol}')
         """
         perform some sort of risk analysis to ensure the trade is still profitable
         and possibly re-buy if it is going well or sell if it is going bad
         
         """
-        print('monitoring trades')
+
+    def get_balance_to_risk(self):
+        """Calculates balance to risk based off of backtests"""
+        minimum_volume = {
+            'XXBTZUSD': 0.00005,
+            'XETHZUSD': 0.002,
+            'XDGUSD': 30,
+            'SHIBUSD': 200000,
+            'AVAXUSD': .1,
+            'BCHUSD': .01,
+            'LINKUSD': .2,
+            'UNIUSD': .5,
+            'XLTCZUSD': .05,
+            'XXLMZUSD': 40,
+            'XETCZUSD': .3,
+            'AAVEUSD': .03,
+            'XTZUSD': 4,
+            'COMPUSD': .1
+        }
+        minimum = minimum_volume[self.symbol]
+        minimum_price = self.current_asset_price* minimum
+        print(minimum_price)
+        desired = self.total_balance *.005
+        print(desired)
+
+        """here is where we need to calculate our volume to send to add_order using self.current_asset_price calculated with the minium volume"""
+        if minimum_price > desired:
+            return minimum_price
+        return desired

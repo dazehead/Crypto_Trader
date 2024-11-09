@@ -29,6 +29,7 @@ class DF_Manager():
 
     def data_for_live_trade(self, update=False):
         """dataframe needs to be indexed by symbol"""
+        print('...Updated DataFrames')
         for symbol in self.products_to_trade:
             # Get the historical data
             days_ago = 1 if update else 2
@@ -39,7 +40,7 @@ class DF_Manager():
             if update:
                 last_row = historical_data[updated_symbol].iloc[[-1]]
                 self.dict_df[updated_symbol] = pd.concat([self.dict_df[updated_symbol], last_row]).drop_duplicates()
-                print(f"Updated {updated_symbol}")
+                #print(f"Updated {updated_symbol}")
             else:
                 self.dict_df[updated_symbol] = historical_data[updated_symbol]
 

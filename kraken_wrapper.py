@@ -132,7 +132,7 @@ class Kraken():
         else:
             balance = response_data['result']
             zusd_balance = balance.get('ZUSD', '0')
-            return zusd_balance
+            return float(zusd_balance)
 
     def get_trade_balance(self):
         """note this can also get unrealized profit/loss"""
@@ -147,6 +147,7 @@ class Kraken():
 
         response = requests.request("POST", url, headers=self.headers, data=data)
         response_data = response.json()
+        print(response_data)
 
         return float(response_data['result']['eb'])
 
@@ -183,7 +184,7 @@ class Kraken():
         response = requests.request("POST", url, headers=self.headers, data=data)
         print(response.text)
 
-    def add_order(self, type_of_order, symbol, price,pickle=True):
+    def add_order(self, type_of_order, symbol, volume ,pickle=True):
         if type_of_order not in ['buy', 'sell']:
             print('needs to be "buy" or "sell"')
         urlpath = '/0/private/AddOrder'
@@ -191,11 +192,12 @@ class Kraken():
         nonce = str(int(time.time()) * 1000)
 
         data = {"nonce": nonce,
-                'ordertype': 'limit',
+                'ordertype': 'market',
                 'type': type_of_order,
-                'pair': symbol,
-                'price': price,
-                'cl_ord_id': "generated order id from database"}
+                'volume': volume,
+                'pair': symbol}
+                #'price': price,
+                #'cl_ord_id': "generated order id from database"}
         
         self.get_kraken_signature(urlpath=urlpath, data=data, secret=self.api_secret)
 
@@ -203,6 +205,7 @@ class Kraken():
         response_data = response.json()
         if pickle:
             pickling.to_pickle(f'{type_of_order}_order', response_data)
+        return response_data
 
 
     def get_closed_orders(self):

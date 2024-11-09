@@ -58,7 +58,6 @@ def get_best_params(strategy_object):
     table = f"{strategy_object.__class__.__name__}_{strategy_object.granularity}"
     params = inspect.signature(strategy_object.custom_indicator)
     params = list(dict(params.parameters).keys())[1:]
-    print(params)
     parameters = ', '.join(params)
 
     symbol = convert_symbols(strategy_object = strategy_object)
@@ -116,8 +115,7 @@ def export_hyper_to_db(strategy: object, hyper: object):
             'Best Trade [%]',
             'Worst Trade [%]',
             'Avg Winning Trade [%]',
-            'Avg Losing Trade [%]',
-            'Sharpe Ratio',
+            'Avg Losing Trade [%]'
         ]
     
     data = hyper.pf.stats()

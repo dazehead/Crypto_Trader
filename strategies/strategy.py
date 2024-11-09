@@ -28,6 +28,7 @@ class Strategy:
         self.granularity = None
         self.set_granularity()
 
+
         self.entries = None
         self.exits = None
 
@@ -288,9 +289,12 @@ class Strategy:
     
     
     def set_granularity(self):
+        if self.risk_object.client.interval:
+            self.granularity = self.risk_object.client.interval
+            return
         # Retrieves multiple dates and compares then gets the most frequest
         time_differences = []
-        for i in range(10):
+        for i in range(100):
             if i == 0:
                 pass
             time_diff = self.df.index[i] - self.df.index[i-1]

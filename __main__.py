@@ -15,12 +15,13 @@ from risk import Risk_Handler
 from kraken_wrapper import Kraken
 from strategies.double.rsi_adx import RSI_ADX
 
-interval = 'FIVE_MINUTE'
+interval = 'ONE_MINUTE'
 symbol = 'XBTUSD'
 counter = 0
 
 
 def on_message():
+    pass
     global counter
     global kraken
     global risk
@@ -34,9 +35,10 @@ def on_message():
         strat = RSI_ADX(current_dict, risk)
         params = database_interaction.get_best_params(strat)
         strat.custom_indicator(strat.close, *params)
-        print(strat.rsi_window,strat.buy_threshold,strat.sell_threshold,strat.adx_buy_threshold,strat.adx_time_period)
-        print(params)
-        signals = [0,1,-1,0]
+
+        signals = [0,0,0,0,0]
+        if k == 'XDGUSD':
+            signals = [0,1,0,-1,0]
         
         trade = Trade(risk = risk,
                     strat_object=strat,

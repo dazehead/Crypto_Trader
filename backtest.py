@@ -28,7 +28,7 @@ from hyper import Hyper
 
 symbols = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
 product = ['BTC-USD']
-granularity = 'FIVE_MINUTE'
+granularity = 'ONE_MINUTE'
 
 def test_multiple_strategy():
     logbook = LinkedList()
@@ -97,7 +97,7 @@ def run_basic_backtest():
 def run_hyper():
     dict_df = database_interaction.get_historical_from_db(granularity=granularity,
                                                         symbols=symbols,
-                                                        num_days=365)
+                                                        num_days=2)
     print(f'...Running hyper on {len(symbols)} symbols')
 
     #dict_df = utils.heikin_ashi_transform(dict_df)
