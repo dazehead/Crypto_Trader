@@ -1,6 +1,9 @@
 import pandas as pd
 import utils
 import sqlite3 as sql
+import sqlite3 as sql
+import pandas as pd
+
 
 def volume_conversion():
     times_to_resample = ['ONE_MINUTE', 'FIVE_MINUTE', 'THIRTY_MINUTE', 'ONE_HOUR', 'TWO_HOUR', 'SIX_HOUR', 'ONE_DAY']
@@ -20,8 +23,6 @@ def volume_conversion():
 
 
 
-import sqlite3 as sql
-import pandas as pd
 
 def get_historical_from_db(granularity, symbols: list = [], num_days: int = None, page_size: int = 1000):
     conn = sql.connect(f'database/{granularity}.db')
