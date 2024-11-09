@@ -13,7 +13,7 @@ def get_historical_from_db(granularity, symbols: list = [], num_days: int = None
     query = "SELECT name FROM sqlite_master WHERE type='table';"
     tables = pd.read_sql_query(query, conn)
     tables_data = {}
-    
+
     for table in tables['name']:
         clean_table_name = '-'.join(table.split('_')[:2])
 
@@ -21,20 +21,34 @@ def get_historical_from_db(granularity, symbols: list = [], num_days: int = None
         if symbols and clean_table_name not in symbols:
             continue
 
-        # Retrieve data from the table
-        data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
-        data['date'] = pd.to_datetime(data['date'], errors='coerce')
-        data.set_index('date', inplace=True)
+        # Get the total number of rows in the table
+        count_query = f'SELECT COUNT(*) FROM "{table}"'
+        total_rows = pd.read_sql_query(count_query, conn).iloc[0, 0]
 
-        # If num_days is provided, filter the data based on the most recent date
-        if num_days is not None:
-            last_date = data.index.max()  # Find the most recent date in the dataset
-            start_date = last_date - pd.Timedelta(days=num_days)
-            data = data.loc[data.index >= start_date]
+        # Initialize the variable to store all data
+        data = pd.DataFrame()
+
+        # Fetch data in chunks (paging)
+        for offset in range(0, total_rows, page_size):
+            paged_query = f'SELECT * FROM "{table}" LIMIT {page_size} OFFSET {offset}'
+            chunk = pd.read_sql_query(paged_query, conn)
+            
+            # Convert 'date' column to datetime and set as index
+            chunk['date'] = pd.to_datetime(chunk['date'], errors='coerce')
+            chunk.set_index('date', inplace=True)
+
+            # If num_days is provided, filter the data based on the most recent date
+            if num_days is not None:
+                last_date = chunk.index.max()  # Find the most recent date in the dataset
+                start_date = last_date - pd.Timedelta(days=num_days)
+                chunk = chunk.loc[chunk.index >= start_date]
+
+            # Append the chunk to the data DataFrame
+            data = data._append(chunk)
 
         # Store the data in the dictionary
         tables_data[clean_table_name] = data
-    
+
     conn.close()
     return tables_data
 
@@ -178,7 +192,6 @@ def resample_dataframe_from_db(granularity='ONE_MINUTE'):
     """
     Resamples data from the database for different timeframes based on the granularity.
     """
-    print("\n...Resampling all tables in Historical_Data database")
     times_to_resample = {
         'FIVE_MINUTE': '5min',
         'FIFTEEN_MINUTE': '15min',
@@ -208,174 +221,10 @@ def resample_dataframe_from_db(granularity='ONE_MINUTE'):
 
             df_resampled.dropna(inplace=True)
 
-            #print(f"Resampled {symbol} to {key}")
+            print(f"Resampled {symbol} to {key}")
             resampled_dict_df[symbol] = df_resampled
 
-        export_historical_to_db(resampled_dict_df, granularity=key)
+        utils.export_historical_to_db(resampled_dict_df, granularity=key)
 
-    print("\nResampling completed.")
+    print("Resampling completed.")
 
-
-def get_params_from_strategy(strategy_object):
-    symbol = strategy_object.symbol
-    backtest_dict = {'symbol': symbol}
-
-    params = inspect.signature(strategy_object.custom_indicator)
-    params = list(dict(params.parameters).keys())[1:]
-
-    for param in params:
-        value = getattr(strategy_object, param, None)
-        backtest_dict[param] = value
-    return backtest_dict
-
-
-def get_metrics_from_backtest(strategy_object, multiple=False, multiple_dict=None):
-
-    symbol = strategy_object.symbol
-    portfolio = strategy_object.portfolio
-    backtest_dict = {'symbol': symbol}
-    if multiple_dict:
-        backtest_dict = multiple_dict
-    if not multiple:
-        params = inspect.signature(strategy_object.custom_indicator)
-        params = list(dict(params.parameters).keys())[1:]
-        value_list = []
-
-        for param in params:
-            value = getattr(strategy_object, param, None)
-            backtest_dict[param] = value
-            value_list.append(value)
-    
-
-
-    functions_to_export = [
-        'annual_returns',
-        'downside_risk',
-        'value_at_risk'
-    ]
-
-    for metric in functions_to_export:
-        metric_value = getattr(portfolio, metric)()
-        if isinstance(metric_value, (pd.Series, pd.DataFrame)):
-             metric_value = metric_value.iloc[0]
-        backtest_dict[metric] = metric_value
-    
-    stats_to_export = [
-        'Total Return [%]',
-        'Total Trades',
-        'Win Rate [%]',
-        'Best Trade [%]',
-        'Worst Trade [%]',
-        'Avg Winning Trade [%]',
-        'Avg Losing Trade [%]',
-        'Sharpe Ratio',
-    ]
-
-    for key, value in portfolio.stats().items():
-        if key in stats_to_export:
-            backtest_dict[key] = value
-
-    backtest_df = pd.DataFrame([backtest_dict])
-
-    if not multiple:
-        return backtest_df, value_list, params
-    return backtest_df
-
-
-def export_backtest_to_db(object, multiple_table_name = None):
-    """ object can either be a Strategy Class or a pd.Dataframe"""
-
-    conn = sql.connect('database/backtest.db')
-
-    if not isinstance(object, pd.DataFrame):
-        
-        strategy_object = object
-        granularity = strategy_object.granularity
-        backtest_df, value_list, params = get_metrics_from_backtest(strategy_object)
-        symbol = backtest_df['symbol'].unique()[0]
-        table_name = f"{strategy_object.__class__.__name__}_{granularity}"
-
-        query = f'SELECT * FROM "{table_name}" WHERE symbol = ?'
-        delete_query = f'DELETE FROM "{table_name}" WHERE symbol = ?'
-        param_query = (symbol,)
-        
-        for i,param in enumerate(params):
-            param_string = f' AND {param} = ?'
-            query += param_string
-            delete_query += param_string
-            param_query += (value_list[i],)
-        query += ';'
-        delete_query += ';'
-
-        _create_table_if_not_exists(table_name, backtest_df, conn)
-
-        # print(f"param_query: {param_query}")
-        # print(f"param_string: {param_string}")
-        # print(f"query: {query}")
-        # print(f"delete_query: {delete_query}")
-
-    else:
-        print('********* Might be missing granularity at this point ***********')
-        backtest_df = object
-        table_name = f"{multiple_table_name}_{granularity}"
-
-        start_col = backtest_df.columns.get_loc('symbol')
-        end_col = backtest_df.columns.get_loc('annual_returns')
-        subset_df = backtest_df.iloc[:, start_col:end_col]
-
-        query = f'SELECT * FROM "{table_name}" WHERE symbol = ?'
-        delete_query = f'DELETE FROM "{table_name}" WHERE symbol = ?'
-
-        param_values = subset_df.iloc[0].values
-        param_values_converted = [
-            int(x) if isinstance(x, np.integer)
-            else float(x) if isinstance(x, np.floating)
-            else x
-            for x in param_values
-        ]
-
-        param_query = tuple(param_values_converted)
-        columns = subset_df.columns.drop('symbol')
-        param_string = ' AND '.join([f'"{col}" = ?' for col in columns])
-        query += f" AND {param_string};"
-        delete_query += f" AND {param_string};"
-
-        _create_table_if_not_exists(table_name, backtest_df, conn)
-
-        # print(f"param_query: {param_query}")
-        # print(f"param_string: {param_string}")
-        # print(f"query: {query}")
-        # print(f"delete_query: {delete_query}")
-
-
-    existing_row = pd.read_sql(query, conn, params=param_query)
-
-    if not existing_row.empty:
-        cursor = conn.cursor()
-        cursor.execute(delete_query, param_query)
-        conn.commit()
-
-        backtest_df.to_sql(table_name, conn, if_exists='append', index=False)
-
-    else:
-        backtest_df.to_sql(table_name, conn, if_exists='append', index=False)
-
-    conn.close()
-    return
-
-def delete_all_tables_in_historical_data():
-    choice = input('*****WARNING****\n This will delete all historical data tables is this what you want??\nY or N\n').upper()
-    if choice != 'Y':
-        sys.exit()
-    elif choice == 'Y':
-        print('...Deleting tables in Historical Data')
-        databases = ['ONE_MINUTE', 'FIVE_MINUTE', 'FIFTEEN_MINUTE','THIRTY_MINUTE', 'ONE_HOUR', 'TWO_HOUR', 'SIX_HOUR', 'ONE_DAY']
-        for db in databases:
-            if len(db) > 0:
-                print(f'Deleting tables in databse {db}')
-                conn = sql.connect(f'database/{db}.db')
-                cursor = conn.cursor()
-                query = "SELECT name FROM sqlite_master WHERE type='table';"
-                tables = pd.read_sql_query(query, conn)
-                for table_name in tables['name']:
-                    cursor.execute(f'DROP TABLE IF EXISTS "{table_name}"')

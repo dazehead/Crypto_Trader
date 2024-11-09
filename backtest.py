@@ -7,6 +7,7 @@ import numpy as np
 import database_interaction
 import time
 import gc
+import gc
 from coinbase.rest import RESTClient
 from strategies.strategy import Strategy
 from strategies.single.efratio import EFratio
@@ -134,9 +135,9 @@ def run_hyper():
         #     z_level = 'cust_efrato_window',
         # )
 
-        # fig = hyper.returns.vbt.heatmap(
-        # x_level = 'cust_fast_window',
-        # y_level = 'cust_slow_window')
-        # fig.show()
+            # fig = hyper.returns.vbt.heatmap(
+            # x_level = 'cust_fast_window',
+            # y_level = 'cust_slow_window')
+            # fig.show()
 run_hyper()
 
