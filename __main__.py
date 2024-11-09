@@ -2,6 +2,7 @@ import time
 import os
 import coinbase_wrapper
 import asyncio
+import database_interaction
 from coinbase.websocket import WSClient, WSClientConnectionClosedException
 from coinbase.rest import RESTClient
 from dataframe_manager import DF_Manager
@@ -12,8 +13,9 @@ from log import LinkedList
 from scanner import Scanner
 from risk import Risk_Handler
 from kraken_wrapper import Kraken
+from strategies.double.rsi_adx import RSI_ADX
 
-interval = 'ONE_MINUTE'
+interval = 'FIVE_MINUTE'
 symbol = 'XBTUSD'
 counter = 0
 
@@ -29,8 +31,11 @@ def on_message():
         current_dict = {k:v}
         
         """grab best parameters for symbols and run the strategy with those parametrs"""
-        strat = RSI(current_dict)
-        strat.custom_indicator(strat.close)
+        strat = RSI_ADX(current_dict, risk)
+        params = database_interaction.get_best_params(strat)
+        strat.custom_indicator(strat.close, *params)
+        print(strat.rsi_window,strat.buy_threshold,strat.sell_threshold,strat.adx_buy_threshold,strat.adx_time_period)
+        print(params)
         signals = [0,1,-1,0]
         
         trade = Trade(risk = risk,
@@ -56,7 +61,7 @@ async def fetch_data_periodically():
 
 
 """---------------start of program-----------------"""
-kraken = Kraken()
+kraken = Kraken(interval=interval)
 scanner = Scanner(client=kraken)
 df_manager = DF_Manager(scanner)
 

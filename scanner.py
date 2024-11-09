@@ -11,8 +11,9 @@ class Scanner():
         self.products = self.client.all_products
         self.products_to_trade = None
         self.df_manager = None
+        self.coinbase_crypto = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
         self.robinhood_crypto = ['BTC', 'ETH', 'DOGE', 'SHIB', 'AVAX', 'BCH', 'LINK', 'UNI', 'LTC', 'XLM', 'ETC', 'AAVE', 'XTZ', 'COMP']
-        self.kraken_robinhood_crypto = ['XBTUSD', 'XETHZUSD', 'XDGUSD', 'SHIBUSD', 'AVAXUSD', 'BCHUSD', 'LINKUSD', 'UNIUSD', 'LTCUSD', 'XLMUSD', 'ETCUSD', 'AAVEUSD', 'XTZUSD', 'COMPUSD']
+        self.kraken_crypto = ['XXBTZUSD', 'XETHZUSD', 'XDGUSD', 'SHIBUSD', 'AVAXUSD', 'BCHUSD', 'LINKUSD', 'UNIUSD', 'LTCUSD', 'XLMUSD', 'ETCUSD', 'AAVEUSD', 'XTZUSD', 'COMPUSD']
 
 
     def assign_attribute(self, df_manager):
@@ -21,16 +22,17 @@ class Scanner():
     def populate_manager(self, days_ago=None):
         """currently only using robinhood symbols"""
 
-        start_time = time.time()
         print('Populating DF Manager')
-        for i, symbol in enumerate(self.kraken_robinhood_crypto):
-            self.df_manager.add_to_manager(self.client.get_historical_data(symbol, days_ago=days_ago))
-            utils.progress_bar_with_eta(i, len(self.products), start_time)
+        for symbol in self.kraken_crypto:
+            dict_df = self.client.get_historical_data(symbol, days_ago=days_ago)
+            self.df_manager.add_to_manager(dict_df)
+            
+            
 
     def filter_products(self, filter_type: str=None):
         print('Starting filter')
-        self.products_to_trade = self.kraken_robinhood_crypto
-        self.df_manager.products_to_trade = self.kraken_robinhood_crypto
+        self.products_to_trade = self.kraken_crypto
+        self.df_manager.products_to_trade = self.kraken_crypto
         """iterate over all available symbols and only go with volume that is above the average"""
         """iterate overal all availabel symbols and filter by only market cap greater than a value"""
 

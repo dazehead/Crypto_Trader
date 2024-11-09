@@ -8,12 +8,26 @@ import time
 import gc
 
 
+def convert_symbols(strategy_object:object):
+    coinbase_crypto = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
+    robinhood_crypto = ['BTC', 'ETH', 'DOGE', 'SHIB', 'AVAX', 'BCH', 'LINK', 'UNI', 'LTC', 'XLM', 'ETC', 'AAVE', 'XTZ', 'COMP']
+    kraken_crypto = ['XXBTZUSD', 'XETHZUSD', 'XDGUSD', 'SHIBUSD', 'AVAXUSD', 'BCHUSD', 'LINKUSD', 'UNIUSD', 'XLTCZUSD', 'XXLMZUSD', 'XETCZUSD', 'AAVEUSD', 'XTZUSD', 'COMPUSD']
+
+    database_list = coinbase_crypto
+    symbol_list = kraken_crypto
+    current_symbol =  strategy_object.symbol
+    symbol_index = kraken_crypto.index(current_symbol)
+    return coinbase_crypto[symbol_index]
+
+
+
+
 def get_historical_from_db(granularity, symbols: list = [], num_days: int = None):
     conn = sql.connect(f'database/{granularity}.db')
     query = "SELECT name FROM sqlite_master WHERE type='table';"
     tables = pd.read_sql_query(query, conn)
     tables_data = {}
-
+    
     for table in tables['name']:
         clean_table_name = '-'.join(table.split('_')[:2])
 
@@ -21,49 +35,45 @@ def get_historical_from_db(granularity, symbols: list = [], num_days: int = None
         if symbols and clean_table_name not in symbols:
             continue
 
-        # Get the total number of rows in the table
-        count_query = f'SELECT COUNT(*) FROM "{table}"'
-        total_rows = pd.read_sql_query(count_query, conn).iloc[0, 0]
+        # Retrieve data from the table
+        data = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
+        data['date'] = pd.to_datetime(data['date'], errors='coerce')
+        data.set_index('date', inplace=True)
 
-        # Initialize the variable to store all data
-        data = pd.DataFrame()
-
-        # Fetch data in chunks (paging)
-        for offset in range(0, total_rows, page_size):
-            paged_query = f'SELECT * FROM "{table}" LIMIT {page_size} OFFSET {offset}'
-            chunk = pd.read_sql_query(paged_query, conn)
-            
-            # Convert 'date' column to datetime and set as index
-            chunk['date'] = pd.to_datetime(chunk['date'], errors='coerce')
-            chunk.set_index('date', inplace=True)
-
-            # If num_days is provided, filter the data based on the most recent date
-            if num_days is not None:
-                last_date = chunk.index.max()  # Find the most recent date in the dataset
-                start_date = last_date - pd.Timedelta(days=num_days)
-                chunk = chunk.loc[chunk.index >= start_date]
-
-            # Append the chunk to the data DataFrame
-            data = data._append(chunk)
+        # If num_days is provided, filter the data based on the most recent date
+        if num_days is not None:
+            last_date = data.index.max()  # Find the most recent date in the dataset
+            start_date = last_date - pd.Timedelta(days=num_days)
+            data = data.loc[data.index >= start_date]
 
         # Store the data in the dictionary
         tables_data[clean_table_name] = data
-
+    
     conn.close()
     return tables_data
 
-def get_hyper_from_db(strategy_object):
+
+def get_best_params(strategy_object):
     conn = sql.connect(f'database/hyper.db')
     table = f"{strategy_object.__class__.__name__}_{strategy_object.granularity}"
     params = inspect.signature(strategy_object.custom_indicator)
     params = list(dict(params.parameters).keys())[1:]
     print(params)
     parameters = ', '.join(params)
-    query = f'SELECT {parameters},MAX("Total Return [%]") FROM {table} WHERE symbol="{strategy_object.symbol}"'
+
+    symbol = convert_symbols(strategy_object = strategy_object)
+
+    query = f'SELECT {parameters},MAX("Total Return [%]") FROM {table} WHERE symbol="{symbol}"'
     result = pd.read_sql_query(query, conn)
-    print(result)
+
+    list_results = []
+
+    for param in result:
+        list_results.append(result[param][0])
+    list_results = list_results[:-1]  
+
     conn.close()
-    #return tables_data
+    return list_results
 
 
 def _create_table_if_not_exists(table_name, df, conn):

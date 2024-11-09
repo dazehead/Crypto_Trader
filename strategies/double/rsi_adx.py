@@ -10,7 +10,9 @@ class RSI_ADX(Strategy):
         self.rsi_window = rsi_window
         self.buy_threshold = buy_threshold
         self.sell_threshold = sell_threshold
-
+        self.adx_buy_threshold = adx_buy_threshold
+        self.adx_time_period = adx_time_period
+        
         rsi = self.calculate_rsi(self.close, rsi_window)
         self.osc1_data = ('RSI', rsi)
 
