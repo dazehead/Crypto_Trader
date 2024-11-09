@@ -94,6 +94,9 @@ def run_basic_backtest():
 
 
 def run_hyper():
+    dict_df = database_interaction.get_historical_from_db(granularity=granularity,
+                                                        symbols=symbols,
+                                                        num_days=100)
     print(f'...Running hyper on {len(symbols)} symbols')
     for symbol in symbols:
         time.sleep(10)
