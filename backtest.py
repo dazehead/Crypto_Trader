@@ -6,6 +6,7 @@ import coinbase_wrapper
 import numpy as np
 import database_interaction
 import time
+import gc
 from coinbase.rest import RESTClient
 from strategies.strategy import Strategy
 from strategies.single.efratio import EFratio
@@ -124,6 +125,8 @@ def run_hyper():
             progress=i,
             data=dict_df.keys(),
             start_time=start_time)
+        del hyper
+        gc.collect()
         
         # fig = hyper.returns.vbt.volume(# this line is now volume for a 3D
         #     x_level = 'cust_fast_window',

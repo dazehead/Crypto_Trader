@@ -288,8 +288,16 @@ class Strategy:
     
     
     def set_granularity(self):
-        # Retrieve the first DataFrame in the dictionary
-        time_diff = self.df.index[1] - self.df.index[0]
+        # Retrieves multiple dates and compares then gets the most frequest
+        time_differences = []
+        for i in range(10):
+            if i == 0:
+                pass
+            time_diff = self.df.index[i] - self.df.index[i-1]
+            time_differences.append(time_diff)
+        time_diff = max(time_differences, key=time_differences.count)
+
+
         time_map = {
             pd.Timedelta(minutes=1): 'ONE_MINUTE',
             pd.Timedelta(minutes=5): 'FIVE_MINUTE',

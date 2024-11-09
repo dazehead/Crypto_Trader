@@ -5,6 +5,7 @@ import inspect
 import numpy as np
 import sys
 import time
+import gc
 
 
 def get_historical_from_db(granularity, symbols: list = [], num_days: int = None):
@@ -39,19 +40,16 @@ def get_historical_from_db(granularity, symbols: list = [], num_days: int = None
 
 def get_hyper_from_db(strategy_object):
     conn = sql.connect(f'database/hyper.db')
-    query = "SELECT name FROM sqlite_master WHERE type='table';"
-    tables = pd.read_sql_query(query, conn)
-    tables_data = {}
-    
-    for table in tables['name']:
-        clean_table_name = '-'.join(table.split('_')[:2])
-        table_granularity = '-'.join(table.split('_')[:2])
-        if table_granularity == strategy_object.granularity and clean_table_name == strategy_object.__class__.__name__:
-            query = f"SELECT symbol FROM {table} WHERE MAX(return_percentage)"
-        result = pd.read_sql_query(query, conn)
-        print(result)
+    table = f"{strategy_object.__class__.__name__}_{strategy_object.granularity}"
+    params = inspect.signature(strategy_object.custom_indicator)
+    params = list(dict(params.parameters).keys())[1:]
+    print(params)
+    parameters = ', '.join(params)
+    query = f'SELECT {parameters},MAX("Total Return [%]") FROM {table} WHERE symbol="{strategy_object.symbol}"'
+    result = pd.read_sql_query(query, conn)
+    print(result)
     conn.close()
-    return tables_data
+    #return tables_data
 
 
 def _create_table_if_not_exists(table_name, df, conn):
@@ -87,7 +85,19 @@ def _create_table_if_not_exists(table_name, df, conn):
         return
 
 def export_hyper_to_db(strategy: object, hyper: object):
+    stats_to_export = [
+            'Total Return [%]',
+            'Total Trades',
+            'Win Rate [%]',
+            'Best Trade [%]',
+            'Worst Trade [%]',
+            'Avg Winning Trade [%]',
+            'Avg Losing Trade [%]',
+            'Sharpe Ratio',
+        ]
+    
     data = hyper.pf.stats()
+
     conn = sql.connect('database/hyper.db')
 
     symbol = strategy.symbol
@@ -101,16 +111,6 @@ def export_hyper_to_db(strategy: object, hyper: object):
         backtest_dict = {'symbol': symbol}
         for j,param in enumerate(params):
             backtest_dict[param] = stats.name[j]
-        stats_to_export = [
-            'Total Return [%]',
-            'Total Trades',
-            'Win Rate [%]',
-            'Best Trade [%]',
-            'Worst Trade [%]',
-            'Avg Winning Trade [%]',
-            'Avg Losing Trade [%]',
-            'Sharpe Ratio',
-        ]
 
         for key, value in stats.items():
             if key in stats_to_export:
