@@ -148,7 +148,7 @@ class Combined_Strategy(Strategy):
             fig_combined.add_hline(y=sell_threshold, line_color='red', line_width=1.5, row=2, col=1)
 
         # Update the layout of the combined figure
-        fig_combined.update_layout(height=800, title_text="Combined Plot: Close Price and Strategy Data")
+        fig_combined.update_layout(height=800, title_text=f"{self.__class__.__name__} strategy for {self.symbol} on {self.granularity} timeframe" )
 
         # Display the combined figure
         fig_combined.show()

@@ -60,7 +60,11 @@ def get_best_params(strategy_object):
     params = list(dict(params.parameters).keys())[1:]
     parameters = ', '.join(params)
 
-    symbol = convert_symbols(strategy_object = strategy_object)
+    # we have already sent it the correct symbols that it did not get from client
+    if strategy_object.risk_object.client is not None:
+        symbol = convert_symbols(strategy_object = strategy_object)
+    else:
+        symbol = strategy_object.symbol
 
     query = f'SELECT {parameters},MAX("Total Return [%]") FROM {table} WHERE symbol="{symbol}"'
     result = pd.read_sql_query(query, conn)
@@ -236,3 +240,95 @@ def resample_dataframe_from_db(granularity='ONE_MINUTE'):
 
     print("Resampling completed.")
 
+
+
+
+
+
+############################################### for backtest;however, will need to re-do...maybe ################################################################
+
+
+def get_metrics_from_backtest(strategy_object, multiple=False, multiple_dict=None):
+
+    symbol = strategy_object.symbol
+    portfolio = strategy_object.portfolio
+    backtest_dict = {'symbol': symbol}
+    if multiple_dict:
+        backtest_dict = multiple_dict
+    if not multiple:
+        params = inspect.signature(strategy_object.custom_indicator)
+        params = list(dict(params.parameters).keys())[1:]
+        value_list = []
+
+        for param in params:
+            value = getattr(strategy_object, param, None)
+            backtest_dict[param] = value
+            value_list.append(value)
+    
+
+    stats_to_export = [
+        'Total Return [%]',
+        'Total Trades',
+        'Win Rate [%]',
+        'Best Trade [%]',
+        'Worst Trade [%]',
+        'Avg Winning Trade [%]',
+        'Avg Losing Trade [%]'
+    ]
+
+    for key, value in portfolio.stats().items():
+        if key in stats_to_export:
+            backtest_dict[key] = value
+
+    backtest_df = pd.DataFrame([backtest_dict])
+
+    if not multiple:
+        return backtest_df, value_list, params
+    return backtest_df
+
+
+
+
+def export_backtest_to_db(object, multiple_table_name=None):
+    """ object can either be a Strategy Class or a pd.DataFrame """
+    conn = sql.connect('database/backtest.db')
+
+    if not isinstance(object, pd.DataFrame):
+        # Handle Strategy object
+        strategy_object = object
+        granularity = strategy_object.granularity
+        backtest_df, value_list, params = get_metrics_from_backtest(strategy_object)
+        symbol = backtest_df['symbol'].unique()[0]
+        table_name = f"{strategy_object.__class__.__name__}_{granularity}"
+
+        # Ensure the table exists
+        _create_table_if_not_exists(table_name, backtest_df, conn)
+
+        # Prepare the DELETE query
+        delete_query = f'DELETE FROM "{table_name}" WHERE symbol = ?'
+        param_query = (symbol,)
+
+    else:
+        # Handle DataFrame directly
+        backtest_df = object
+        granularity = "default_granularity"  # Fallback granularity if not provided
+        table_name = f"{multiple_table_name}_{granularity}"
+
+        # Ensure the table exists
+        _create_table_if_not_exists(table_name, backtest_df, conn)
+
+        # Prepare the DELETE query
+        symbol = backtest_df['symbol'].unique()[0]
+        delete_query = f'DELETE FROM "{table_name}" WHERE symbol = ?'
+        param_query = (symbol,)
+
+    # Step 1: Delete existing rows with the same symbol
+    cursor = conn.cursor()
+    cursor.execute(delete_query, param_query)
+    conn.commit()
+
+    # Step 2: Insert the updated data
+    backtest_df.to_sql(table_name, conn, if_exists='append', index=False)
+
+    conn.close()
+    return

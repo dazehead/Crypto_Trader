@@ -15,7 +15,7 @@ import pickling
 
 class Kraken():
 
-    def __init__(self, interval: str=None):
+    def __init__(self, granularity: str=None):
         self.api_key = os.getenv('API_KEY_KRAKEN') #API_ENV_KEY | KRAKEN
         self.api_secret = os.getenv('API_PRIVATE_KEY_KRAKEN') #API_SECRET_ENV_KEY | KRAKEN
         self.base_url = 'https://api.kraken.com'
@@ -26,7 +26,7 @@ class Kraken():
             'API-Sign': self.api_secret
         }
 
-        self.interval_map = {
+        self.granularity_map = {
             "ONE_MINUTE": 1,
             "FIVE_MINUTE": 5,
             "FIFTEEN_MINUTE": 15,
@@ -37,16 +37,16 @@ class Kraken():
             "ONE_WEEK": 10080,
             "FIFTEEN_DAYS": 21600
         }
-        if interval == None:
-            self.interval = 'ONE_MINUTE'
+        if granularity == None:
+            self.granularity = 'ONE_MINUTE'
         else:
-            self.interval = interval
-        if self.interval not in self.interval_map.keys():
-            print(f'interval must be one of the following: {[k for k in self.interval_map.keys()]}')
+            self.granularity = granularity
+        if self.granularity not in self.granularity_map.keys():
+            print(f'granularity must be one of the following: {[k for k in self.granularity_map.keys()]}')
             sys.exit()
 
         self.all_products = self.get_tradable_asset_pairs()
-        self.time_to_wait = self.interval_map[self.interval] * 60
+        self.time_to_wait = self.granularity_map[self.granularity] * 60
 
 
     def get_kraken_signature(self, urlpath, data, secret):
@@ -82,7 +82,7 @@ class Kraken():
         function_url = self.base_url + '/0/public/OHLC?'
             
         parameters = '&'.join([f'pair={pair}' if pair else '',
-                            f'interval={self.interval_map[self.interval]}' if self.interval else '',
+                            f'interval={self.granularity_map[self.granularity]}' if self.granularity else '',
                             f'since={since}' if since else '']).strip('&')
         
         url = function_url + parameters

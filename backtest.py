@@ -25,15 +25,14 @@ from hyper import Hyper
 #pd.set_option('display.max_rows', None)
 #pd.set_option('display.max_columns', None)
 
-
 symbols = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
 product = ['BTC-USD']
-#granularity = 'ONE_MINUTE'
+granularity = 'ONE_MINUTE'
 granularites = ['ONE_MINUTE','FIVE_MINUTE','FIFTEEN_MINUTE','THIRTY_MINUTE','ONE_HOUR','TWO_HOUR','SIX_HOUR','ONE_DAY']
 
 def test_multiple_strategy():
     logbook = LinkedList()
-    df_dict = database_interaction.get_historical_from_db(granularity=granularity, symbols=product, num_days=40)
+    df_dict = database_interaction.get_historical_from_db(granularity=granularity, symbols=symbols, num_days=50)
 
 
     for symbol, df in df_dict.items():
@@ -44,6 +43,7 @@ def test_multiple_strategy():
         combined_strat.graph()
         combined_strat.generate_backtest()
         print(combined_strat.portfolio.stats())
+
 
 
     #     logbook.insert_beginning(combined_strat)
@@ -57,49 +57,65 @@ def run_basic_backtest():
 
     dict_df = database_interaction.get_historical_from_db(granularity=granularity,
                                                           symbols=symbols,
-                                                          num_days=1)
+                                                          num_days=50)
     for key, value in dict_df.items():
         current_dict = {key : value}
-        print(key)
+
         #current_dict = utils.heikin_ashi_transform(current_dict)
-        # risk = Risk_Handler()
+        risk = Risk_Handler()
         
-        # strat = RSI_ADX(
-        #     dict_df=current_dict,
-        #     with_sizing=True,
-        #     risk_object=risk)
-        
-        # strat.custom_indicator()
-        # strat.graph()
-        # strat.generate_backtest()
-        # pf = strat.portfolio
-        # print(pf.stats())
+        strat = RSI_ADX(
+            dict_df=current_dict,
+            with_sizing=True,
+            risk_object=risk)
+        params = database_interaction.get_best_params(strat)
+        strat.custom_indicator(None, *params)
+
+        strat.graph()
+        strat.generate_backtest()
+        pf = strat.portfolio
+        print(pf.stats())
+
+        database_interaction.export_backtest_to_db(object=strat)
 
 
+        fig = pf.plot(subplots = [
+        'orders',
+        'trade_pnl',
+        'cum_returns',
+        'drawdowns',
+        'underwater',
+        'gross_exposure'])
+        fig.update_layout(
+            title={
+                'text': "RSI_ADX strategy for DOGE-USD on ONE_MINUTE timeframe",  # Replace with your desired title
+                'x': 0.5,  # Centers the title
+                'xanchor': 'center',
+                'yanchor': 'top'
+            },
+            margin={
+                't': 100  # Adjust the top margin to create space for the title
+            }
+        )
+        fig.show()
 
-        # database_interaction.export_backtest_to_db(object=strat)
-
-
-        # fig = pf.plot(subplots = [
-        # 'orders',
-        # 'trade_pnl',
-        # 'cum_returns',
-        # 'drawdowns',
-        # 'underwater',
-        # 'gross_exposure'])
-        # fig.show()
-
-        # print(pf.stats())
-#run_basic_backtest()
+        print(pf.stats())
+run_basic_backtest()
 
 
 
 
 def run_hyper():
     for granularity in granularites:
+        if granularity == 'ONE_MINUTE':
+            days = 50
+        elif granularity == 'FIVE_MINUTE':
+            days = 150
+        else:
+            days = 365
         dict_df = database_interaction.get_historical_from_db(granularity=granularity,
                                                             symbols=symbols,
-                                                            num_days=365)
+                                                            num_days=days)
         print(f'...Running hyper on {len(symbols)} symbols')
 
         #dict_df = utils.heikin_ashi_transform(dict_df)
@@ -141,5 +157,5 @@ def run_hyper():
                 # x_level = 'cust_fast_window',
                 # y_level = 'cust_slow_window')
                 # fig.show()
-run_hyper()
+#run_hyper()
 

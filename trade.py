@@ -11,6 +11,7 @@ class Trade():
         self.symbol = self.strat.symbol
         self.current_asset_price = float(self.strat.close[-1])
         self.volume_to_risk = self.get_balance_to_risk()
+        #print(f'volume_to_buy: {self.volume_to_risk}')
 
         self.signals = self.strat.signals     
         if signals:
@@ -19,10 +20,12 @@ class Trade():
 
 
         if self.signals[-1] == 1:
-            self.buy()
+            pass
+            #self.buy()
 
         elif self.signals[-1] == -1:
-            self.sell()
+            pass
+            #self.sell()
 
         else:
             self.monitor_trade()
@@ -45,7 +48,8 @@ class Trade():
         
 
     def monitor_trade(self):
-        print(f'...monitoring trade for {self.symbol}')
+        pass
+        #print(f'...monitoring trade for {self.symbol}')
         """
         perform some sort of risk analysis to ensure the trade is still profitable
         and possibly re-buy if it is going well or sell if it is going bad
@@ -72,9 +76,7 @@ class Trade():
         }
         minimum = minimum_volume[self.symbol]
         minimum_price = self.current_asset_price* minimum
-        print(minimum_price)
-        desired = self.total_balance *.005
-        print(desired)
+        desired = self.risk.total_balance *.005
 
         """here is where we need to calculate our volume to send to add_order using self.current_asset_price calculated with the minium volume"""
         if minimum_price > desired:

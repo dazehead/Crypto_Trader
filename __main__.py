@@ -15,7 +15,7 @@ from risk import Risk_Handler
 from kraken_wrapper import Kraken
 from strategies.double.rsi_adx import RSI_ADX
 
-interval = 'ONE_MINUTE'
+granularity = 'ONE_MINUTE'
 symbol = 'XBTUSD'
 counter = 0
 
@@ -63,7 +63,7 @@ async def fetch_data_periodically():
 
 
 """---------------start of program-----------------"""
-kraken = Kraken(interval=interval)
+kraken = Kraken(granularity=granularity)
 scanner = Scanner(client=kraken)
 df_manager = DF_Manager(scanner)
 

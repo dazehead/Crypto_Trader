@@ -256,14 +256,14 @@ class Strategy:
             fig_combined.add_hline(y=self.sell_threshold, line_color='red', line_width=1.5, row=2, col=1)
 
         # Optionally, update the layout of the combined figure
-        fig_combined.update_layout(height=800, title_text="Combined Plot: Close Price and Oscillator Data", xaxis_rangeslider_visible=False)
+        fig_combined.update_layout(height=800, title_text=f"{self.__class__.__name__} strategy for {self.symbol} on {self.granularity} timeframe", xaxis_rangeslider_visible=False)
 
         # Display the combined figure
         fig_combined.show()
 
     def generate_backtest(self):
         """Performs backtest and returns the stats"""
-        init_cash = self.risk_object.balance
+        init_cash = self.risk_object.total_balance
         size = None
         size_type = None
         accumulate = False
@@ -289,9 +289,9 @@ class Strategy:
     
     
     def set_granularity(self):
-        if self.risk_object is not None:
-            if self.risk_object.client.interval:
-                self.granularity = self.risk_object.client.interval
+        if self.risk_object.client is not None:
+            if self.risk_object.client.granularity:
+                self.granularity = self.risk_object.client.granularity
                 return
         # Retrieves multiple dates and compares then gets the most frequest
         time_differences = []
@@ -318,6 +318,12 @@ class Strategy:
 
     def add_adx(self, adx_buy_threshold, time_period):
         adx = ta.ADX(self.high, self.low, self.close, time_period)
+        
+        #adds signal to oscilator data for graphing by finding the first None
+        for i in range(4):
+            osc_string = f'osc{i}_data'
+            if getattr(self, osc_string, None) is None:
+                setattr(self, osc_string, ('ADX', adx))
 
         buy_signal = adx > adx_buy_threshold
         sell_signal = ~buy_signal
