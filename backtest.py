@@ -54,52 +54,57 @@ def test_multiple_strategy():
 
 
 def run_basic_backtest():
+    for granularity in granularites:
+        if granularity == 'ONE_MINUTE':
+            days = 50
+        elif granularity == 'FIVE_MINUTE':
+            days = 150
+        else:
+            days = 365
 
-    dict_df = database_interaction.get_historical_from_db(granularity=granularity,
-                                                          symbols=symbols,
-                                                          num_days=50)
-    for key, value in dict_df.items():
-        current_dict = {key : value}
+        dict_df = database_interaction.get_historical_from_db(granularity=granularity,
+                                                            symbols=symbols,
+                                                            num_days=days)
+        for key, value in dict_df.items():
+            current_dict = {key : value}
 
-        #current_dict = utils.heikin_ashi_transform(current_dict)
-        risk = Risk_Handler()
-        
-        strat = RSI_ADX(
-            dict_df=current_dict,
-            with_sizing=True,
-            risk_object=risk)
-        params = database_interaction.get_best_params(strat)
-        strat.custom_indicator(None, *params)
+            #current_dict = utils.heikin_ashi_transform(current_dict)
+            risk = Risk_Handler()
+            
+            strat = RSI_ADX(
+                dict_df=current_dict,
+                with_sizing=True,
+                risk_object=risk)
+            params = database_interaction.get_best_params(strat)
+            strat.custom_indicator(None, *params)
+            #strat.graph()
+            strat.generate_backtest()
+            #pf = strat.portfolio
+            #print(pf.stats())
 
-        strat.graph()
-        strat.generate_backtest()
-        pf = strat.portfolio
-        print(pf.stats())
-
-        database_interaction.export_backtest_to_db(object=strat)
+            database_interaction.export_backtest_to_db(object=strat)
 
 
-        fig = pf.plot(subplots = [
-        'orders',
-        'trade_pnl',
-        'cum_returns',
-        'drawdowns',
-        'underwater',
-        'gross_exposure'])
-        fig.update_layout(
-            title={
-                'text': "RSI_ADX strategy for DOGE-USD on ONE_MINUTE timeframe",  # Replace with your desired title
-                'x': 0.5,  # Centers the title
-                'xanchor': 'center',
-                'yanchor': 'top'
-            },
-            margin={
-                't': 100  # Adjust the top margin to create space for the title
-            }
-        )
-        fig.show()
+            # fig = pf.plot(subplots = [
+            # 'orders',
+            # 'trade_pnl',
+            # 'cum_returns',
+            # 'drawdowns',
+            # 'underwater',
+            # 'gross_exposure'])
+            # fig.update_layout(
+            #     title={
+            #         'text': "RSI_ADX strategy for DOGE-USD on ONE_MINUTE timeframe",  # Replace with your desired title
+            #         'x': 0.5,  # Centers the title
+            #         'xanchor': 'center',
+            #         'yanchor': 'top'
+            #     },
+            #     margin={
+            #         't': 100  # Adjust the top margin to create space for the title
+            #     }
+            # )
+            # fig.show()
 
-        print(pf.stats())
 run_basic_backtest()
 
 
