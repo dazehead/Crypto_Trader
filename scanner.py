@@ -6,7 +6,7 @@ import sys
 class Scanner():
     def __init__(self, client):
         self.client = client
-        self.interval = self.client.interval
+        self.granularity = self.client.granularity
 
         self.products = self.client.all_products
         self.products_to_trade = None

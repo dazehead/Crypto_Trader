@@ -10,7 +10,7 @@ class DF_Manager():
     def __init__(self,scanner: object, data=None):
         self.scanner = scanner
         self.client = self.scanner.client
-        self.interval = self.scanner.interval
+        self.granularity = self.scanner.granularity
         self.products_to_trade = scanner.products_to_trade
         if not data:
             self.dict_df = {}

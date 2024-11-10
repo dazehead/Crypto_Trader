@@ -20,12 +20,11 @@ class Trade():
 
 
         if self.signals[-1] == 1:
-            pass
-            #self.buy()
+
+            self.buy()
 
         elif self.signals[-1] == -1:
-            pass
-            #self.sell()
+            self.sell()
 
         else:
             self.monitor_trade()

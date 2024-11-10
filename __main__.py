@@ -30,10 +30,12 @@ def on_message():
 
     for k, v in df_manager.dict_df.items():
         current_dict = {k:v}
-        
-        """grab best parameters for symbols and run the strategy with those parametrs"""
+
+        """send the strategy what time it is and update that time for the last time it was updated"""
         strat = RSI_ADX(current_dict, risk)
+
         params = database_interaction.get_best_params(strat)
+
         strat.custom_indicator(strat.close, *params)
 
         signals = [0,0,0,0,0]
