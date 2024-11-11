@@ -6,14 +6,14 @@ import talib
 
 class Hyper(Strategy):
     """A class to handle Hyper Optimization backtests"""
-    def __init__(self, strategy_object, with_sizing=False, **kwargs):
+    def __init__(self, strategy_object, **kwargs):
         """Initiates strategy resources"""
         dict_df = {strategy_object.symbol: strategy_object.df}
         super().__init__(dict_df=dict_df)
         self.strategy = strategy_object
         if self.strategy.risk_object is not None:
             self.risk_object = self.strategy.risk_object
-        self.with_sizing = with_sizing
+        self.with_sizing = self.strategy.with_sizing
 
         
         possible_inputs = ['open', 'high', 'low', 'close', 'volume']

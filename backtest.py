@@ -133,11 +133,10 @@ def run_hyper():
             key, value = items
             current_dict = {key:value}
             
-            strat = RSI_ADX(current_dict, risk_object=risk)
+            strat = RSI_ADX(current_dict, risk_object=risk, with_sizing=True)
 
             hyper = Hyper(
                 strategy_object=strat,
-                with_sizing=True,
                 close=strat.close,
                 rsi_window=np.arange(10, 30, step=5),
                 buy_threshold=np.arange(5, 51, step=5),
