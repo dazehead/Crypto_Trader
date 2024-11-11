@@ -53,7 +53,7 @@ def get_historical_from_db(granularity, symbols: list = [], num_days: int = None
     return tables_data
 
 
-def get_best_params(strategy_object):
+def get_best_params(strategy_object, symbol):
     conn = sql.connect(f'database/hyper.db')
     table = f"{strategy_object.__class__.__name__}_{strategy_object.granularity}"
     params = inspect.signature(strategy_object.custom_indicator)
@@ -61,13 +61,14 @@ def get_best_params(strategy_object):
     parameters = ', '.join(params)
 
     # we have already sent it the correct symbols that it did not get from client
-    if strategy_object.risk_object.client is not None:
-        symbol = convert_symbols(strategy_object = strategy_object)
-    else:
-        symbol = strategy_object.symbol
+    # if strategy_object.risk_object.client is not None:
+    #     symbol = convert_symbols(strategy_object = strategy_object)
+    # else:
+    #     symbol = strategy_object.symbol
 
     query = f'SELECT {parameters},MAX("Total Return [%]") FROM {table} WHERE symbol="{symbol}"'
     result = pd.read_sql_query(query, conn)
+    print(result)
 
     list_results = []
 
@@ -75,6 +76,10 @@ def get_best_params(strategy_object):
         list_results.append(result[param][0])
     list_results = list_results[:-1]  
 
+    best_params = [result[param][0] for param in result.columns[:-1]]
+    print(f"Best parameters for {symbol}: {best_params}")
+
+    print(list_results)
     conn.close()
     return list_results
 
