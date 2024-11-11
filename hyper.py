@@ -1,15 +1,19 @@
 import vectorbt as vbt
 import numpy as np
+import pandas as pd
 from strategies.strategy import Strategy
 import talib
 
 class Hyper(Strategy):
     """A class to handle Hyper Optimization backtests"""
-    def __init__(self, strategy_object, **kwargs):
+    def __init__(self, strategy_object, with_sizing=False, **kwargs):
         """Initiates strategy resources"""
         dict_df = {strategy_object.symbol: strategy_object.df}
         super().__init__(dict_df=dict_df)
         self.strategy = strategy_object
+        if self.strategy.risk_object is not None:
+            self.risk_object = self.strategy.risk_object
+        self.with_sizing = with_sizing
 
         
         possible_inputs = ['open', 'high', 'low', 'close', 'volume']
@@ -77,4 +81,37 @@ class Hyper(Strategy):
             self.entries,
             self.exits
         )
+        return pf
+    
+
+    def run_portrfolio(self):
+        """Performs backtest and returns the stats"""
+        if self.risk_object is not None:
+            init_cash = self.risk_object.total_balance
+        size = None
+        size_type = None
+        accumulate = False
+
+        if self.with_sizing:
+            size = pd.Series(index=self.close.index, dtype='float')
+            size[self.entries] = 10
+            if self.risk_object is not None:
+                size[self.entries] = self.risk_object.percent_to_size #this sizing will be calculated through risk class
+            size[self.exits] = np.inf
+
+            size_type = 'value'
+            accumulate = True
+
+        close_data = getattr(self, 'close', self.close)
+        open_data = getattr(self, 'open', self.open)
+
+        pf = vbt.Portfolio.from_signals(
+            close = open_data,
+            entries = self.entries,
+            exits = self.exits,
+            size = size,
+            size_type= size_type,
+            accumulate= accumulate,
+            init_cash= init_cash)
+
         return pf

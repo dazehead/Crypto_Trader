@@ -74,7 +74,7 @@ class Trade():
             'COMPUSD': .1
         }
         minimum = minimum_volume[self.symbol]
-        minimum_price = self.current_asset_price* minimum
+        minimum_price = (self.current_asset_price* minimum) * 1.01
         desired = self.risk.total_balance *.005
 
         """here is where we need to calculate our volume to send to add_order using self.current_asset_price calculated with the minium volume"""

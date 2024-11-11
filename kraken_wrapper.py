@@ -204,7 +204,7 @@ class Kraken():
         response = requests.request("POST",url, headers=self.headers, data=data)
         response_data = response.json()
         if pickle:
-            pickling.to_pickle(f'{type_of_order}_order', response_data)
+            pickling.to_pickle(f'{type_of_order}_order_{symbol}', response_data)
         return response_data
 
 

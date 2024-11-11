@@ -270,7 +270,7 @@ class Strategy:
 
         if self.with_sizing:
             size = pd.Series(index=self.close.index, dtype='float')
-            size[self.entries] = 10 #this sizing will be calculated through risk class
+            size[self.entries] = self.risk_object.percent_to_size #this sizing will be calculated through risk class
             size[self.exits] = np.inf
 
             size_type = 'value'
@@ -289,8 +289,8 @@ class Strategy:
     
     
     def set_granularity(self):
-        if self.risk_object.client is not None:
-            if self.risk_object.client.granularity:
+        if self.risk_object is not None:
+            if self.risk_object.client is not None:
                 self.granularity = self.risk_object.client.granularity
                 return
         # Retrieves multiple dates and compares then gets the most frequest
