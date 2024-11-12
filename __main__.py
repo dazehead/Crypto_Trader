@@ -21,33 +21,35 @@ counter = 0
 
 
 def on_message():
-    pass
+    print('--------------------------------------------------------------------------------------\n')
     global counter
     global kraken
     global risk
+    global scanner
     print(f'counter: {counter}')
     df_manager.data_for_live_trade(update=True)
-
+    #print(scanner.products_to_trade)
     for k, v in df_manager.dict_df.items():
         current_dict = {k:v}
-        print(k)
+        print(f"current symbol: {k}")
 
         """send the strategy what time it is and update that time for the last time it was updated"""
-        strat = RSI_ADX(current_dict, risk)
+        strat = RSI_ADX(current_dict, risk, with_sizing=False)
 
         #params = database_interaction.get_best_params(strat)
         #strat.custom_indicator(strat.close, *params)
 
         strat.custom_indicator(strat.close)
 
-        signals = [0,0,0,0,0]
-        if k == 'XXBTZUSD':
-            signals = [0,1,0,-1,0]
+        signals = [0,1,0,0,0]
+        if k in ['XDGUSD','XXBTZUSD', 'AVAX-USD', 'UNI-USD', 'ETC-USD']:
+            signals = [0,0,0,0,0]
         
         trade = Trade(risk = risk,
                     strat_object=strat,
                     logbook=logbook,
                     signals=[signals[counter]])
+        print('\n-------------------------------------------------------------------------------------\n')
     
     counter += 1
 
@@ -76,7 +78,7 @@ scanner.populate_manager(days_ago=2)
 
 """Loops through the scanner until a product gets returned from our defined filter parameters"""
 while not scanner.products_to_trade:
-    scanner.filter_products(symbol='XDGUSD')
+    scanner.filter_products()
 
 
 logbook = LinkedList()

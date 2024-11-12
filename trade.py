@@ -12,6 +12,7 @@ class Trade():
         self.symbol = self.strat.symbol
         self.current_asset_price = float(self.strat.close.iloc[-1])
         self.volume_to_risk = self.get_balance_to_risk()
+        self.total_volume_owned = self.client.get_extended_balance(self.symbol)
         print(f"calculated volume to risk: {self.volume_to_risk}")
         #print(f'volume_to_buy: {self.volume_to_risk}')
 
@@ -33,18 +34,23 @@ class Trade():
 
 
     def buy(self):
-        print(self.risk.balance_to_risk)
+        print(self.risk.volume_to_risk)
         buy_order = self.client.add_order(
             type_of_order= 'buy',
             symbol = self.symbol,
-            volume= self.risk.balance_to_risk,
+            volume= self.risk.volume_to_risk,
+            price = self.current_asset_price,
+            nonce = self.risk.get_nonce(),
             pickle=True)
         print(buy_order)
 
     def sell(self):
         sell_order = self.client.add_order(
-            type_of_order= 'buy',
+            type_of_order= 'sell',
             symbol = self.symbol,
+            volume = self.total_volume_owned,
+            price = self.current_asset_price,
+            nonce = self.risk.get_nonce(),
             pickle=True)
         print(sell_order)
         
@@ -77,10 +83,14 @@ class Trade():
             'COMPUSD': .1
         }
         minimum = minimum_volume[self.symbol]
-        minimum_price = math.ceil((self.current_asset_price* minimum)*100) /100
-        desired = self.risk.total_balance *.005
+        self.risk.volume_to_risk = minimum
+        return minimum
+        # minimum_price = (math.ceil((self.current_asset_price* minimum)*10) /10) + .05
+        # desired = self.risk.total_balance *.005
 
-        """here is where we need to calculate our volume to send to add_order using self.current_asset_price calculated with the minium volume"""
-        if minimum_price > desired:
-            return minimum_price
-        return desired
+        # """here is where we need to calculate our volume to send to add_order using self.current_asset_price calculated with the minium volume"""
+        # if minimum_price > desired:
+        #     self.risk.volume_to_risk = minimum_price
+        #     return minimum_price
+        # self.risk.volume_to_risk = desired
+        # return desired

@@ -70,6 +70,25 @@ class Kraken():
             self.headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=utf-8'
         return #sigdigest.decode()
 
+    def get_extended_balance(self, symbol):
+        url_path = '/0/private/BalanceEx'
+        url = self.base_url + url_path
+        nonce = str(int(time.time() * 1000))
+        data = {'nonce': nonce}
+
+        self.get_kraken_signature(urlpath=url_path,data=data, secret=self.api_secret)
+
+        response = requests.request("POST", url, headers=self.headers, data=data)
+
+        data = response.json()
+        all_held_data = data.get('result',{})
+        for pair, amount in all_held_data.items():
+            pass
+            print(pair)
+            print(amount)
+
+
+
     def get_historical_data(self,pair: str, days_ago=None):
         """days_ago using kraken for some reason only gets 1 days worth datat"""
         if days_ago is not None:
@@ -184,18 +203,18 @@ class Kraken():
         response = requests.request("POST", url, headers=self.headers, data=data)
         print(response.text)
 
-    def add_order(self, type_of_order, symbol, volume ,pickle=True):
+    def add_order(self, type_of_order, symbol, volume, price , nonce ,pickle=True):
         if type_of_order not in ['buy', 'sell']:
             print('needs to be "buy" or "sell"')
         urlpath = '/0/private/AddOrder'
         url = self.base_url + urlpath
-        nonce = str(int(time.time()) * 1000)
 
         data = {"nonce": nonce,
-                'ordertype': 'market',
+                'ordertype': 'limit',
                 'type': type_of_order,
                 'volume': volume,
-                'pair': symbol}
+                'pair': symbol,
+                'price': price}
                 #'price': price,
                 #'cl_ord_id': "generated order id from database"}
         

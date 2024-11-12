@@ -29,7 +29,7 @@ class DF_Manager():
 
     def data_for_live_trade(self, update=False):
         """dataframe needs to be indexed by symbol"""
-        print('...Updated DataFrames')
+        print('...Updating DataFrames')
         for symbol in self.products_to_trade:
             # Get the historical data
             days_ago = 1 if update else 2

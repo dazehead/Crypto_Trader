@@ -31,8 +31,9 @@ class Scanner():
 
     def filter_products(self, symbol=None):
         print('Starting filter')    
-        symbol = symbol
-        if symbol is not None:
+        self.products_to_trade = symbol
+        self.df_manager.products_to_trade = symbol
+        if symbol is None:
             self.products_to_trade = self.kraken_crypto
             self.df_manager.products_to_trade = self.kraken_crypto
         """iterate over all available symbols and only go with volume that is above the average"""
