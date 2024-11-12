@@ -62,9 +62,9 @@ def run_basic_backtest():
     #     else:
     #         days = 365
 
-    dict_df = database_interaction.get_historical_from_db(granularity='FIFTEEN_MINUTE',
-                                                        symbols=symbols,
-                                                        num_days=150)
+    dict_df = database_interaction.get_historical_from_db(granularity='ONE_MINUTE',
+                                                        symbols=product,
+                                                        num_days=50)
     for key, value in dict_df.items():
         current_dict = {key : value}
 
@@ -80,9 +80,9 @@ def run_basic_backtest():
         strat.graph()
         strat.generate_backtest()
         pf = strat.portfolio
-        #print(pf.stats())
+        print(pf.stats())
 
-        database_interaction.export_backtest_to_db(object=strat)
+        #database_interaction.export_backtest_to_db(object=strat)
 
 
         fig = pf.plot(subplots = [
@@ -105,7 +105,7 @@ def run_basic_backtest():
         )
         fig.show()
 
-#run_basic_backtest()
+run_basic_backtest()
 
 
 
@@ -165,5 +165,5 @@ def run_hyper():
                 # x_level = 'cust_fast_window',
                 # y_level = 'cust_slow_window')
                 # fig.show()
-run_hyper()
+#run_hyper()
 

@@ -30,16 +30,18 @@ def on_message():
 
     for k, v in df_manager.dict_df.items():
         current_dict = {k:v}
+        print(k)
 
         """send the strategy what time it is and update that time for the last time it was updated"""
         strat = RSI_ADX(current_dict, risk)
 
-        params = database_interaction.get_best_params(strat)
+        #params = database_interaction.get_best_params(strat)
+        #strat.custom_indicator(strat.close, *params)
 
-        strat.custom_indicator(strat.close, *params)
+        strat.custom_indicator(strat.close)
 
         signals = [0,0,0,0,0]
-        if k == 'XDGUSD':
+        if k == 'XXBTZUSD':
             signals = [0,1,0,-1,0]
         
         trade = Trade(risk = risk,
@@ -74,7 +76,7 @@ scanner.populate_manager(days_ago=2)
 
 """Loops through the scanner until a product gets returned from our defined filter parameters"""
 while not scanner.products_to_trade:
-    scanner.filter_products()
+    scanner.filter_products(symbol='XDGUSD')
 
 
 logbook = LinkedList()

@@ -1,4 +1,5 @@
 import pickling
+import math
 
 class Trade():
     """This class will have all logic for executing trades"""
@@ -9,8 +10,9 @@ class Trade():
         self.logbook = logbook
         self.client = self.risk.client
         self.symbol = self.strat.symbol
-        self.current_asset_price = float(self.strat.close[-1])
+        self.current_asset_price = float(self.strat.close.iloc[-1])
         self.volume_to_risk = self.get_balance_to_risk()
+        print(f"calculated volume to risk: {self.volume_to_risk}")
         #print(f'volume_to_buy: {self.volume_to_risk}')
 
         self.signals = self.strat.signals     
@@ -31,6 +33,7 @@ class Trade():
 
 
     def buy(self):
+        print(self.risk.balance_to_risk)
         buy_order = self.client.add_order(
             type_of_order= 'buy',
             symbol = self.symbol,
@@ -74,7 +77,7 @@ class Trade():
             'COMPUSD': .1
         }
         minimum = minimum_volume[self.symbol]
-        minimum_price = (self.current_asset_price* minimum) * 1.01
+        minimum_price = math.ceil((self.current_asset_price* minimum)*100) /100
         desired = self.risk.total_balance *.005
 
         """here is where we need to calculate our volume to send to add_order using self.current_asset_price calculated with the minium volume"""
