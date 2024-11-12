@@ -10,7 +10,7 @@ class Risk_Handler:
             self.balance_to_risk = None
             print(f"Balance: {self.total_balance}")
             print(f"Balance to risk: {self.balance_to_risk}")
-        self.nonce_counter = 1
+
         self.last_buy = {}
 
     def get_nonce(self):

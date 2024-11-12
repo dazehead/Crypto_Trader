@@ -105,7 +105,7 @@ def run_basic_backtest():
         )
         fig.show()
 
-run_basic_backtest()
+#run_basic_backtest()
 
 
 
@@ -114,7 +114,7 @@ def run_hyper():
     risk = Risk_Handler()
     for granularity in granularites:
         if granularity == 'ONE_MINUTE':
-            days = 25
+            days = 50
         elif granularity == 'FIVE_MINUTE':
             days = 150
         elif granularity == 'FIFTEEN_MINUTE':
@@ -165,5 +165,5 @@ def run_hyper():
                 # x_level = 'cust_fast_window',
                 # y_level = 'cust_slow_window')
                 # fig.show()
-#run_hyper()
+run_hyper()
 

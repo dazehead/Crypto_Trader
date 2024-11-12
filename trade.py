@@ -14,7 +14,6 @@ class Trade():
         self.volume_to_risk = self.get_balance_to_risk()
         self.total_volume_owned = self.client.get_extended_balance(self.symbol)
         print(f"calculated volume to risk: {self.volume_to_risk}")
-        #print(f'volume_to_buy: {self.volume_to_risk}')
 
         self.signals = self.strat.signals     
         if signals:
@@ -40,7 +39,6 @@ class Trade():
             symbol = self.symbol,
             volume= self.risk.volume_to_risk,
             price = self.current_asset_price,
-            nonce = self.risk.get_nonce(),
             pickle=True)
         print(buy_order)
 
@@ -50,7 +48,6 @@ class Trade():
             symbol = self.symbol,
             volume = self.total_volume_owned,
             price = self.current_asset_price,
-            nonce = self.risk.get_nonce(),
             pickle=True)
         print(sell_order)
         

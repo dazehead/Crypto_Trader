@@ -47,7 +47,15 @@ class Kraken():
 
         self.all_products = self.get_tradable_asset_pairs()
         self.time_to_wait = self.granularity_map[self.granularity] * 60
+        self.nonce_counter = 1
 
+    def get_nonce(self):
+        if self.nonce_counter > 14:
+            self.conce_counter = 1
+        base_nonce = int(time.time() * 10000)
+        nonce = base_nonce + self.nonce_counter
+        self.nonce_counter += 1
+        return str(nonce)
 
     def get_kraken_signature(self, urlpath, data, secret):
         if 'public' in urlpath:
@@ -71,9 +79,24 @@ class Kraken():
         return #sigdigest.decode()
 
     def get_extended_balance(self, symbol):
+        """gets how much volume we have bought for the symbol passed"""
+        symbol_map = {'XXBTZUSD':'XXBT',
+                      'XETHZUSD': 'XETH',
+                      'XDGUSD': 'XXDG',
+                      'SHIBUSD': 'SHIB',
+                      'AVAXUSD': 'AVAX',
+                      'BCHUSD': 'BCH',
+                      'LINKUSD': 'LINK',
+                      'UNIUSD': 'UNI',
+                      'XLTCZUSD': 'XLTC',
+                      'XXLMZUSD': 'XXLM',
+                      'XETCZUSD': 'XETC',
+                      'AAVEUSD': 'AAVE',
+                      'XTZUSD': 'XTZ',
+                      'COMPUSD': 'COMP'}
         url_path = '/0/private/BalanceEx'
         url = self.base_url + url_path
-        nonce = str(int(time.time() * 1000))
+        nonce = self.get_nonce()
         data = {'nonce': nonce}
 
         self.get_kraken_signature(urlpath=url_path,data=data, secret=self.api_secret)
@@ -82,10 +105,11 @@ class Kraken():
 
         data = response.json()
         all_held_data = data.get('result',{})
+        symbol = symbol_map[symbol]
         for pair, amount in all_held_data.items():
-            pass
-            print(pair)
-            print(amount)
+            if symbol == pair:
+                current_balance = amount['balance']
+        return current_balance
 
 
 
@@ -138,7 +162,7 @@ class Kraken():
         """This function does not get our actual account blance it is get_trade_balance that get the portfolio balanace"""
         urlpath = '/0/private/Balance'
         url = self.base_url + urlpath
-        nonce = str(int(time.time() * 1000))
+        nonce = self.get_nonce()
         data = {'nonce': nonce}
 
         # Compute signature
@@ -157,7 +181,7 @@ class Kraken():
         """note this can also get unrealized profit/loss"""
         urlpath = '/0/private/TradeBalance'
         url = self.base_url + urlpath
-        nonce = str(int(time.time() * 1000))
+        nonce = self.get_nonce()
 
         data = {'nonce': nonce,
                 'asset': 'ZUSD'}
@@ -173,7 +197,7 @@ class Kraken():
     def get_open_orders(self):
         urlpath = '/0/private/OpenOrders'
         url = self.base_url + urlpath
-        nonce = str(int(time.time() * 1000))
+        nonce = self.get_nonce()
 
         data = {'nonce': nonce,
                 'trades': True}
@@ -190,7 +214,7 @@ class Kraken():
     def get_open_postions(self):
         urlpath = '/0/private/OpenPositions'
         url = self.base_url + urlpath
-        nonce = str(int(time.time() * 1000))
+        nonce = self.get_nonce()
 
         data = {'nonce': nonce,
                 'trades': True,
@@ -203,11 +227,13 @@ class Kraken():
         response = requests.request("POST", url, headers=self.headers, data=data)
         print(response.text)
 
-    def add_order(self, type_of_order, symbol, volume, price , nonce ,pickle=True):
+    def add_order(self, type_of_order, symbol, volume, price, pickle=True):
         if type_of_order not in ['buy', 'sell']:
             print('needs to be "buy" or "sell"')
         urlpath = '/0/private/AddOrder'
         url = self.base_url + urlpath
+        nonce = self.get_nonce()
+
 
         data = {"nonce": nonce,
                 'ordertype': 'limit',
@@ -215,8 +241,6 @@ class Kraken():
                 'volume': volume,
                 'pair': symbol,
                 'price': price}
-                #'price': price,
-                #'cl_ord_id': "generated order id from database"}
         
         self.get_kraken_signature(urlpath=urlpath, data=data, secret=self.api_secret)
 
@@ -230,7 +254,7 @@ class Kraken():
     def get_closed_orders(self):
         urlpath = '/0/private/ClosedOrders'
         url = self.base_url + urlpath
-        nonce = str(int(time.time() * 1000))
+        nonce = self.get_nonce()
         data = {'nonce': nonce,
                 'trades': True}
         
@@ -241,7 +265,7 @@ class Kraken():
     def get_trade_volume(self):
             urlpath = '/0/private/TradeVolume'
             url = self.base_url + urlpath
-            nonce = str(int(time.time() * 1000))
+            nonce = self.get_nonce()
             data = {'nonce': nonce,
                     'pair': "BTC/USD"
                 }
@@ -254,7 +278,7 @@ class Kraken():
     def get_order_book(self):
         url_path = '/0/public/Depth'
         url = self.base_url + url_path
-        nonce = str(int(time.time() * 1000))
+        #nonce = self.get_nonce()
         data = {}
 
         self.get_kraken_signature(urlpath=url_path, data=data, secret=self.api_secret)

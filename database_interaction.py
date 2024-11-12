@@ -236,7 +236,7 @@ def resample_dataframe_from_db(granularity='ONE_MINUTE'):
             print(f"Resampled {symbol} to {key}")
             resampled_dict_df[symbol] = df_resampled
 
-        utils.export_historical_to_db(resampled_dict_df, granularity=key)
+        export_historical_to_db(resampled_dict_df, granularity=key)
 
     print("Resampling completed.")
 

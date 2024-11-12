@@ -41,9 +41,7 @@ def on_message():
 
         strat.custom_indicator(strat.close)
 
-        signals = [0,1,0,0,0]
-        if k in ['XDGUSD','XXBTZUSD', 'AVAX-USD', 'UNI-USD', 'ETC-USD']:
-            signals = [0,0,0,0,0]
+        signals = [0,-1,0,0,0]
         
         trade = Trade(risk = risk,
                     strat_object=strat,

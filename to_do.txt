@@ -1,8 +1,6 @@
 TO-DO:
 --- with_sizing issue in strategy when running on live trading 
 
---- nonce not updating quick enough when doing high frequency trading
-
 --- when looking at coins we own, they are different symbols need to make a map
 
 --- when using 2 osc_data, graph plots on top of each other, need to add another figure
