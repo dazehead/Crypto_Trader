@@ -268,7 +268,7 @@ class Kraken():
             pickling.to_pickle(f'{type_of_order}_order_{symbol}', response_data)
         return response_data
 
-    def edit_order(self, order_id, symbol, volume, price):
+    def edit_order(self, order_id, symbol, volume, price, pickle=False):
         url_path = '/0/private/EditOrder'
         url = self.base_url + url_path 
         data = {
@@ -286,6 +286,8 @@ class Kraken():
         
         response = requests.request("POST",url=url, headers=self.headers, data=data)
         response_data = response.json()
+        if pickle:
+            pickling.to_pickle(f'updated_order_{symbol}', response_data)
         print('order has been updated')
         print(response_data)
 
