@@ -1,5 +1,6 @@
 import pickling
 import math
+import time
 
 class Trade():
     """This class will have all logic for executing trades"""
@@ -13,7 +14,6 @@ class Trade():
         self.current_asset_price = float(self.strat.close.iloc[-1])
         self.volume_to_risk = self.get_balance_to_risk()
         self.total_volume_owned = self.client.get_extended_balance(self.symbol)
-        print(f"calculated volume to risk: {self.volume_to_risk}")
 
         self.signals = self.strat.signals     
         if signals:
@@ -33,14 +33,30 @@ class Trade():
 
 
     def buy(self):
-        print(self.risk.volume_to_risk)
         buy_order = self.client.add_order(
             type_of_order= 'buy',
             symbol = self.symbol,
             volume= self.risk.volume_to_risk,
             price = self.current_asset_price,
             pickle=True)
-        print(buy_order)
+        time.sleep(.25)
+
+        # if True it will keep looping until there are no open orders
+        while self.client.any_open_orders():
+            order_id =buy_order['result']['txid'][0]
+            buy_order = self.client.edit_order(
+                order_id = order_id,
+                symbol = self.symbol,
+                volume = self.risk.volume_to_risk,
+                price = self.client.get_recent_spreads(
+                    symbol=self.symbol,
+                    type_of_order= 'buy'
+                    )          
+            )
+            time.sleep(.25)
+
+            """edit the open order until it fills"""
+        #print(buy_order)
 
     def sell(self):
         sell_order = self.client.add_order(
@@ -49,7 +65,22 @@ class Trade():
             volume = self.total_volume_owned,
             price = self.current_asset_price,
             pickle=True)
-        print(sell_order)
+        #print(sell_order)
+        time.sleep(1)
+
+        while self.client.any_open_orders():
+            print(sell_order)
+            order_id =sell_order['result']['txid'][0]
+            sell_order = self.client.edit_order(
+                order_id = order_id,
+                symbol = self.symbol,
+                volume = self.risk.volume_to_risk,
+                price = self.client.get_recent_spreads(
+                    symbol=self.symbol,
+                    type_of_order= 'sell'
+                    )          
+            )
+            time.sleep(.25)
         
 
     def monitor_trade(self):

@@ -194,7 +194,7 @@ class Kraken():
 
         return float(response_data['result']['eb'])
 
-    def get_open_orders(self):
+    def any_open_orders(self, pickle=False):
         urlpath = '/0/private/OpenOrders'
         url = self.base_url + urlpath
         nonce = self.get_nonce()
@@ -206,9 +206,27 @@ class Kraken():
 
         response = requests.request("POST", url, headers=self.headers, data=data)
         response_data = response.json()
-        print(response_data['result']['open'])
+        if pickle:
+            pickling.to_pickle('open_orders', response_data)
+        open_data = response_data['result']['open']
 
-        print(f'Open Orders: {response.text}')
+        #returns False if theres no open orders
+        if response_data['result']['open']=={}:
+            return False
+        else:
+            #returns True if there are open orders
+            return True
+        
+        # print(response_data['result']['open']=={})
+        # print('-------------------------------------------------------------------')
+        # for id in open_data:
+        #     print(open_data)
+        #     print('------------------------------------')
+        #     print(open_data[id])
+        #     print('---------------------')
+        #     print(open_data[id]['descr'])
+        #     print('*************************')
+        # #print(f'Open Orders: {response.text}')
 
 
     def get_open_postions(self):
@@ -230,8 +248,8 @@ class Kraken():
     def add_order(self, type_of_order, symbol, volume, price, pickle=True):
         if type_of_order not in ['buy', 'sell']:
             print('needs to be "buy" or "sell"')
-        urlpath = '/0/private/AddOrder'
-        url = self.base_url + urlpath
+        url_path = '/0/private/AddOrder'
+        url = self.base_url + url_path
         nonce = self.get_nonce()
 
 
@@ -242,13 +260,36 @@ class Kraken():
                 'pair': symbol,
                 'price': price}
         
-        self.get_kraken_signature(urlpath=urlpath, data=data, secret=self.api_secret)
+        self.get_kraken_signature(urlpath=url_path, data=data, secret=self.api_secret)
 
         response = requests.request("POST",url, headers=self.headers, data=data)
         response_data = response.json()
         if pickle:
             pickling.to_pickle(f'{type_of_order}_order_{symbol}', response_data)
         return response_data
+
+    def edit_order(self, order_id, symbol, volume, price, pickle=False):
+        url_path = '/0/private/EditOrder'
+        url = self.base_url + url_path 
+        data = {
+            'nonce': self.get_nonce(),
+            'pair': symbol,
+            'txid': order_id,
+            'volume': volume,
+            'price':price
+        }
+
+        self.get_kraken_signature(
+            urlpath = url_path,
+            data = data,
+            secret=self.api_secret)
+        
+        response = requests.request("POST",url=url, headers=self.headers, data=data)
+        response_data = response.json()
+        if pickle:
+            pickling.to_pickle(f'updated_order_{symbol}', response_data)
+        print('order has been updated')
+        print(response_data)
 
 
     def get_closed_orders(self):
@@ -263,20 +304,22 @@ class Kraken():
         print(response.text)
 
     def get_trade_volume(self):
-            urlpath = '/0/private/TradeVolume'
-            url = self.base_url + urlpath
+            url_path = '/0/private/TradeVolume'
+            url = self.base_url + url_path
             nonce = self.get_nonce()
             data = {'nonce': nonce,
                     'pair': "BTC/USD"
                 }
             
-            self.get_kraken_signature(urlpath, data, self.api_secret)
+            self.get_kraken_signature(url_path, data, self.api_secret)
             response = requests.request("POST", url, headers=self.headers, data=data)
 
             print(f'Volume: {response.text}')
 
-    def get_order_book(self):
+    def get_order_book(self, symbol):
         url_path = '/0/public/Depth'
+        query = f'?pair={symbol}'
+        url_path += query
         url = self.base_url + url_path
         #nonce = self.get_nonce()
         data = {}
@@ -285,6 +328,32 @@ class Kraken():
 
         response = requests.request('GET', url=url, headers=self.headers, data=data)
         print(response.text)
+
+    def get_recent_spreads(self, symbol, type_of_order):
+        url_path = '/0/public/Spread'
+        queary = f'?pair={symbol}'
+        url_path += queary
+        url = self.base_url + url_path
+        data = {}
+
+        self.get_kraken_signature(url_path,self.headers,data)
+        response = requests.request(
+            "GET",
+            url= url,
+            headers = self.headers,
+            data = data)
+        data = response.json()
+        key = list(data['result'].keys())[0]
+        current_spread = data['result'][key][-1]
+        if type_of_order == 'sell':
+            new_price = current_spread[1]
+        elif type_of_order == 'buy':
+            new_price = current_spread[2]
+        return new_price
+        
+
+
+
 
 # testing_kraken = Kraken()
 # testing_kraken.get_trade_balance("ZUSD")

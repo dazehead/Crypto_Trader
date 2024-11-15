@@ -9,7 +9,7 @@ def to_pickle(data_name, data):
 
     existing_data.append(data)
 
-    with open(F'pickle_data/.{data_name}', 'wb') as file:
+    with open(F'pickle_data/{data_name}', 'wb') as file:
         pickle.dump(existing_data, file)
 
 def from_pickle(data_name):

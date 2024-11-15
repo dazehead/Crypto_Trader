@@ -42,6 +42,8 @@ def on_message():
         strat.custom_indicator(strat.close)
 
         signals = [0,-1,0,0,0]
+        if k in ['XXBTZUSD', 'XETHZUSD', 'SHIBUSD', 'BCHUSD', 'LINKUSD', 'UNIUSD', 'XLTCZUSD', 'XXLMZUSD', 'XETCZUSD', 'AAVEUSD', 'XTZUSD', 'COMPUSD']:
+            signals = [0,0,0,0,0]
         
         trade = Trade(risk = risk,
                     strat_object=strat,
