@@ -6,11 +6,35 @@ import inspect
 import re
 import sys
 import time
+from numba import njit
 pd.set_option('future.no_silent_downcasting', True)
 
 
-import pandas as pd
+@njit
+def calculate_with_sizing_numba(signal, close, percent_to_size):
+    n = len(signal)
+    new_signal = signal.copy()
+    saved_close = 0.0
+    tracking = False
 
+    for i in range(n):
+        if signal[i] == 1 and not tracking:
+            saved_close = close[i]
+            tracking = True
+        elif tracking:
+            target_close = saved_close * (1 + percent_to_size)
+
+            if signal[i] == 0:
+                if close[i] >= target_close:
+                    new_signal[i] = 1
+                    saved_close = close[i]
+                elif close[i] <= target_close * (1 - (percent_to_size * 2)):
+                    saved_close = close[i]
+
+            if signal[i] == -1:
+                tracking = False
+                saved_close = 0.0
+    return new_signal
 
 def progress_bar_with_eta(progress, data, start_time, bar_length=50):
     total = len(data)

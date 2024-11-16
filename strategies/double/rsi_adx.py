@@ -14,6 +14,8 @@ class RSI_ADX(Strategy):
         self.adx_time_period = adx_time_period
         
         rsi = self.calculate_rsi(self.close, rsi_window)
+        print(rsi.tail())
+        print(len(rsi))
         self.osc1_data = ('RSI', rsi)
 
         buy_signal = rsi < buy_threshold

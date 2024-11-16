@@ -6,6 +6,9 @@ import plotly.subplots as sp
 import plotly.graph_objects as go
 import sys
 import talib as ta
+import cupy as cp
+from numba import njit
+import utils
 
 class Strategy:
     """Class to store strategy resources"""
@@ -24,6 +27,12 @@ class Strategy:
         self.low = self.df['low']
         self.close = self.df['close']
         self.volume = self.df['volume']
+
+        self.close_gpu = cp.array(self.close)
+        self.high_gpu = cp.array(self.high)
+        self.low_gpu = cp.array(self.low)
+        self.open_gpu = cp.array(self.open)
+        self.volume_gpu = cp.array(self.volume)
 
         self.granularity = None
         self.set_granularity()
@@ -93,45 +102,32 @@ class Strategy:
         self.exits = pd.Series(self.exits, index=self.close.index)
         return signals
     
-    def calculate_with_sizing(self, signals):
-        #convert signals to pandas series
-        date_with_signals = pd.DataFrame({'signal': signals,
-                                          'close': self.close}, index=self.close.index)
-        # Copy of the original DataFrame to avoid modifying it directly
-        df = date_with_signals.copy()
+    # @njit
+    # def calculate_with_sizing_numba(self,signal, close, percent_to_size):
+    #     n = len(signal)
+    #     new_signal = signal.copy()
+    #     saved_close = 0.0
+    #     tracking = False
 
-        # Initialize variables to hold the saved close price and a flag to check if we are in a tracking phase
-        saved_close = None
-        tracking = False
+    #     for i in range(n):
+    #         if signal[i] == 1 and not tracking:
+    #             saved_close = close[i]
+    #             tracking = True
+    #         elif tracking:
+    #             target_close = saved_close * (1 + percent_to_size)
 
-        # Iterate through each row in the DataFrame
-        for i in range(len(df)):
-            # Check if the signal is 1 and we are not already tracking
-            if df['signal'].iloc[i] == 1 and not tracking:
-                # Save the close price and start tracking
-                saved_close = df['close'].iloc[i]
-                tracking = True
+    #             if signal[i] == 0:
+    #                 if close[i] >= target_close:
+    #                     new_signal[i] = 1
+    #                     saved_close = close[i]
+    #                 elif close[i] <= target_close * (1 - (percent_to_size * 2)):
+    #                     saved_close = close[i]
 
-            # If tracking, compare each subsequent close price
-            elif tracking:
-                # Calculate the 2% threshold
-                target_close = saved_close * (1 + self.risk_object.percent_to_size) # this value will be calculated through the risk class
-                
-                # Check if the close price has increased by 2% or more from the saved close price
-                if df['close'].iloc[i] >= target_close and df['signal'].iloc[i] == 0:
-                    # Update the signal to 1
-                    df.at[df.index[i], 'signal'] = 1
-                    saved_close = df['close'].iloc[i]
-                
-                if df['close'].iloc[i] <= (target_close * (1 - (self.risk_object.percent_to_size * 2))) and df['signal'].iloc[i] ==0:
-                    saved_close = df['close'].iloc[i]
-                
-                # Stop tracking if a -1 signal is encountered
-                if df['signal'].iloc[i] == -1:
-                    tracking = False
-                    saved_close = None  # Reset saved close
-        signals = df['signal'].to_numpy()
-        return signals
+    #             if signal[i] == -1:
+    #                 tracking = False
+    #                 saved_close = 0.0
+
+    #     return new_signal
 
         
     
@@ -170,7 +166,11 @@ class Strategy:
         
         combined_signals = self.format_signals(combined_signals)
         if self.with_sizing:
-            combined_signals = self.calculate_with_sizing(combined_signals)
+            # extracting information too work with njit
+            percent_to_size = self.risk_object.percent_to_size
+            close_array = self.close.to_numpy(dtype=np.float64)
+            signal_array = np.array(combined_signals)
+            combined_signals = utils.calculate_with_sizing_numba(signal_array, close_array, percent_to_size)
 
         self.entries = np.zeros_like(self.close, dtype=bool) #from signal to signal_length
         self.exits = np.zeros_like(self.close, dtype=bool)#from signal to signal_length
@@ -299,9 +299,10 @@ class Strategy:
             if i == 0:
                 pass
             time_diff = self.df.index[i] - self.df.index[i-1]
+            if time_diff < pd.Timedelta(minutes=4):
+                time_diff = pd.Timedelta(minutes=1)
             time_differences.append(time_diff)
         time_diff = max(time_differences, key=time_differences.count)
-
 
         time_map = {
             pd.Timedelta(minutes=1): 'ONE_MINUTE',

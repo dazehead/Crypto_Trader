@@ -144,7 +144,11 @@ def export_hyper_to_db(strategy: object, hyper: object):
 
         combined_df = pd.concat([combined_df,pd.DataFrame([backtest_dict])])
 
-    table_name = f"{strategy.__class__.__name__}_{granularity}"
+    class_name = strategy.__class__.__name__
+    if class_name.split('_')[-1] == 'GPU':
+        class_name = '_'.join(class_name.split('_')[:-1])
+        
+    table_name = f"{class_name}_{granularity}"
 
     _create_table_if_not_exists(table_name, combined_df, conn=conn) 
 

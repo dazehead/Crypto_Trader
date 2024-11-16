@@ -1,0 +1,163 @@
+from strategies.strategy import Strategy
+import cupy as cp
+import numpy as np
+import pandas as pd
+import utils
+
+class RSI_ADX_GPU(Strategy):
+    def __init__(self, dict_df, risk_object=None, with_sizing=False, hyper=False):
+        super().__init__(dict_df=dict_df, risk_object=risk_object, with_sizing=with_sizing)
+        self.hyper = hyper
+
+    def custom_indicator(self, close=None, rsi_window=20, buy_threshold=15, sell_threshold=70,
+                            adx_buy_threshold=20, adx_time_period=20):
+        if not self.hyper:
+            self.rsi_window = rsi_window
+            self.buy_threshold = buy_threshold
+            self.sell_threshold = sell_threshold
+            self.adx_buy_threshold = adx_buy_threshold
+            self.adx_time_period = adx_time_period
+
+
+
+        # Calculate RSI
+        rsi = self.calculate_rsi_gpu(self.close_gpu, rsi_window)
+        rsi_np = cp.asnumpy(rsi)
+        # print(rsi_np[-5:])
+        # print(len(rsi_np))
+
+        # Generate RSI Signals
+        buy_signal = rsi_np < buy_threshold
+        sell_signal = rsi_np > sell_threshold
+
+        #Create initial signals
+        signals = np.zeros_like(self.close, dtype=int)
+        signals[buy_signal] = 1
+        signals[sell_signal] = -1
+
+        signals = self.format_signals(signals)
+
+        # Calculate ADX
+        adx = self.calculate_adx_gpu(self.high_gpu, self.low_gpu, self.close_gpu, adx_time_period)
+        adx_np = cp.asnumpy(adx)
+
+        # Generate ADX signals
+        buy_signal_adx = adx_np > adx_buy_threshold
+        sell_signal_adx = ~buy_signal_adx
+
+        # Create ADX signals
+        signals_adx = np.zeros_like(self.close, dtype=int)
+        signals_adx[buy_signal_adx] = 1
+        signals_adx[sell_signal_adx] = -1
+
+        # Combine RSI and ADX signals
+        final_signals = self.combine_signals(signals, signals_adx)
+
+        # Format signals to avoid double entries/exits
+        final_signals = self.format_signals(final_signals)
+
+
+        if self.with_sizing:
+            percent_to_size = self.risk_object.percent_to_size
+            close_array = self.close.to_numpy(dtype=np.float64)
+            signal_array = np.array(final_signals)
+            final_signals = utils.calculate_with_sizing_numba(signal_array, close_array, percent_to_size)
+
+        if not self.hyper:
+            self.osc1_data = ('RSI', rsi_np)
+            self.osc2_data = ('ADX', adx_np)
+            self.signals = final_signals
+
+
+            self.entries = np.zeros_like(signals, dtype=bool)
+            self.exits = np.zeros_like(signals, dtype=bool)
+
+            self.entries[self.signals == 1] = True
+            self.exits[self.signals == -1] = True
+
+            self.entries = pd.Series(self.entries, index=self.close.index)
+            self.exits = pd.Series(self.exits, index=self.close.index)
+
+        return final_signals
+    
+    def calculate_with_sizing(self, signals):
+        pass
+
+
+    def calculate_rsi_gpu(self, close_gpu, rsi_window):
+        delta = close_gpu[1:] - close_gpu[:-1]
+        gain = cp.maximum(delta, 0)
+        loss = cp.maximum(-delta, 0)
+
+        # Calculate rolling averages (simple moving average for RSI)
+        avg_gain = cp.convolve(gain, cp.ones(rsi_window) / rsi_window, mode='valid')
+        avg_loss = cp.convolve(loss, cp.ones(rsi_window) / rsi_window, mode='valid')
+        rs = avg_gain / avg_loss
+
+        rsi = 100 - (100/ (1 + rs))
+
+        # Align output size
+        pad_length = close_gpu.shape[0] - rsi.shape[0]
+        rsi = cp.concatenate([cp.full(pad_length, cp.nan), rsi])
+        return rsi
+    
+    def calculate_adx_gpu(self, high_gpu, low_gpu, close_gpu, adx_time_period):
+        tr1 = cp.abs(high_gpu[1:] - low_gpu[1:])
+        tr2 = cp.abs(high_gpu[1:] - close_gpu[:-1])
+        tr3 = cp.abs(low_gpu[1:] - close_gpu[:-1])
+        true_range = cp.maximum(tr1, cp.maximum(tr2, tr3))
+
+        # Directional Movement
+        plus_dm = cp.maximum(high_gpu[1:] - high_gpu[:-1], 0)
+        minus_dm = cp.maximum(low_gpu[:-1] - low_gpu[1:], 0)
+
+        plus_dm = cp.where(plus_dm > minus_dm, plus_dm, 0)
+        minus_dm = cp.where(minus_dm > plus_dm, minus_dm, 0)
+
+        # Smoothed averages
+        atr = cp.convolve(true_range, cp.ones(adx_time_period) / adx_time_period, mode='valid')
+        plus_di = 100 * cp.convolve(plus_dm, cp.ones(adx_time_period) / adx_time_period, mode='valid') / atr
+        minus_di = 100 * cp.convolve(minus_dm, cp.ones(adx_time_period) / adx_time_period, mode='valid') / atr
+
+        # ADX calculation
+        dx = cp.abs(plus_di - minus_di) / (plus_di + minus_di) * 100
+        adx = cp.convolve(dx, cp.ones(adx_time_period) / adx_time_period, mode='valid')
+
+        # Align output size
+        pad_length = high_gpu.shape[0] - adx.shape[0]
+        adx = cp.concatenate([cp.full(pad_length, cp.nan), adx])
+        return adx
+
+    def combine_signals(self, signals1, signals2):
+        combined_signals = signals1.copy()
+        combined_signals[signals2 == 0], 0
+        return combined_signals
+    
+    def format_signals(self, signals):
+        """
+        Formats signals to avoid double buys or sells.
+        Vectorized implementation using NumPy.
+        """
+        # Initialize formatted signals array
+        formatted_signals = np.zeros_like(signals)
+
+        # Identify where signals change (entries/exits)
+        signal_changes = signals != 0
+
+        # Compute cumulative sum of signal changes
+        cumulative_signals = np.cumsum(signal_changes)
+
+        # Compute previous in_position status
+        prev_in_position = (np.concatenate([[0], cumulative_signals[:-1]]) % 2) == 1
+
+        # Allowed entries: signals == 1 and not in position
+        allowed_entries = (signals == 1) & (~prev_in_position)
+
+        # Allowed exits: signals == -1 and in position
+        allowed_exits = (signals == -1) & prev_in_position
+
+        # Set formatted signals
+        formatted_signals[allowed_entries] = 1
+        formatted_signals[allowed_exits] = -1
+
+        return formatted_signals

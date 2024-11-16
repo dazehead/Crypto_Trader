@@ -19,6 +19,7 @@ from strategies.single.kama import Kama
 from strategies.single.adx import ADX
 from strategies.double.rsi_adx import RSI_ADX
 from strategies.combined_strategy import Combined_Strategy
+from strategies.gpu_optimized.rsi_adx_gpu import RSI_ADX_GPU
 from risk import Risk_Handler
 from log import LinkedList
 from hyper import Hyper
@@ -29,6 +30,7 @@ symbols = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 
 product = ['BTC-USD']
 granularity = 'ONE_MINUTE'
 granularites = ['ONE_MINUTE','FIVE_MINUTE','FIFTEEN_MINUTE','THIRTY_MINUTE','ONE_HOUR','TWO_HOUR','SIX_HOUR','ONE_DAY']
+
 
 def test_multiple_strategy():
     logbook = LinkedList()
@@ -64,7 +66,7 @@ def run_basic_backtest():
 
     dict_df = database_interaction.get_historical_from_db(granularity='ONE_MINUTE',
                                                         symbols=product,
-                                                        num_days=50)
+                                                        num_days=10)
     for key, value in dict_df.items():
         current_dict = {key : value}
 
@@ -73,37 +75,57 @@ def run_basic_backtest():
         
         strat = RSI_ADX(
             dict_df=current_dict,
+            risk_object=risk,
+            with_sizing=True)
+        
+        strat_gpu = RSI_ADX_GPU(
+            dict_df=current_dict,
+            risk_object=risk,
             with_sizing=True,
-            risk_object=risk)
+            hyper=False
+        )
+
         params = database_interaction.get_best_params(strat)
+        print(params)
+
         strat.custom_indicator(None, *params)
+        strat_gpu.custom_indicator(None, *params)
+
         strat.graph()
+        strat_gpu.graph()
+
         strat.generate_backtest()
+        strat_gpu.generate_backtest()
+
+
         pf = strat.portfolio
+        pf_gpu = strat_gpu.portfolio
+
         print(pf.stats())
+        print(pf_gpu.stats())
 
         #database_interaction.export_backtest_to_db(object=strat)
 
 
-        fig = pf.plot(subplots = [
-        'orders',
-        'trade_pnl',
-        'cum_returns',
-        'drawdowns',
-        'underwater',
-        'gross_exposure'])
-        fig.update_layout(
-            title={
-                'text': f"{strat.__class__.__name__} for {strat.symbol} on {strat.granularity} timeframe",  # Replace with your desired title
-                'x': 0.5,  # Centers the title
-                'xanchor': 'center',
-                'yanchor': 'top'
-            },
-            margin={
-                't': 100  # Adjust the top margin to create space for the title
-            }
-        )
-        fig.show()
+        # fig = pf.plot(subplots = [
+        # 'orders',
+        # 'trade_pnl',
+        # 'cum_returns',
+        # 'drawdowns',
+        # 'underwater',
+        # 'gross_exposure'])
+        # fig.update_layout(
+        #     title={
+        #         'text': f"{strat.__class__.__name__} for {strat.symbol} on {strat.granularity} timeframe",  # Replace with your desired title
+        #         'x': 0.5,  # Centers the title
+        #         'xanchor': 'center',
+        #         'yanchor': 'top'
+        #     },
+        #     margin={
+        #         't': 100  # Adjust the top margin to create space for the title
+        #     }
+        # )
+        # fig.show()
 
 #run_basic_backtest()
 
@@ -114,7 +136,7 @@ def run_hyper():
     risk = Risk_Handler()
     for granularity in granularites:
         if granularity == 'ONE_MINUTE':
-            days = 20
+            days = 25
         elif granularity == 'FIVE_MINUTE':
             days = 100
         elif granularity == 'FIFTEEN_MINUTE':
@@ -133,7 +155,7 @@ def run_hyper():
             key, value = items
             current_dict = {key:value}
             
-            strat = RSI_ADX(current_dict, risk_object=risk, with_sizing=True)
+            strat = RSI_ADX_GPU(current_dict, risk_object=risk, with_sizing=True, hyper=True)
 
             hyper = Hyper(
                 strategy_object=strat,
@@ -144,10 +166,11 @@ def run_hyper():
                 adx_buy_threshold = np.arange(20, 60, step=10),
                 adx_time_period=np.arange(10, 30, step=5))
 
-            # database_interaction.export_hyper_to_db(
-            #     strategy=strat,
-            #     hyper=hyper)
-            print(f"Execution Time: {time.time() - start_time}")
+            database_interaction.export_hyper_to_db(
+                strategy=strat,
+                hyper=hyper)
+            
+            #print(f"Execution Time: {time.time() - start_time}")
             utils.progress_bar_with_eta(
                 progress=i,
                 data=dict_df.keys(),
