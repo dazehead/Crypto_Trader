@@ -309,7 +309,7 @@ class Strategy:
     def set_granularity(self):
         # Retrieves multiple dates and compares then gets the most frequest
         time_differences = []
-        for i in range(100):
+        for i in range(20):
             if i == 0:
                 pass
             time_diff = self.df.index[i] - self.df.index[i-1]
