@@ -77,41 +77,41 @@ class Hyper(Strategy):
         close_data = getattr(self, 'close', self.close)
         open_data = getattr(self, 'open', self.open )
         pf = vbt.Portfolio.from_signals(
-            open_data, 
+            close_data, 
             self.entries,
             self.exits
         )
         return pf
     
 
-    # def run_portfolio(self):
-    #     """Performs backtest and returns the stats"""
-    #     if self.risk_object is not None:
-    #         init_cash = self.risk_object.total_balance
-    #     size = None
-    #     size_type = None
-    #     accumulate = False
+    def run_portfolio(self):
+        """Performs backtest and returns the stats"""
+        if self.risk_object is not None:
+            init_cash = self.risk_object.total_balance
+        size = None
+        size_type = None
+        accumulate = False
 
-    #     if self.with_sizing:
-    #         size = pd.Series(index=self.close.index, dtype='float')
-    #         size[self.entries] = 10
-    #         if self.risk_object is not None:
-    #             size[self.entries] = self.risk_object.percent_to_size #this sizing will be calculated through risk class
-    #         size[self.exits] = np.inf
+        if self.with_sizing:
+            size = pd.Series(index=self.close.index, dtype='float')
+            size[self.entries] = 10
+            if self.risk_object is not None:
+                size[self.entries] = self.risk_object.percent_to_size #this sizing will be calculated through risk class
+            size[self.exits] = np.inf
 
-    #         size_type = 'value'
-    #         accumulate = True
+            size_type = 'value'
+            accumulate = True
 
-    #     close_data = getattr(self, 'close', self.close)
-    #     open_data = getattr(self, 'open', self.open)
+        close_data = getattr(self, 'close', self.close)
+        open_data = getattr(self, 'open', self.open)
 
-    #     pf = vbt.Portfolio.from_signals(
-    #         close = open_data,
-    #         entries = self.entries,
-    #         exits = self.exits,
-    #         size = size,
-    #         size_type= size_type,
-    #         accumulate= accumulate,
-    #         init_cash= init_cash)
+        pf = vbt.Portfolio.from_signals(
+            close = open_data,
+            entries = self.entries,
+            exits = self.exits,
+            size = size,
+            size_type= size_type,
+            accumulate= accumulate,
+            init_cash= init_cash)
 
-    #     return pf
+        return pf

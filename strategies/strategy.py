@@ -34,8 +34,7 @@ class Strategy:
         self.open_gpu = cp.array(self.open)
         self.volume_gpu = cp.array(self.volume)
 
-        self.granularity = None
-        self.set_granularity()
+        self.granularity = self.set_granularity()
 
 
         self.entries = None
@@ -79,6 +78,25 @@ class Strategy:
         self.signals = signals
 
         return self.signals
+
+    def update(self, dict_df):
+        for key, value in dict_df.items():
+            self.symbol = key
+            self.df = value
+
+        self.open = self.df['open']
+        self.high = self.df['high']
+        self.low = self.df['low']
+        self.close = self.df['close']
+        self.volume = self.df['volume']
+
+        self.close_gpu = cp.array(self.close)
+        self.high_gpu = cp.array(self.high)
+        self.low_gpu = cp.array(self.low)
+        self.open_gpu = cp.array(self.open)
+        self.volume_gpu = cp.array(self.volume)
+
+        self.granularity = self.set_granularity()
 
     def generate_signals(self, buy_signal, sell_signal, with_formating=True):
         """Common method to generate and format buy/sell signals"""
@@ -228,12 +246,12 @@ class Strategy:
 
         # Plot entry and exit markers on the first figure (fig1)
         if self.entries is not None:
-            fig1 = self.entries.vbt.signals.plot_as_entry_markers(self.open, fig=fig1)
+            fig1 = self.entries.vbt.signals.plot_as_entry_markers(self.close, fig=fig1)
             if osc_data is not None:  # Only plot if osc_data exists
                 fig2 = self.entries.vbt.signals.plot_as_entry_markers(osc_data, fig=fig2)
 
         if self.exits is not None:
-            fig1 = self.exits.vbt.signals.plot_as_exit_markers(self.open, fig=fig1)
+            fig1 = self.exits.vbt.signals.plot_as_exit_markers(self.close, fig=fig1)
             if osc_data is not None:  # Only plot if osc_data exists
                 fig2 = self.exits.vbt.signals.plot_as_exit_markers(osc_data, fig=fig2)
 
@@ -289,10 +307,6 @@ class Strategy:
     
     
     def set_granularity(self):
-        if self.risk_object is not None:
-            if self.risk_object.client is not None:
-                self.granularity = self.risk_object.client.granularity
-                return
         # Retrieves multiple dates and compares then gets the most frequest
         time_differences = []
         for i in range(100):
@@ -303,7 +317,6 @@ class Strategy:
                 time_diff = pd.Timedelta(minutes=1)
             time_differences.append(time_diff)
         time_diff = max(time_differences, key=time_differences.count)
-
         time_map = {
             pd.Timedelta(minutes=1): 'ONE_MINUTE',
             pd.Timedelta(minutes=5): 'FIVE_MINUTE',
@@ -315,7 +328,8 @@ class Strategy:
             pd.Timedelta(days=1): 'ONE_DAY'
         }
         # Return the corresponding string or 'Unknown' if not found
-        self.granularity = time_map.get(time_diff, 'Unknown')
+        return  time_map.get(time_diff, 'Unknown')
+
 
     def add_adx(self, adx_buy_threshold, time_period):
         adx = ta.ADX(self.high, self.low, self.close, time_period)

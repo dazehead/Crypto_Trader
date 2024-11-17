@@ -7,7 +7,7 @@ import sys
 import time
 import gc
 
-
+granularites = ['ONE_MINUTE', 'FIVE_MINUTE', 'FIFTEEN_MINUTE', 'THIRTY_MINUTE', 'ONE_HOUR', 'TWO_HOUR', 'SIX_HOUR', 'ONE_DAY']
 def convert_symbols(strategy_object:object):
     coinbase_crypto = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
     robinhood_crypto = ['BTC', 'ETH', 'DOGE', 'SHIB', 'AVAX', 'BCH', 'LINK', 'UNI', 'LTC', 'XLM', 'ETC', 'AAVE', 'XTZ', 'COMP']
@@ -53,27 +53,70 @@ def get_historical_from_db(granularity, symbols: list = [], num_days: int = None
     return tables_data
 
 
-def get_best_params(strategy_object):
+def get_best_params(strategy_object, best_of_all_granularities=False):
     conn = sql.connect(f'database/hyper.db')
-    table = f"{strategy_object.__class__.__name__}_{strategy_object.granularity}"
-    params = inspect.signature(strategy_object.custom_indicator)
-    params = list(dict(params.parameters).keys())[1:]
-    parameters = ', '.join(params)
+    if best_of_all_granularities:
+        best_results = []
+        best_granularity = ''
+        for granularity in granularites:
+            table = f"{strategy_object.__class__.__name__}_{granularity}"
+            params = inspect.signature(strategy_object.custom_indicator)
+            params = list(dict(params.parameters).keys())[1:]
+            parameters = ', '.join(params)
 
-    # we have already sent it the correct symbols that it did not get from client
-    if strategy_object.risk_object.client is not None:
-        symbol = convert_symbols(strategy_object = strategy_object)
+            # we have already sent it the correct symbols that it did not get from client
+            if strategy_object.risk_object.client is not None:
+                symbol = convert_symbols(strategy_object = strategy_object)
+            else:
+                symbol = strategy_object.symbol
+
+            query = f'SELECT {parameters},MAX("Total Return [%]") FROM {table} WHERE symbol="{symbol}"'
+            result = pd.read_sql_query(query, conn)
+            list_results = []
+            for param in result:
+                list_results.append(result[param][0])
+            if not best_results:
+                best_results = list_results
+                best_granularity = granularity
+            else:
+                if best_results[-1] < list_results[-1]:
+                    best_results = list_results
+                    best_granularity = granularity
+
+        if best_granularity != strategy_object.granularity:
+            #if the granularity has changed then we update strat with new data
+
+            num_days = int(((strategy_object.df.index[-1] - strategy_object.df.index[0]).total_seconds() // 86400))
+            dict_df = get_historical_from_db(granularity=best_granularity,
+                                             symbols = strategy_object.symbol,
+                                             num_days=num_days)
+            strategy_object.update(dict_df)
+
+        best_results = best_results[:-1]
+        conn.close()
+        return best_results
+        
+
     else:
-        symbol = strategy_object.symbol
+            table = f"{strategy_object.__class__.__name__}_{strategy_object.granularity}"
+            params = inspect.signature(strategy_object.custom_indicator)
+            params = list(dict(params.parameters).keys())[1:]
+            parameters = ', '.join(params)
 
-    query = f'SELECT {parameters},MAX("Total Return [%]") FROM {table} WHERE symbol="{symbol}"'
-    result = pd.read_sql_query(query, conn)
+            # we have already sent it the correct symbols that it did not get from client
+            if strategy_object.risk_object.client is not None:
+                symbol = convert_symbols(strategy_object = strategy_object)
+            else:
+                symbol = strategy_object.symbol
 
-    list_results = []
+            query = f'SELECT {parameters},MAX("Total Return [%]") FROM {table} WHERE symbol="{symbol}"'
+            result = pd.read_sql_query(query, conn)
 
-    for param in result:
-        list_results.append(result[param][0])
-    list_results = list_results[:-1]  
+            list_results = []
+
+            for param in result:
+                list_results.append(result[param][0])
+            list_results = list_results[:-1] 
 
     conn.close()
     return list_results
@@ -144,11 +187,7 @@ def export_hyper_to_db(strategy: object, hyper: object):
 
         combined_df = pd.concat([combined_df,pd.DataFrame([backtest_dict])])
 
-    class_name = strategy.__class__.__name__
-    if class_name.split('_')[-1] == 'GPU':
-        class_name = '_'.join(class_name.split('_')[:-1])
-        
-    table_name = f"{class_name}_{granularity}"
+    table_name = f"{strategy.__class__.__name__}_{granularity}"
 
     _create_table_if_not_exists(table_name, combined_df, conn=conn) 
 

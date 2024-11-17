@@ -65,18 +65,13 @@ def run_basic_backtest():
     #         days = 365
 
     dict_df = database_interaction.get_historical_from_db(granularity='ONE_MINUTE',
-                                                        symbols=product,
-                                                        num_days=10)
+                                                        symbols=symbols,
+                                                        num_days=365)
     for key, value in dict_df.items():
         current_dict = {key : value}
 
         #current_dict = utils.heikin_ashi_transform(current_dict)
         risk = Risk_Handler()
-        
-        strat = RSI_ADX(
-            dict_df=current_dict,
-            risk_object=risk,
-            with_sizing=True)
         
         strat_gpu = RSI_ADX_GPU(
             dict_df=current_dict,
@@ -85,23 +80,17 @@ def run_basic_backtest():
             hyper=False
         )
 
-        params = database_interaction.get_best_params(strat)
-        print(params)
+        params = database_interaction.get_best_params(strat_gpu, best_of_all_granularities=True)
+        print(key, strat_gpu.granularity)
 
-        strat.custom_indicator(None, *params)
         strat_gpu.custom_indicator(None, *params)
 
-        strat.graph()
         strat_gpu.graph()
 
-        strat.generate_backtest()
         strat_gpu.generate_backtest()
 
-
-        pf = strat.portfolio
         pf_gpu = strat_gpu.portfolio
 
-        print(pf.stats())
         print(pf_gpu.stats())
 
         #database_interaction.export_backtest_to_db(object=strat)
@@ -127,7 +116,7 @@ def run_basic_backtest():
         # )
         # fig.show()
 
-#run_basic_backtest()
+run_basic_backtest()
 
 
 
@@ -188,5 +177,5 @@ def run_hyper():
                 # x_level = 'cust_fast_window',
                 # y_level = 'cust_slow_window')
                 # fig.show()
-run_hyper()
+#run_hyper()
 
