@@ -88,7 +88,7 @@ class Hyper(Strategy):
         """Performs backtest and returns the stats"""
         if self.risk_object is not None:
             pass
-            #init_cash = self.risk_object.total_balance
+            init_cash = self.risk_object.total_balance
         size = None
         size_type = None
         accumulate = False
@@ -109,7 +109,7 @@ class Hyper(Strategy):
             exits = self.exits,
             size = size,
             size_type= size_type,
-            accumulate= accumulate)
-            #init_cash= init_cash)
+            accumulate= accumulate,
+            init_cash= init_cash)
 
         return pf

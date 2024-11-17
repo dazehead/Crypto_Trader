@@ -1,11 +1,2 @@
 TO-DO:
---- with_sizing issue in strategy when running on live trading 
-
---- when using 2 osc_data, graph plots on top of each other, need to add another figure
-
---- try and implement CUDA
-
---- need to implement calculating fees when live trading
-
-******* IMPORTANT CHECK BUY AND SELL AND SEE IF THEY ARE THE SAME TXID IF THEY ARE NOT WE NEED TO UPDATE THE TXID as of right now
-it seems the tsid is changing if we edit it and put another order
+--- check backtest and see what it does when you 

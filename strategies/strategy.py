@@ -119,35 +119,7 @@ class Strategy:
         self.entries = pd.Series(self.entries, index=self.close.index)
         self.exits = pd.Series(self.exits, index=self.close.index)
         return signals
-    
-    # @njit
-    # def calculate_with_sizing_numba(self,signal, close, percent_to_size):
-    #     n = len(signal)
-    #     new_signal = signal.copy()
-    #     saved_close = 0.0
-    #     tracking = False
-
-    #     for i in range(n):
-    #         if signal[i] == 1 and not tracking:
-    #             saved_close = close[i]
-    #             tracking = True
-    #         elif tracking:
-    #             target_close = saved_close * (1 + percent_to_size)
-
-    #             if signal[i] == 0:
-    #                 if close[i] >= target_close:
-    #                     new_signal[i] = 1
-    #                     saved_close = close[i]
-    #                 elif close[i] <= target_close * (1 - (percent_to_size * 2)):
-    #                     saved_close = close[i]
-
-    #             if signal[i] == -1:
-    #                 tracking = False
-    #                 saved_close = 0.0
-
-    #     return new_signal
-
-        
+      
     
     def format_signals(self, signals):
         """formats signals so no double buy or double sells"""
@@ -281,7 +253,7 @@ class Strategy:
 
     def generate_backtest(self):
         """Performs backtest and returns the stats"""
-        init_cash = self.risk_object.total_balance
+        init_cash = self.risk_object.total_balancegi
         size = None
         size_type = None
         accumulate = False
