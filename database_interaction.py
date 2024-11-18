@@ -53,7 +53,7 @@ def get_historical_from_db(granularity, symbols: list = [], num_days: int = None
     return tables_data
 
 
-def get_best_params(strategy_object, best_of_all_granularities=False):
+def get_best_params(strategy_object, best_of_all_granularities=False, minimum_trades=None):
     conn = sql.connect(f'database/hyper.db')
     if best_of_all_granularities:
         best_results = []
@@ -71,6 +71,8 @@ def get_best_params(strategy_object, best_of_all_granularities=False):
                 symbol = strategy_object.symbol
 
             query = f'SELECT {parameters},MAX("Total Return [%]") FROM {table} WHERE symbol="{symbol}"'
+            if minimum_trades is not None:
+                query += f' AND "Total Trades" >= {minimum_trades}'
             result = pd.read_sql_query(query, conn)
             list_results = []
             for param in result:

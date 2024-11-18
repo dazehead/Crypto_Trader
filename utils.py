@@ -11,6 +11,29 @@ pd.set_option('future.no_silent_downcasting', True)
 
 
 @njit
+def format_signals(signals):
+    """
+    Formats signals to avoid double buys or sells.
+    Optimized using NumPy arrays with a loop.
+    """
+    # Ensure signals is a NumPy array
+    #signals = np.array(signals)
+    formatted_signals = np.zeros_like(signals)
+    in_position = False
+
+    for i in range(len(signals)):
+        if signals[i] == 1 and not in_position:
+            formatted_signals[i] = 1
+            in_position = True
+        elif signals[i] == -1 and in_position:
+            formatted_signals[i] = -1
+            in_position = False
+        # Else, no change; formatted_signals[i] remains 0
+        # in_position remains the same
+
+    return formatted_signals
+
+@njit
 def calculate_with_sizing_numba(signal, close, percent_to_size):
     n = len(signal)
     new_signal = signal.copy()

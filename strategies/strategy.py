@@ -105,7 +105,8 @@ class Strategy:
         signals[sell_signal] = -1
 
         if with_formating:
-            signals = self.format_signals(signals)
+            signals = np.array(signals)
+            signals = utils.format_signals(signals)
             # if self.with_sizing:
             #     signals = self.calculate_with_sizing(signals)##########################################################################
 
@@ -121,40 +122,41 @@ class Strategy:
         return signals
       
     
-    def format_signals(self, signals):
-        """formats signals so no double buy or double sells"""
-        formatted_signals = np.zeros_like(signals)
-        in_position = False
+    # def format_signals(self, signals):
+    #     """formats signals so no double buy or double sells"""
+    #     formatted_signals = np.zeros_like(signals)
+    #     in_position = False
             
-        for i in range(len(signals)):
-            if signals[i] == 1 and not in_position:
-                formatted_signals[i] = 1
-                in_position = True
-            elif signals[i] == -1 and in_position:
-                formatted_signals[i] = -1
-                in_position = False
-        return formatted_signals    
+    #     for i in range(len(signals)):
+    #         if signals[i] == 1 and not in_position:
+    #             formatted_signals[i] = 1
+    #             in_position = True
+    #         elif signals[i] == -1 and in_position:
+    #             formatted_signals[i] = -1
+    #             in_position = False
+    #     return formatted_signals    
 
 
     def combine_signals(self, *signals):
-        combined_signals = []
-        signal_length = len(signals[0])  # Assuming all signals have the same length
-        try:
-            for i in range(signal_length):
-                # Get all the signals at the current index across the provided lists
-                current_signals = [signal[i] for signal in signals]
-                
-                if all(s == 1 for s in current_signals):
-                    combined = 1  # Set to 1 only if all signals are 1
-                elif all(s == -1 for s in current_signals):
-                    combined = -1  # Set to -1 only if all signals are -1
-                else:
-                    combined = 0  # Set to 0 if there's any mix of values
-                combined_signals.append(combined)
-        except Exception as e:
-            print(f"Invalid signals: {e}")
+        # Convert the list of signals to a 2D NumPy array
+        signals_array = np.array(signals)  # Shape: (num_signals, signal_length)
         
-        combined_signals = self.format_signals(combined_signals)
+        # Check where all signals are 1
+        all_ones = np.all(signals_array == 1, axis=0)
+        
+        # Check where all signals are -1
+        all_neg_ones = np.all(signals_array == -1, axis=0)
+        
+        # Initialize combined_signals with zeros
+        combined_signals = np.zeros(signals_array.shape[1], dtype=int)
+        
+        # Set combined_signals to 1 where all signals are 1
+        combined_signals[all_ones] = 1
+        
+        # Set combined_signals to -1 where all signals are -1
+        combined_signals[all_neg_ones] = -1
+        
+        combined_signals = utils.format_signals(combined_signals)
         if self.with_sizing:
             # extracting information too work with njit
             percent_to_size = self.risk_object.percent_to_size
@@ -253,7 +255,7 @@ class Strategy:
 
     def generate_backtest(self):
         """Performs backtest and returns the stats"""
-        init_cash = self.risk_object.total_balancegi
+        init_cash = self.risk_object.total_balance
         size = None
         size_type = None
         accumulate = False

@@ -10,7 +10,7 @@ class RSI_ADX_GPU(Strategy):
         self.hyper = hyper
 
     def custom_indicator(self, close=None, rsi_window=20, buy_threshold=15, sell_threshold=70,
-                            adx_buy_threshold=20, adx_time_period=20):
+                            adx_buy_threshold=30, adx_time_period=20):
         if not self.hyper:
             self.rsi_window = rsi_window
             self.buy_threshold = buy_threshold
@@ -35,7 +35,7 @@ class RSI_ADX_GPU(Strategy):
         signals[buy_signal] = 1
         signals[sell_signal] = -1
 
-        signals = self.format_signals(signals)
+        signals = utils.format_signals(signals)
 
         # Calculate ADX
         adx = self.calculate_adx_gpu(self.high_gpu, self.low_gpu, self.close_gpu, adx_time_period)
@@ -54,7 +54,7 @@ class RSI_ADX_GPU(Strategy):
         final_signals = self.combine_signals(signals, signals_adx)
 
         # Format signals to avoid double entries/exits
-        final_signals = self.format_signals(final_signals)
+        final_signals = utils.format_signals(final_signals)
 
 
         if self.with_sizing:
@@ -69,8 +69,8 @@ class RSI_ADX_GPU(Strategy):
             self.signals = final_signals
 
 
-            self.entries = np.zeros_like(signals, dtype=bool)
-            self.exits = np.zeros_like(signals, dtype=bool)
+            self.entries = np.zeros_like(self.signals, dtype=bool)
+            self.exits = np.zeros_like(self.signals, dtype=bool)
 
             self.entries[self.signals == 1] = True
             self.exits[self.signals == -1] = True
@@ -79,9 +79,6 @@ class RSI_ADX_GPU(Strategy):
             self.exits = pd.Series(self.exits, index=self.close.index)
 
         return final_signals
-    
-    def calculate_with_sizing(self, signals):
-        pass
 
 
     def calculate_rsi_gpu(self, close_gpu, rsi_window):
@@ -128,36 +125,45 @@ class RSI_ADX_GPU(Strategy):
         adx = cp.concatenate([cp.full(pad_length, cp.nan), adx])
         return adx
 
-    def combine_signals(self, signals1, signals2):
-        combined_signals = signals1.copy()
-        combined_signals[signals2 == 0], 0
+    def combine_signals(self, *signals):
+        # Convert the list of signals to a 2D NumPy array
+        signals_array = np.array(signals)  # Shape: (num_signals, signal_length)
+        
+        # Check where all signals are 1
+        all_ones = np.all(signals_array == 1, axis=0)
+        
+        # Check where all signals are -1
+        all_neg_ones = np.all(signals_array == -1, axis=0)
+        
+        # Initialize combined_signals with zeros
+        combined_signals = np.zeros(signals_array.shape[1], dtype=int)
+        
+        # Set combined_signals to 1 where all signals are 1
+        combined_signals[all_ones] = 1
+        
+        # Set combined_signals to -1 where all signals are -1
+        combined_signals[all_neg_ones] = -1
+        
         return combined_signals
     
-    def format_signals(self, signals):
-        """
-        Formats signals to avoid double buys or sells.
-        Vectorized implementation using NumPy.
-        """
-        # Initialize formatted signals array
-        formatted_signals = np.zeros_like(signals)
+    # def format_signals(self, signals):
+    #     """
+    #     Formats signals to avoid double buys or sells.
+    #     Optimized using NumPy arrays with a loop.
+    #     """
+    #     # Ensure signals is a NumPy array
+    #     signals = np.array(signals)
+    #     formatted_signals = np.zeros_like(signals)
+    #     in_position = False
 
-        # Identify where signals change (entries/exits)
-        signal_changes = signals != 0
+    #     for i in range(len(signals)):
+    #         if signals[i] == 1 and not in_position:
+    #             formatted_signals[i] = 1
+    #             in_position = True
+    #         elif signals[i] == -1 and in_position:
+    #             formatted_signals[i] = -1
+    #             in_position = False
+    #         # Else, no change; formatted_signals[i] remains 0
+    #         # in_position remains the same
 
-        # Compute cumulative sum of signal changes
-        cumulative_signals = np.cumsum(signal_changes)
-
-        # Compute previous in_position status
-        prev_in_position = (np.concatenate([[0], cumulative_signals[:-1]]) % 2) == 1
-
-        # Allowed entries: signals == 1 and not in position
-        allowed_entries = (signals == 1) & (~prev_in_position)
-
-        # Allowed exits: signals == -1 and in position
-        allowed_exits = (signals == -1) & prev_in_position
-
-        # Set formatted signals
-        formatted_signals[allowed_entries] = 1
-        formatted_signals[allowed_exits] = -1
-
-        return formatted_signals
+    #     return formatted_signals

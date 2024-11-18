@@ -64,7 +64,7 @@ def run_basic_backtest():
     #     else:
     #         days = 365
 
-    dict_df = database_interaction.get_historical_from_db(granularity='ONE_MINUTE',
+    dict_df = database_interaction.get_historical_from_db(granularity='FIVE_MINUTE',
                                                         symbols=product,
                                                         num_days=25)
     for key, value in dict_df.items():
@@ -73,16 +73,19 @@ def run_basic_backtest():
         #current_dict = utils.heikin_ashi_transform(current_dict)
         risk = Risk_Handler()
         
-        strat = RSI_ADX_GPU(
+        strat = RSI_ADX(
             dict_df=current_dict,
             risk_object=risk,
-            with_sizing=True,
-            hyper=False
+            with_sizing=True
         )
 
-        params = database_interaction.get_best_params(strat, best_of_all_granularities=False)
+        # params = database_interaction.get_best_params(
+        #     strategy_object=strat, 
+        #     best_of_all_granularities=False,
+        #     minimum_trades=5)
+        # print(params)
 
-        strat.custom_indicator(None, *params)
+        strat.custom_indicator(None, 20, 35, 85, 20 ,15)
 
         strat.graph()
 

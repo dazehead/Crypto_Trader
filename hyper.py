@@ -94,6 +94,10 @@ class Hyper(Strategy):
         accumulate = False
 
         if self.with_sizing:
+            # size = np.full(self.entries.shape, np.nan)
+            # size[self.entries.to_numpy()] = self.risk_object.percent_to_size
+            # size[self.exits.to_numpy()] = np.inf
+
             size = pd.DataFrame(np.nan, index=self.entries.index, columns=self.entries.columns)
             size[self.entries] = self.risk_object.percent_to_size #this sizing will be calculated through risk class
             size[self.exits] = np.inf
