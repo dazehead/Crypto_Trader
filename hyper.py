@@ -87,7 +87,6 @@ class Hyper(Strategy):
     def run_portfolio(self):
         """Performs backtest and returns the stats"""
         if self.risk_object is not None:
-            pass
             init_cash = self.risk_object.total_balance
         size = None
         size_type = None

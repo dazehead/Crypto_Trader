@@ -269,7 +269,7 @@ class Strategy:
             accumulate = True
 
         self.portfolio = vbt.Portfolio.from_signals(
-            close = self.open,
+            close = self.close,
             entries = self.entries,
             exits = self.exits,
             size = size,

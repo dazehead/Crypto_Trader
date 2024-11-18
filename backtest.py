@@ -73,19 +73,19 @@ def run_basic_backtest():
         #current_dict = utils.heikin_ashi_transform(current_dict)
         risk = Risk_Handler()
         
-        strat = RSI_ADX(
+        strat = RSI_ADX_GPU(
             dict_df=current_dict,
             risk_object=risk,
             with_sizing=True
         )
 
-        # params = database_interaction.get_best_params(
-        #     strategy_object=strat, 
-        #     best_of_all_granularities=False,
-        #     minimum_trades=5)
-        # print(params)
+        params = database_interaction.get_best_params(
+            strategy_object=strat, 
+            best_of_all_granularities=True,
+            minimum_trades=3)
+        print(params)
 
-        strat.custom_indicator(None, 20, 35, 85, 20 ,15)
+        strat.custom_indicator(None, *params)
 
         strat.graph()
 
@@ -94,9 +94,6 @@ def run_basic_backtest():
         pf = strat.portfolio
 
         print(pf.stats())
-
-        #database_interaction.export_backtest_to_db(object=strat)
-
 
         fig = pf.plot(subplots = [
         'orders',
