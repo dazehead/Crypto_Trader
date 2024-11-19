@@ -1,23 +1,40 @@
 import pandas as pd
 import json
-import coinbase_wrapper
+from coinbase_wrapper import Coinbase_Wrapper
 import utils
 from pickling import to_pickle, from_pickle
+import time
+import database_interaction
+import datetime as dt
 
 
 class DF_Manager():
     """this only needs to be instansiated during WSClient"""
     def __init__(self,scanner: object, data=None):
         self.scanner = scanner
+        self.coinbase = self.scanner.coinbase
         self.client = self.scanner.client
         self.granularity = self.scanner.granularity
-        self.products_to_trade = scanner.products_to_trade
+        self.products_to_trade = scanner.kraken_crypto
+        self.products_granularity = {symbol: None for symbol in scanner.kraken_crypto}
+        self.next_update_time = {symbol: None for symbol in scanner.kraken_crypto}
         if not data:
             self.dict_df = {}
             #self.data_for_live_trade()
         else:
             self.dict_df = data
             #self.update(self.df)
+
+        self.time_map = {
+            'ONE_MINUTE': pd.Timedelta(minutes=1),
+            'FIVE_MINUTE': pd.Timedelta(minutes=5),
+            'FIFTEEN_MINUTE': pd.Timedelta(minutes=15),
+            'THIRTY_MINUTE': pd.Timedelta(minutes=30),
+            'ONE_HOUR': pd.Timedelta(hours=1),
+            'TWO_HOUR': pd.Timedelta(hours=2),
+            'SIX_HOUR': pd.Timedelta(hours=6),
+            'ONE_DAY': pd.Timedelta(days=1)
+        }
 
     def add_to_manager(self, data):
         if not self.dict_df:
@@ -27,22 +44,39 @@ class DF_Manager():
                 self.dict_df[k] = v
 
 
-    def data_for_live_trade(self, update=False):
+    def data_for_live_trade(self,symbol, update=False):
         """dataframe needs to be indexed by symbol"""
-        print('...Updating DataFrames')
-        for symbol in self.products_to_trade:
-            # Get the historical data
-            days_ago = 1 if update else 2
-            historical_data = self.client.get_historical_data(symbol, days_ago=days_ago)
-            updated_symbol = list(historical_data.keys())[0]
-            
-            # If updating, add only the last row if symbol exists
-            if update:
-                last_row = historical_data[updated_symbol].iloc[[-1]]
-                self.dict_df[updated_symbol] = pd.concat([self.dict_df[updated_symbol], last_row]).drop_duplicates()
-                #print(f"Updated {updated_symbol}")
-            else:
-                self.dict_df[updated_symbol] = historical_data[updated_symbol]
+
+        coinbase_symbol = database_interaction.convert_symbols(lone_symbol=symbol)
+        granularity = self.products_granularity[symbol]
+
+        timestamps = self.coinbase._get_unix_times(
+            granularity=granularity,
+            days=1
+        )
+
+        new_dict_df = self.coinbase.get_basic_candles(
+            symbols=[coinbase_symbol],
+            timestamps = timestamps,
+            granularity=granularity
+        )
+        new_dict_df[symbol] = new_dict_df.pop(coinbase_symbol)
+
+        # If updating, add only the last row if symbol exists
+        if update:
+            self.dict_df[symbol] = pd.concat([self.dict_df[symbol], new_dict_df[symbol]]).drop_duplicates()
+        else:
+            self.dict_df[symbol] = new_dict_df
+
+    def set_next_update(self, symbol, initial=False):
+        if initial:
+            next_update_in = dt.datetime.now() - pd.Timedelta(seconds=20)
+            self.next_update_time[symbol] = next_update_in
+        else:
+            next_update_in = dt.datetime.now() + (self.time_map[self.products_granularity[symbol]] - pd.Timedelta(seconds=20))
+            self.next_update_time[symbol] = next_update_in
+
+
 
     
     # def _to_df(self, dict:dict):

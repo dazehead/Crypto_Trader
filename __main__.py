@@ -14,6 +14,9 @@ from scanner import Scanner
 from risk import Risk_Handler
 from kraken_wrapper import Kraken
 from strategies.double.rsi_adx import RSI_ADX
+from strategies.gpu_optimized.rsi_adx_gpu import RSI_ADX_GPU
+import datetime as dt
+import pandas as pd
 
 granularity = 'ONE_MINUTE'
 symbol = 'XBTUSD'
@@ -26,31 +29,28 @@ def on_message():
     global kraken
     global risk
     global scanner
+    global df_manager
     print(f'counter: {counter}')
-    df_manager.data_for_live_trade(update=True)
-    #print(scanner.products_to_trade)
+    
     for k, v in df_manager.dict_df.items():
+
+        if dt.datetime.now() <= df_manager.next_update_time[k]:
+            continue
+        print(k)
+        df_manager.data_for_live_trade(symbol=k, update=True)
         current_dict = {k:v}
-        print(f"current symbol: {k}")
 
-        """send the strategy what time it is and update that time for the last time it was updated"""
-        strat = RSI_ADX(current_dict, risk, with_sizing=False)
+        strat = RSI_ADX_GPU(current_dict, risk, with_sizing=False)
 
-        #params = database_interaction.get_best_params(strat)
-        #strat.custom_indicator(strat.close, *params)
+        strat.custom_indicator(strat.close_gpu, *risk.symbol_params[k])
 
-        strat.custom_indicator(strat.close)
-
-        signals = [0,-1,0,0,0]
-        if k in ['XXBTZUSD', 'XETHZUSD', 'SHIBUSD', 'BCHUSD', 'LINKUSD', 'UNIUSD', 'XLTCZUSD', 'XXLMZUSD', 'XETCZUSD', 'AAVEUSD', 'XTZUSD', 'COMPUSD']:
-            signals = [0,0,0,0,0]
-        
         trade = Trade(risk = risk,
                     strat_object=strat,
-                    logbook=logbook,
-                    signals=[signals[counter]])
+                    logbook=logbook)
+        
+        df_manager.set_next_update(k)
         print('\n-------------------------------------------------------------------------------------\n')
-    
+
     counter += 1
 
 
@@ -69,21 +69,22 @@ async def fetch_data_periodically():
 
 
 """---------------start of program-----------------"""
-kraken = Kraken(granularity=granularity)
+kraken = Kraken()
+risk = Risk_Handler(kraken)
 scanner = Scanner(client=kraken)
 df_manager = DF_Manager(scanner)
-
 scanner.assign_attribute(df_manager=df_manager)
-scanner.populate_manager(days_ago=2)
 
-"""Loops through the scanner until a product gets returned from our defined filter parameters"""
-while not scanner.products_to_trade:
-    scanner.filter_products()
+#scanner.coinbase.get_candles_for_db(scanner.coinbase_crypto, kraken.granularity, days=30)
 
 
+for symbol in scanner.kraken_crypto:
+    strat = RSI_ADX_GPU(dict_df= None, risk_object=risk)
+    strat.symbol = symbol
+    params = database_interaction.get_best_params(strat, df_manager,live_trading=True, best_of_all_granularities=True, minimum_trades=3)
+    risk.symbol_params[symbol] = params
+    df_manager.set_next_update(symbol, initial=True)
 logbook = LinkedList()
-risk = Risk_Handler(kraken)
-
 
 
 async def main():

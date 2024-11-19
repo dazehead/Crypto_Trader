@@ -16,8 +16,6 @@ def format_signals(signals):
     Formats signals to avoid double buys or sells.
     Optimized using NumPy arrays with a loop.
     """
-    # Ensure signals is a NumPy array
-    #signals = np.array(signals)
     formatted_signals = np.zeros_like(signals)
     in_position = False
 

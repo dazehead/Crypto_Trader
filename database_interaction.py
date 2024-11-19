@@ -7,22 +7,31 @@ import sys
 import time
 import gc
 
-granularites = ['ONE_MINUTE', 'FIVE_MINUTE', 'FIFTEEN_MINUTE', 'THIRTY_MINUTE', 'ONE_HOUR', 'TWO_HOUR', 'SIX_HOUR', 'ONE_DAY']
-def convert_symbols(strategy_object:object):
+
+def convert_symbols(strategy_object:object=None, lone_symbol=None, to_kraken=False):
     coinbase_crypto = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
     robinhood_crypto = ['BTC', 'ETH', 'DOGE', 'SHIB', 'AVAX', 'BCH', 'LINK', 'UNI', 'LTC', 'XLM', 'ETC', 'AAVE', 'XTZ', 'COMP']
     kraken_crypto = ['XXBTZUSD', 'XETHZUSD', 'XDGUSD', 'SHIBUSD', 'AVAXUSD', 'BCHUSD', 'LINKUSD', 'UNIUSD', 'XLTCZUSD', 'XXLMZUSD', 'XETCZUSD', 'AAVEUSD', 'XTZUSD', 'COMPUSD']
 
-    database_list = coinbase_crypto
-    symbol_list = kraken_crypto
-    current_symbol =  strategy_object.symbol
-    symbol_index = kraken_crypto.index(current_symbol)
-    return coinbase_crypto[symbol_index]
+    if strategy_object is not None:
+        current_symbol =  strategy_object.symbol
+    elif lone_symbol is not None:
+        current_symbol = lone_symbol
+    if to_kraken:
+        symbol_index = coinbase_crypto.index(current_symbol)
+        return kraken_crypto.index(current_symbol)
+    else:
+        symbol_index = kraken_crypto.index(current_symbol)
+        return coinbase_crypto[symbol_index]
 
 
 
 
-def get_historical_from_db(granularity, symbols: list = [], num_days: int = None):
+def get_historical_from_db(granularity, symbols: list = [], num_days: int = None, convert=False):
+    original_symbol = symbols
+
+    if convert:
+        symbols = convert_symbols(lone_symbol=symbols)
     conn = sql.connect(f'database/{granularity}.db')
     query = "SELECT name FROM sqlite_master WHERE type='table';"
     tables = pd.read_sql_query(query, conn)
@@ -47,18 +56,22 @@ def get_historical_from_db(granularity, symbols: list = [], num_days: int = None
             data = data.loc[data.index >= start_date]
 
         # Store the data in the dictionary
-        tables_data[clean_table_name] = data
+        if convert:
+            tables_data[original_symbol] = data
+        else:
+            tables_data[clean_table_name] = data
     
     conn.close()
     return tables_data
 
 
-def get_best_params(strategy_object, best_of_all_granularities=False, minimum_trades=None):
+def get_best_params(strategy_object, df_manager=None,live_trading=False, best_of_all_granularities=False, minimum_trades=None, with_lowest_losing_average=False):
+    granularities = ['ONE_MINUTE', 'FIVE_MINUTE', 'FIFTEEN_MINUTE', 'THIRTY_MINUTE', 'ONE_HOUR', 'TWO_HOUR', 'SIX_HOUR', 'ONE_DAY']
     conn = sql.connect(f'database/hyper.db')
     if best_of_all_granularities:
         best_results = []
         best_granularity = ''
-        for granularity in granularites:
+        for granularity in granularities:
             table = f"{strategy_object.__class__.__name__}_{granularity}"
             params = inspect.signature(strategy_object.custom_indicator)
             params = list(dict(params.parameters).keys())[1:]
@@ -85,14 +98,25 @@ def get_best_params(strategy_object, best_of_all_granularities=False, minimum_tr
                     best_results = list_results
                     best_granularity = granularity
 
-        if best_granularity != strategy_object.granularity:
+        if best_granularity != strategy_object.granularity or strategy_object.granularity is None:
             #if the granularity has changed then we update strat with new data
 
-            num_days = int(((strategy_object.df.index[-1] - strategy_object.df.index[0]).total_seconds() // 86400))
-            dict_df = get_historical_from_db(granularity=best_granularity,
-                                             symbols = strategy_object.symbol,
-                                             num_days=num_days)
-            strategy_object.update(dict_df)
+            if live_trading:
+                dict_df = get_historical_from_db(granularity=best_granularity,
+                                                symbols = strategy_object.symbol,
+                                                num_days=30,
+                                                convert=True)
+            else:
+                num_days = int(((strategy_object.df.index[-1] - strategy_object.df.index[0]).total_seconds() // 86400))
+                dict_df = get_historical_from_db(granularity=best_granularity,
+                                symbols = strategy_object.symbol,
+                                num_days=30)
+            
+            if hasattr(strategy_object, 'df'):
+                strategy_object.update(dict_df)
+            if live_trading:
+                df_manager.add_to_manager(dict_df)
+                df_manager.products_granularity[list(dict_df.keys())[0]] = best_granularity
 
         best_results = best_results[:-1]
         conn.close()
@@ -249,6 +273,7 @@ def resample_dataframe_from_db(granularity='ONE_MINUTE'):
     """
     Resamples data from the database for different timeframes based on the granularity.
     """
+    print("\n...Resampling Database")
     times_to_resample = {
         'FIVE_MINUTE': '5min',
         'FIFTEEN_MINUTE': '15min',
@@ -263,8 +288,9 @@ def resample_dataframe_from_db(granularity='ONE_MINUTE'):
     dict_df = get_historical_from_db(granularity=granularity)
 
     resampled_dict_df = {}
-
-    for key, value in times_to_resample.items():
+    start_time = time.time()
+    for i, key in enumerate(times_to_resample.keys()):
+        value = times_to_resample[key]
         for symbol, df in dict_df.items():
             df = df.sort_index()
 
@@ -278,12 +304,11 @@ def resample_dataframe_from_db(granularity='ONE_MINUTE'):
 
             df_resampled.dropna(inplace=True)
 
-            print(f"Resampled {symbol} to {key}")
+
             resampled_dict_df[symbol] = df_resampled
-
         export_historical_to_db(resampled_dict_df, granularity=key)
+        utils.progress_bar_with_eta(i, data= times_to_resample.keys(), start_time=start_time)
 
-    print("Resampling completed.")
 
 
 

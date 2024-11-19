@@ -8,6 +8,6 @@ class Risk_Handler:
         if client is not None:
             self.total_balance = self.client.get_account_balance()
             self.balance_to_risk = None
-            print(f"Balance: {self.total_balance}")
-            print(f"Balance to risk: {self.balance_to_risk}")
+            print(f"Balance: {self.total_balance}")   
+        self.symbol_params = {}
 

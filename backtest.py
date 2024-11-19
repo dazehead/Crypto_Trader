@@ -64,9 +64,9 @@ def run_basic_backtest():
     #     else:
     #         days = 365
 
-    dict_df = database_interaction.get_historical_from_db(granularity='FIVE_MINUTE',
+    dict_df = database_interaction.get_historical_from_db(granularity='ONE_MINUTE',
                                                         symbols=product,
-                                                        num_days=25)
+                                                        num_days=365)
     for key, value in dict_df.items():
         current_dict = {key : value}
 
@@ -86,13 +86,9 @@ def run_basic_backtest():
         print(params)
 
         strat.custom_indicator(None, *params)
-
         strat.graph()
-
         strat.generate_backtest()
-
         pf = strat.portfolio
-
         print(pf.stats())
 
         fig = pf.plot(subplots = [
@@ -114,6 +110,7 @@ def run_basic_backtest():
             }
         )
         fig.show()
+
 
 run_basic_backtest()
 

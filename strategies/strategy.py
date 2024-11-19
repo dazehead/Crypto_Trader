@@ -13,28 +13,30 @@ import utils
 class Strategy:
     """Class to store strategy resources"""
     def __init__(self, dict_df, risk_object=None, with_sizing=False):
-        if not isinstance(dict_df, dict):
-            print('You have passed a Dataframe. This Class needs to be dictionary with key as symbol and value as DataFrame')
-            sys.exit(1)
-        for key, value in dict_df.items():
-            self.symbol = key
-            self.df = value
-        self.with_sizing = with_sizing
+        self.granularity = None
+        if dict_df is not None:
+            if not isinstance(dict_df, dict):
+                print('You have passed a Dataframe. This Class needs to be dictionary with key as symbol and value as DataFrame')
+                sys.exit(1)
+            for key, value in dict_df.items():
+                self.symbol = key
+                self.df = value
+            self.with_sizing = with_sizing
+
+            self.open = self.df['open']
+            self.high = self.df['high']
+            self.low = self.df['low']
+            self.close = self.df['close']
+            self.volume = self.df['volume']
+
+            self.close_gpu = cp.array(self.close)
+            self.high_gpu = cp.array(self.high)
+            self.low_gpu = cp.array(self.low)
+            self.open_gpu = cp.array(self.open)
+            self.volume_gpu = cp.array(self.volume)
+
+            self.granularity = self.set_granularity()
         self.risk_object = risk_object
-
-        self.open = self.df['open']
-        self.high = self.df['high']
-        self.low = self.df['low']
-        self.close = self.df['close']
-        self.volume = self.df['volume']
-
-        self.close_gpu = cp.array(self.close)
-        self.high_gpu = cp.array(self.high)
-        self.low_gpu = cp.array(self.low)
-        self.open_gpu = cp.array(self.open)
-        self.volume_gpu = cp.array(self.volume)
-
-        self.granularity = self.set_granularity()
 
 
         self.entries = None

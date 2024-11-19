@@ -22,8 +22,10 @@ class Trade():
 
 
         if self.signals[-1] == 1:
-
-            self.buy()
+            if self.client.get_account_balance() <= self.volume_to_risk:
+                print('*****NO MORE MULA*********')
+            else:
+                self.buy()
 
         elif self.signals[-1] == -1:
             self.sell()
@@ -33,6 +35,7 @@ class Trade():
 
 
     def buy(self):
+        print('BUY')
         buy_order = self.client.add_order(
             type_of_order= 'buy',
             symbol = self.symbol,
@@ -59,6 +62,7 @@ class Trade():
         #print(buy_order)
 
     def sell(self):
+        print('SELL')
         sell_order = self.client.add_order(
             type_of_order= 'sell',
             symbol = self.symbol,
@@ -84,6 +88,7 @@ class Trade():
         
 
     def monitor_trade(self):
+        print('monitoring')
         pass
         #print(f'...monitoring trade for {self.symbol}')
         """
