@@ -112,7 +112,7 @@ def run_basic_backtest():
         fig.show()
 
 
-run_basic_backtest()
+#run_basic_backtest()
 
 
 
@@ -140,16 +140,16 @@ def run_hyper():
             key, value = items
             current_dict = {key:value}
             
-            strat = RSI_ADX_GPU(current_dict, risk_object=risk, with_sizing=True, hyper=True)
+            strat = RSI_ADX(current_dict, risk_object=risk, with_sizing=True)
 
             hyper = Hyper(
                 strategy_object=strat,
                 close=strat.close,
-                rsi_window=np.arange(10, 30, step=5),
-                buy_threshold=np.arange(5, 50, step=5),
-                sell_threshold = np.arange(50, 95, step=5),
-                adx_buy_threshold = np.arange(20, 60, step=10),
-                adx_time_period=np.arange(10, 30, step=5))
+                rsi_window=np.arange(10, 30, step=15),
+                buy_threshold=np.arange(5, 50, step=25),
+                sell_threshold = np.arange(50, 95, step=30),
+                adx_buy_threshold = np.arange(20, 60, step=25),
+                adx_time_period=np.arange(10, 30, step=15))
 
             database_interaction.export_hyper_to_db(
                 strategy=strat,
@@ -173,5 +173,5 @@ def run_hyper():
                 # x_level = 'cust_fast_window',
                 # y_level = 'cust_slow_window')
                 # fig.show()
-#run_hyper()
+run_hyper()
 
