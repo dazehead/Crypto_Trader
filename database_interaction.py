@@ -191,19 +191,22 @@ def export_hyper_to_db(strategy: object, hyper: object):
             'Avg Losing Trade [%]'
         ]
     
-    data = hyper.pf.stats()
+    data = hyper.pf.stats(silence_warnings=True, agg_func=None)
+   
 
     conn = sql.connect('database/hyper.db')
 
     symbol = strategy.symbol
     granularity = strategy.granularity
     params = inspect.signature(strategy.custom_indicator)
+    
     params = list(dict(params.parameters).keys())[1:]
     combined_df = pd.DataFrame()
 
     for i in range(len(data)):
         stats = data.iloc[i]
         backtest_dict = {'symbol': symbol}
+
         for j,param in enumerate(params):
             backtest_dict[param] = stats.name[j]
 
@@ -211,29 +214,28 @@ def export_hyper_to_db(strategy: object, hyper: object):
             if key in stats_to_export:
                 backtest_dict[key] = value
 
-        combined_df = pd.concat([combined_df,pd.DataFrame([backtest_dict])])
+    combined_df = pd.concat([combined_df,pd.DataFrame([backtest_dict])])
 
+    # Prepare table name
     table_name = f"{strategy.__class__.__name__}_{granularity}"
 
-    _create_table_if_not_exists(table_name, combined_df, conn=conn) 
+    # Create table if not exists
+    _create_table_if_not_exists(table_name, combined_df, conn=conn)
 
-    query = f'SELECT * FROM "{table_name}" WHERE symbol = "{symbol}";'
-    delete_query = f'DELETE FROM "{table_name}" WHERE symbol = "{symbol}";'
+    # Check for existing data and update
+    query = f'SELECT * FROM "{table_name}" WHERE symbol = ?;'
+    delete_query = f'DELETE FROM "{table_name}" WHERE symbol = ?;'
+    existing_data = pd.read_sql(query, conn, params=(symbol,))
 
-    existing_data = pd.read_sql(query, conn)
-    
     if not existing_data.empty:
-        cursor = conn.cursor()
-        cursor.execute(delete_query)
-        conn.commit()
-
+        with conn:
+            conn.execute(delete_query, (symbol,))
         combined_df.to_sql(table_name, conn, if_exists='append', index=False)
-
     else:
         combined_df.to_sql(table_name, conn, if_exists='append', index=False)
+
     conn.close()
     return
-
 
 def export_historical_to_db(dict_df, granularity):
     conn = sql.connect(f'database/{granularity}.db')

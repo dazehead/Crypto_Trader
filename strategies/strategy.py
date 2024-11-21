@@ -20,6 +20,7 @@ class Strategy:
                 sys.exit(1)
             for key, value in dict_df.items():
                 self.symbol = key
+                print(self.symbol)
                 self.df = value
             self.with_sizing = with_sizing
 
@@ -28,12 +29,15 @@ class Strategy:
             self.low = self.df['low']
             self.close = self.df['close']
             self.volume = self.df['volume']
+            
+
 
             self.close_gpu = cp.array(self.close)
             self.high_gpu = cp.array(self.high)
             self.low_gpu = cp.array(self.low)
             self.open_gpu = cp.array(self.open)
             self.volume_gpu = cp.array(self.volume)
+            
 
             self.granularity = self.set_granularity()
         self.risk_object = risk_object
@@ -97,7 +101,7 @@ class Strategy:
         self.low_gpu = cp.array(self.low)
         self.open_gpu = cp.array(self.open)
         self.volume_gpu = cp.array(self.volume)
-
+        
         self.granularity = self.set_granularity()
 
     def generate_signals(self, buy_signal, sell_signal, with_formating=True):
