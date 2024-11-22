@@ -39,7 +39,7 @@ class Trade():
         buy_order = self.client.add_order(
             type_of_order= 'buy',
             symbol = self.symbol,
-            volume= self.risk.volume_to_risk,
+            volume= self.risk.volume_to_risk * 2,
             price = self.current_asset_price,
             pickle=True)
         time.sleep(.25)

@@ -6,6 +6,8 @@ import os
 import database_interaction
 import time
 from coinbase.rest import RESTClient
+import requests
+from requests.exceptions import RequestException
 
 
 
@@ -93,16 +95,31 @@ class Coinbase_Wrapper():
         return combined_df
 
     def _fetch_data(self, symbol, start_unix, end_unix, granularity):
+        max_retries = 4
 
-        btc_candles = self.client.get_candles(
-            product_id=symbol,
-            start=start_unix,
-            end=end_unix,
-            granularity=granularity
-        )
-        df = utils.to_df(btc_candles)
+        for attempt in range(10):
+            try:
+                btc_candles = self.client.get_candles(
+                    product_id=symbol,
+                    start=start_unix,
+                    end=end_unix,
+                    granularity=granularity
+                )
+                # Convert the response to a DataFrame
+                df = utils.to_df(btc_candles)
+                return df
 
-        return df
+            except RequestException as e:
+                print(f"Attempt {attempt + 1} failed: {e}")
+                if attempt < max - 1:
+                    time.sleep(2 ** attempt)  # Exponential backoff
+                else:
+                    print("All retry attempts failed.")
+                    raise
+
+            except Exception as e:
+                print(f"Unexpected error: {e}")
+                raise
 
 
     def _get_missing_unix_range(self, desired_start_unix, desired_end_unix, existing_start_unix, existing_end_unix):

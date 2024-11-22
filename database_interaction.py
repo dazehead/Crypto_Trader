@@ -6,6 +6,7 @@ import numpy as np
 import sys
 import time
 import gc
+import sys
 
 
 def convert_symbols(strategy_object:object=None, lone_symbol=None, to_kraken=False):
@@ -204,14 +205,15 @@ def export_hyper_to_db(strategy: object, hyper: object):
     for i in range(len(data)):
         stats = data.iloc[i]
         backtest_dict = {'symbol': symbol}
-        for j,param in enumerate(params):
-            backtest_dict[param] = stats.name[j]
+        # for j,param in enumerate(params):
+        #     backtest_dict[param] = stats.name[j]
 
         for key, value in stats.items():
             if key in stats_to_export:
                 backtest_dict[key] = value
 
         combined_df = pd.concat([combined_df,pd.DataFrame([backtest_dict])])
+    sys.quit()
 
     table_name = f"{strategy.__class__.__name__}_{granularity}"
 
