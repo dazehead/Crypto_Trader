@@ -192,7 +192,8 @@ def export_hyper_to_db(strategy: object, hyper: object):
             'Avg Losing Trade [%]'
         ]
     
-    data = hyper.pf.stats()
+    data = hyper.pf.stats(silence_warnings=True,
+                          agg_func=None)
 
     conn = sql.connect('database/hyper.db')
 

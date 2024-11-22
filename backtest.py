@@ -140,7 +140,7 @@ def run_hyper():
             key, value = items
             current_dict = {key:value}
             
-            strat = RSI_ADX_GPU(current_dict, risk_object=risk, with_sizing=True, hyper=True)
+            strat = RSI_ADX(current_dict, risk_object=risk, with_sizing=True)
 
             hyper = Hyper(
                 strategy_object=strat,
