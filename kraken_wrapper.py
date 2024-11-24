@@ -12,7 +12,8 @@ import hmac
 import base64
 import database_interaction
 import pickling
-
+import uuid
+from datetime import datetime
 class Kraken():
 
     def __init__(self, granularity: str=None):
@@ -252,20 +253,35 @@ class Kraken():
         url = self.base_url + url_path
         nonce = self.get_nonce()
 
+        txid = str(uuid.uuid4())
+        time_date =  datetime.now().strftime('%Y-%m-%D %H:%M:%S')
 
         data = {"nonce": nonce,
                 'ordertype': 'limit',
                 'type': type_of_order,
                 'volume': volume,
                 'pair': symbol,
-                'price': price}
+                'price': price,
+                'cl_ord_id' : txid}
         
+        store_data = {
+            'volume' : volume,
+            'Amount' : price,
+            'txid' : txid,
+            'symbol' : symbol,
+            'date_time' : time_date
+        }
         self.get_kraken_signature(urlpath=url_path, data=data, secret=self.api_secret)
 
         response = requests.request("POST",url, headers=self.headers, data=data)
         response_data = response.json()
         if pickle:
-            pickling.to_pickle(f'{type_of_order}_order_{symbol}', response_data)
+            pickle_name = f'{type_of_order}_order_{symbol}'
+            pickling.to_pickle(pickle_name, store_data)
+            database_interaction.trade_export(pickle_name)
+
+
+
         return response_data
 
     def edit_order(self, order_id, symbol, volume, price, pickle=False):
