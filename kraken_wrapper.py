@@ -195,27 +195,31 @@ class Kraken():
         return float(response_data['result']['eb'])
 
     def any_open_orders(self, pickle=False):
-        urlpath = '/0/private/OpenOrders'
-        url = self.base_url + urlpath
-        nonce = self.get_nonce()
+        try:
+            urlpath = '/0/private/OpenOrders'
+            url = self.base_url + urlpath
+            nonce = self.get_nonce()
 
-        data = {'nonce': nonce,
-                'trades': True}
+            data = {'nonce': nonce,
+                    'trades': True}
 
-        self.get_kraken_signature(urlpath, data, self.api_secret)
+            self.get_kraken_signature(urlpath, data, self.api_secret)
 
-        response = requests.request("POST", url, headers=self.headers, data=data)
-        response_data = response.json()
-        if pickle:
-            pickling.to_pickle('open_orders', response_data)
-        open_data = response_data['result']['open']
+            response = requests.request("POST", url, headers=self.headers, data=data)
+            response_data = response.json()
+            if pickle:
+                pickling.to_pickle('open_orders', response_data)
+            open_data = response_data['result']['open']
 
-        #returns False if theres no open orders
-        if response_data['result']['open']=={}:
+            #returns False if theres no open orders
+            if response_data['result']['open']=={}:
+                return False
+            else:
+                #returns True if there are open orders
+                return True
+        except Exception as e:
+            print("Error occured in any_open_oders()")
             return False
-        else:
-            #returns True if there are open orders
-            return True
         
         # print(response_data['result']['open']=={})
         # print('-------------------------------------------------------------------')
