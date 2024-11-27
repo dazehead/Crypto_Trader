@@ -254,7 +254,7 @@ class Kraken():
         nonce = self.get_nonce()
 
         txid = str(uuid.uuid4())
-        time_date =  datetime.now().strftime('%Y-%m-%D %H:%M:%S')
+        time_date =  datetime.now().strftime('%D %H:%M:%S')
 
         data = {"nonce": nonce,
                 'ordertype': 'limit',
@@ -276,7 +276,7 @@ class Kraken():
         response = requests.request("POST",url, headers=self.headers, data=data)
         response_data = response.json()
         if pickle:
-            pickle_name = f'{type_of_order}_order_{symbol}'
+            pickle_name = f'{type_of_order}_order_{symbol}_{time_date}'
             pickling.to_pickle(pickle_name, store_data)
             database_interaction.trade_export(pickle_name)
 

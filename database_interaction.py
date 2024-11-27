@@ -7,6 +7,8 @@ import sys
 import time
 import gc
 import pickling
+from datetime import datetime
+import os
 
 def convert_symbols(strategy_object:object=None, lone_symbol=None, to_kraken=False):
     coinbase_crypto = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
@@ -408,14 +410,16 @@ def export_backtest_to_db(object, multiple_table_name=None):
     return
 
 
+
 def trade_export(pickle_name):
     trade = pickling.from_pickle(pickle_name)
+    print("Trade data:", trade)
     
-    db_path = 'database/backtest.db'
+    db_path = 'database/trades.db'
     table_name = 'trade_data'
     
-   
-    trade_df = pd.DataFrame([trade])  # Wrap trade dict in a list to convert to DataFrame
+    trade_df = pd.DataFrame([trade[0]])
+    print("Trade DataFrame:", trade_df)
     
     conn = sql.connect(db_path)
     cursor = conn.cursor()
@@ -429,14 +433,39 @@ def trade_export(pickle_name):
         date_time TEXT
     )
     '''
+    print("Executing create table query...")
     cursor.execute(create_table_query)
     
-    # Delete existing record for the same symbol (if applicable)
-    delete_query = f'DELETE FROM {table_name} WHERE symbol = ?'
-    cursor.execute(delete_query, (trade['symbol'],))
+    print("Inserting data into table...")
+    trade_df.to_sql(table_name, conn, if_exists='replace', index=False)
     
-    # Insert new trade data into the table
-    trade_df.to_sql(table_name, conn, if_exists='append', index=False)
-    
+    print("Committing changes...")
     conn.commit()
+    
+    cursor.execute("SELECT * FROM trade_data")
+    rows = cursor.fetchall()
+    print("Rows in trade_data:", rows)
+    
     conn.close()
+
+# def testing_sql():
+#     time_date = datetime.now().strftime('%D %H:%M:%S')
+    
+#     store_data = {
+#         'volume': 6,
+#         'Amount': 10,
+#         'txid': "abeceda2",
+#         'symbol': "BTC-USD",
+#         'date_time': time_date
+#     }
+    
+#     pickle_name = 'trades_data.pickle'
+#     pickling.to_pickle(pickle_name, store_data)
+#     trade_export(pickle_name)
+
+#testing_sql()
+
+
+# db_path = 'database/trades.db'
+# print("Database path:", os.path.abspath(db_path))
+
