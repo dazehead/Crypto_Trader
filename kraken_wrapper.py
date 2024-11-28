@@ -105,10 +105,17 @@ class Kraken():
 
         data = response.json()
         all_held_data = data.get('result',{})
-        symbol = symbol_map[symbol]
+
+        symbol = symbol_map.get(symbol)
+        if not symbol:
+            raise ValueError(f"Symbol {symbol} not recognized in symbol_map")
+        
+        current_balance = 0.0
+        
         for pair, amount in all_held_data.items():
             if symbol == pair:
                 current_balance = amount['balance']
+                break
         return current_balance
 
 

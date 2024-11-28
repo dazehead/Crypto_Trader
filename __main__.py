@@ -50,6 +50,7 @@ def on_message():
         
         df_manager.set_next_update(k)
         print('\n-------------------------------------------------------------------------------------\n')
+        time.sleep(.5)
 
     counter += 1
 
