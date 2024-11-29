@@ -40,7 +40,7 @@ def on_message():
         df_manager.data_for_live_trade(symbol=k, update=True)
         current_dict = {k:v}
 
-        strat = RSI_ADX_GPU(current_dict, risk, with_sizing=False)
+        strat = RSI_ADX_GPU(current_dict, risk, with_sizing=True)
 
         strat.custom_indicator(strat.close_gpu, *risk.symbol_params[k])
 
@@ -50,6 +50,7 @@ def on_message():
         
         df_manager.set_next_update(k)
         print('\n-------------------------------------------------------------------------------------\n')
+        time.sleep(.5)
 
     counter += 1
 
@@ -75,7 +76,7 @@ scanner = Scanner(client=kraken)
 df_manager = DF_Manager(scanner)
 scanner.assign_attribute(df_manager=df_manager)
 
-#scanner.coinbase.get_candles_for_db(scanner.coinbase_crypto, kraken.granularity, days=30)
+scanner.coinbase.get_candles_for_db(scanner.coinbase_crypto, kraken.granularity, days=30)
 
 
 for symbol in scanner.kraken_crypto:

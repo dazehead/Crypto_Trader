@@ -22,12 +22,16 @@ class Trade():
 
 
         if self.signals[-1] == 1:
-            if self.client.get_account_balance() <= self.volume_to_risk:
+            account_balance = self.client.get_account_balance()
+            at_risk = self.volume_to_risk
+            if account_balance <= at_risk:
                 print('*****NO MORE MULA*********')
+                print(f"Cash Balance: {account_balance}\nAt Risk: {at_risk}")
             else:
                 self.buy()
 
         elif self.signals[-1] == -1:
+            pass
             self.sell()
 
         else:
@@ -39,23 +43,27 @@ class Trade():
         buy_order = self.client.add_order(
             type_of_order= 'buy',
             symbol = self.symbol,
-            volume= self.risk.volume_to_risk,
+            volume= self.risk.volume_to_risk * 2,
             price = self.current_asset_price,
             pickle=True)
-        time.sleep(.25)
+        time.sleep(1)
 
         # if True it will keep looping until there are no open orders
         while self.client.any_open_orders():
-            order_id =buy_order['result']['txid'][0]
-            buy_order = self.client.edit_order(
-                order_id = order_id,
-                symbol = self.symbol,
-                volume = self.risk.volume_to_risk,
-                price = self.client.get_recent_spreads(
-                    symbol=self.symbol,
-                    type_of_order= 'buy'
-                    )          
-            )
+            try:
+                if buy_order is not None:
+                    order_id =buy_order['result']['txid'][0]
+                    buy_order = self.client.edit_order(
+                        order_id = order_id,
+                        symbol = self.symbol,
+                        volume = self.risk.volume_to_risk,
+                        price = self.client.get_recent_spreads(
+                            symbol=self.symbol,
+                            type_of_order= 'buy'
+                            )          
+                    )
+            except TypeError as e:
+                print('no more open orders')
             time.sleep(.25)
 
             """edit the open order until it fills"""

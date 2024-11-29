@@ -6,7 +6,8 @@ import numpy as np
 import sys
 import time
 import gc
-import pickling
+import sys
+
 
 def convert_symbols(strategy_object:object=None, lone_symbol=None, to_kraken=False):
     coinbase_crypto = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
@@ -193,8 +194,8 @@ def export_hyper_to_db(strategy: object, hyper: object):
             'Avg Losing Trade [%]'
         ]
     
-    data = hyper.pf.stats(silence_warnings=True, agg_func=None)
-   
+    data = hyper.pf.stats(silence_warnings=True,
+                          agg_func=None)
 
     conn = sql.connect('database/hyper.db')
 
@@ -208,15 +209,15 @@ def export_hyper_to_db(strategy: object, hyper: object):
     for i in range(len(data)):
         stats = data.iloc[i]
         backtest_dict = {'symbol': symbol}
-
-        for j,param in enumerate(params):
-            backtest_dict[param] = stats.name[j]
+        # for j,param in enumerate(params):
+        #     backtest_dict[param] = stats.name[j]
 
         for key, value in stats.items():
             if key in stats_to_export:
                 backtest_dict[key] = value
 
-    combined_df = pd.concat([combined_df,pd.DataFrame([backtest_dict])])
+        combined_df = pd.concat([combined_df,pd.DataFrame([backtest_dict])])
+    sys.quit()
 
     # Prepare table name
     table_name = f"{strategy.__class__.__name__}_{granularity}"
