@@ -5,7 +5,7 @@ import pandas as pd
 import utils
 
 class RSI_ADX_GPU(Strategy):
-    def __init__(self, dict_df, risk_object=None, with_sizing=False, hyper=False):
+    def __init__(self, dict_df, risk_object=None, with_sizing=True, hyper=True):
         super().__init__(dict_df=dict_df, risk_object=risk_object, with_sizing=with_sizing)
         self.hyper = hyper
 
