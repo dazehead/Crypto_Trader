@@ -411,19 +411,51 @@ def export_backtest_to_db(object, multiple_table_name=None):
 
 
 
-def trade_export(pickle_name):
-    trade = pickling.from_pickle(pickle_name)
-    print("Trade data:", trade)
+def trade_export(response_json):
+    # Extract data from the JSON response
+    if response_json.get("error"):
+        print("Error in response:", response_json["error"])
+        return
+
+    result = response_json.get("result", {})
+    txid_list = result.get("txid", [])  # List of transaction IDs
+    order_description = result.get("descr", {}).get("order", "")
     
+    # Parse the order description string
+    if order_description:
+        order_parts = order_description.split()
+        order_type = order_parts[0]  # "buy" or "sell"
+        volume = float(order_parts[1])  # e.g., "1.45"
+        symbol = order_parts[2]  # e.g., "XBTUSD"
+        price = float(order_parts[-1])  # e.g., "27500.0"
+    else:
+        print("Order description is missing.")
+        return
+
+    # Use the first txid if multiple are provided (or handle it accordingly)
+    txid = txid_list[0] if txid_list else "Unknown"
+
+    # Add a timestamp
+    time_date = datetime.now().strftime('%D %H:%M:%S')
+
+    # Prepare the data for the database
+    trade_data = {
+        "volume": volume,
+        "amount": price,
+        "txid": txid,
+        "symbol": symbol,
+        "date_time": time_date
+    }
+    trade_df = pd.DataFrame([trade_data])
+
+    # Database interaction
     db_path = 'database/trades.db'
     table_name = 'trade_data'
-    
-    trade_df = pd.DataFrame([trade[0]])
-    print("Trade DataFrame:", trade_df)
-    
+
     conn = sql.connect(db_path)
     cursor = conn.cursor()
-    
+
+    # Create the table if it doesn't exist
     create_table_query = f'''
     CREATE TABLE IF NOT EXISTS {table_name} (
         volume REAL,
@@ -433,23 +465,19 @@ def trade_export(pickle_name):
         date_time TEXT
     )
     '''
-    print("Executing create table query...")
     cursor.execute(create_table_query)
-    
-    print("Inserting data into table...")
-    trade_df.to_sql(table_name, conn, if_exists='replace', index=False)
-    
-    print("Committing changes...")
+
+    # Insert the data into the table
+    trade_df.to_sql(table_name, conn, if_exists='append', index=False)
+
+    # Commit and close the connection
     conn.commit()
-    
-    cursor.execute("SELECT * FROM trade_data")
-    rows = cursor.fetchall()
-    print("Rows in trade_data:", rows)
-    
     conn.close()
 
+    print("Trade exported successfully:")
+    print(trade_df)
 # def testing_sql():
-#     time_date = datetime.now().strftime('%D %H:%M:%S')
+#time_date = datetime.now().strftime('%D %H:%M:%S')
     
 #     store_data = {
 #         'volume': 6,
@@ -468,4 +496,4 @@ def trade_export(pickle_name):
 
 # db_path = 'database/trades.db'
 # print("Database path:", os.path.abspath(db_path))
-
+import requests

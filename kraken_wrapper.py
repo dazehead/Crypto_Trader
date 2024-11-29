@@ -275,10 +275,11 @@ class Kraken():
 
         response = requests.request("POST",url, headers=self.headers, data=data)
         response_data = response.json()
-        if pickle:
-            pickle_name = f'{type_of_order}_order_{symbol}_{time_date}'
-            pickling.to_pickle(pickle_name, store_data)
-            database_interaction.trade_export(pickle_name)
+        database_interaction.trade_export(response_data)
+        # if pickle:
+        #     pickle_name = f'{type_of_order}_order_{symbol}_{time_date}'
+        #     pickling.to_pickle(pickle_name, store_data)
+        #     database_interaction.trade_export(pickle_name)
 
 
 
@@ -302,6 +303,8 @@ class Kraken():
         
         response = requests.request("POST",url=url, headers=self.headers, data=data)
         response_data = response.json()
+
+
         if pickle:
             pickling.to_pickle(f'updated_order_{symbol}', response_data)
         print('order has been updated')
@@ -366,8 +369,6 @@ class Kraken():
         elif type_of_order == 'buy':
             new_price = current_spread[2]
         return new_price
-        
-
 
 
 

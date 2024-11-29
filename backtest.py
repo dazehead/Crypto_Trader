@@ -48,11 +48,11 @@ def test_multiple_strategy():
 
 
 
-    #     logbook.insert_beginning(combined_strat)
+        logbook.insert_beginning(combined_strat)
     
-    # logbook.export_multiple_pf_to_db()
+    logbook.export_multiple_pf_to_db()
 
-#test_multiple_strategy()
+test_multiple_strategy()
 
 
 def run_basic_backtest():
@@ -173,5 +173,5 @@ def run_hyper():
                 # x_level = 'cust_fast_window',
                 # y_level = 'cust_slow_window')
                 # fig.show()
-run_hyper()
+#run_hyper()
 
