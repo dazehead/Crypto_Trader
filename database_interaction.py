@@ -7,6 +7,7 @@ import sys
 import time
 import gc
 import sys
+import pickling
 
 
 def convert_symbols(strategy_object:object=None, lone_symbol=None, to_kraken=False):
