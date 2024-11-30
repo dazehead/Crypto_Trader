@@ -1,6 +1,7 @@
 import pickling
 import math
 import time
+import database_interaction
 
 class Trade():
     """This class will have all logic for executing trades"""
@@ -57,6 +58,7 @@ class Trade():
                     )          
             )
             time.sleep(.25)
+            database_interaction.trade_export(buy_order, self.get_balance_to_risk())
 
             """edit the open order until it fills"""
         #print(buy_order)
@@ -85,6 +87,7 @@ class Trade():
                     )          
             )
             time.sleep(.25)
+        database_interaction.trade_export(sell_order, self.get_balance_to_risk())
         
 
     def monitor_trade(self):

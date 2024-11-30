@@ -411,7 +411,7 @@ def export_backtest_to_db(object, multiple_table_name=None):
 
 
 
-def trade_export(response_json):
+def trade_export(response_json, balance):
     # Extract data from the JSON response
     if response_json.get("error"):
         print("Error in response:", response_json["error"])
@@ -440,11 +440,12 @@ def trade_export(response_json):
 
     # Prepare the data for the database
     trade_data = {
+        "order_type":order_type,
         "volume": volume,
         "amount": price,
-        "txid": txid,
         "symbol": symbol,
-        "date_time": time_date
+        "date_time": time_date,
+        "txid": txid
     }
     trade_df = pd.DataFrame([trade_data])
 
@@ -453,19 +454,7 @@ def trade_export(response_json):
     table_name = 'trade_data'
 
     conn = sql.connect(db_path)
-    cursor = conn.cursor()
-
-    # Create the table if it doesn't exist
-    create_table_query = f'''
-    CREATE TABLE IF NOT EXISTS {table_name} (
-        volume REAL,
-        amount REAL,
-        txid TEXT PRIMARY KEY,
-        symbol TEXT,
-        date_time TEXT
-    )
-    '''
-    cursor.execute(create_table_query)
+    _create_table_if_not_exists(table_name, trade_df, conn)
 
     # Insert the data into the table
     trade_df.to_sql(table_name, conn, if_exists='append', index=False)
@@ -475,25 +464,3 @@ def trade_export(response_json):
     conn.close()
 
     print("Trade exported successfully:")
-    print(trade_df)
-# def testing_sql():
-#time_date = datetime.now().strftime('%D %H:%M:%S')
-    
-#     store_data = {
-#         'volume': 6,
-#         'Amount': 10,
-#         'txid': "abeceda2",
-#         'symbol': "BTC-USD",
-#         'date_time': time_date
-#     }
-    
-#     pickle_name = 'trades_data.pickle'
-#     pickling.to_pickle(pickle_name, store_data)
-#     trade_export(pickle_name)
-
-#testing_sql()
-
-
-# db_path = 'database/trades.db'
-# print("Database path:", os.path.abspath(db_path))
-import requests
