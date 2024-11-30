@@ -15,6 +15,7 @@ def to_pickle(data_name, data):
 def from_pickle(data_name):
     try:
         with open(f'pickle_data/{data_name}', 'rb') as file:
-            return pickle.load(file)
+            data = pickle.load(file)
+            return data[0]
     except (FileNotFoundError, EOFError):
         return []  

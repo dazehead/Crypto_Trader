@@ -8,6 +8,8 @@ import time
 import gc
 import sys
 import pickling
+from datetime import datetime
+import os
 
 
 def convert_symbols(strategy_object:object=None, lone_symbol=None, to_kraken=False):
@@ -409,35 +411,57 @@ def export_backtest_to_db(object, multiple_table_name=None):
     return
 
 
-def trade_export(pickle_name):
-    trade = pickling.from_pickle(pickle_name)
+
+def trade_export(response_json, balance):
+    # Extract data from the JSON response
+    if response_json.get("error"):
+        print("Error in response:", response_json["error"])
+        return
+
+    result = response_json.get("result", {})
+    txid_list = result.get("txid", [])  # List of transaction IDs
+    order_description = result.get("descr", {}).get("order", "")
     
-    db_path = 'database/backtest.db'
+    # Parse the order description string
+    if order_description:
+        order_parts = order_description.split()
+        order_type = order_parts[0]  # "buy" or "sell"
+        volume = float(order_parts[1])  # e.g., "1.45"
+        symbol = order_parts[2]  # e.g., "XBTUSD"
+        price = float(order_parts[-1])  # e.g., "27500.0"
+    else:
+        print("Order description is missing.")
+        return
+
+    # Use the first txid if multiple are provided (or handle it accordingly)
+    txid = txid_list[0] if txid_list else "Unknown"
+
+    # Add a timestamp
+    time_date = datetime.now().strftime('%D %H:%M:%S')
+
+    # Prepare the data for the database
+    trade_data = {
+        "order_type":order_type,
+        "volume": volume,
+        "amount": price,
+        "symbol": symbol,
+        "date_time": time_date,
+        "txid": txid
+    }
+    trade_df = pd.DataFrame([trade_data])
+
+    # Database interaction
+    db_path = 'database/trades.db'
     table_name = 'trade_data'
-    
-   
-    trade_df = pd.DataFrame([trade])  # Wrap trade dict in a list to convert to DataFrame
-    
+
     conn = sql.connect(db_path)
-    cursor = conn.cursor()
-    
-    create_table_query = f'''
-    CREATE TABLE IF NOT EXISTS {table_name} (
-        volume REAL,
-        amount REAL,
-        txid TEXT PRIMARY KEY,
-        symbol TEXT,
-        date_time TEXT
-    )
-    '''
-    cursor.execute(create_table_query)
-    
-    # Delete existing record for the same symbol (if applicable)
-    delete_query = f'DELETE FROM {table_name} WHERE symbol = ?'
-    cursor.execute(delete_query, (trade['symbol'],))
-    
-    # Insert new trade data into the table
+    _create_table_if_not_exists(table_name, trade_df, conn)
+
+    # Insert the data into the table
     trade_df.to_sql(table_name, conn, if_exists='append', index=False)
-    
+
+    # Commit and close the connection
     conn.commit()
     conn.close()
+
+    print("Trade exported successfully:")
