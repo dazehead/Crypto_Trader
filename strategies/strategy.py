@@ -20,7 +20,6 @@ class Strategy:
                 sys.exit(1)
             for key, value in dict_df.items():
                 self.symbol = key
-                print(self.symbol)
                 self.df = value
             self.with_sizing = with_sizing
 
