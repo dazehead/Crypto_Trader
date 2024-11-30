@@ -64,8 +64,8 @@ def run_basic_backtest():
     #     else:
     #         days = 365
 
-    dict_df = database_interaction.get_historical_from_db(granularity='ONE_MINUTE',
-                                                        symbols=product,
+    dict_df = database_interaction.get_historical_from_db(granularity='THIRTY_MINUTE',
+                                                        symbols=symbols,
                                                         num_days=365)
     for key, value in dict_df.items():
         current_dict = {key : value}
@@ -112,7 +112,7 @@ def run_basic_backtest():
         fig.show()
 
 
-#run_basic_backtest()
+run_basic_backtest()
 
 
 
@@ -173,5 +173,5 @@ def run_hyper():
                 # x_level = 'cust_fast_window',
                 # y_level = 'cust_slow_window')
                 # fig.show()
-run_hyper()
+#run_hyper()
 
