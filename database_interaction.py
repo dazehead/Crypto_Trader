@@ -95,6 +95,8 @@ def get_best_params(strategy_object, df_manager=None,live_trading=False, best_of
                 best_results = list_results
                 best_granularity = granularity
             else:
+                print(param)
+                print(strategy_object.symbol)
                 if best_results[-1] < list_results[-1]:
                     best_results = list_results
                     best_granularity = granularity
@@ -200,6 +202,7 @@ def export_hyper_to_db(strategy: object, hyper: object):
     symbol = strategy.symbol
     granularity = strategy.granularity
     params = inspect.signature(strategy.custom_indicator)
+    
     params = list(dict(params.parameters).keys())[1:]
     combined_df = pd.DataFrame()
 
@@ -216,27 +219,26 @@ def export_hyper_to_db(strategy: object, hyper: object):
         combined_df = pd.concat([combined_df,pd.DataFrame([backtest_dict])])
     sys.quit()
 
+    # Prepare table name
     table_name = f"{strategy.__class__.__name__}_{granularity}"
 
-    _create_table_if_not_exists(table_name, combined_df, conn=conn) 
+    # Create table if not exists
+    _create_table_if_not_exists(table_name, combined_df, conn=conn)
 
-    query = f'SELECT * FROM "{table_name}" WHERE symbol = "{symbol}";'
-    delete_query = f'DELETE FROM "{table_name}" WHERE symbol = "{symbol}";'
+    # Check for existing data and update
+    query = f'SELECT * FROM "{table_name}" WHERE symbol = ?;'
+    delete_query = f'DELETE FROM "{table_name}" WHERE symbol = ?;'
+    existing_data = pd.read_sql(query, conn, params=(symbol,))
 
-    existing_data = pd.read_sql(query, conn)
-    
     if not existing_data.empty:
-        cursor = conn.cursor()
-        cursor.execute(delete_query)
-        conn.commit()
-
+        with conn:
+            conn.execute(delete_query, (symbol,))
         combined_df.to_sql(table_name, conn, if_exists='append', index=False)
-
     else:
         combined_df.to_sql(table_name, conn, if_exists='append', index=False)
+
     conn.close()
     return
-
 
 def export_historical_to_db(dict_df, granularity):
     conn = sql.connect(f'database/{granularity}.db')
@@ -405,3 +407,37 @@ def export_backtest_to_db(object, multiple_table_name=None):
 
     conn.close()
     return
+
+
+def trade_export(pickle_name):
+    trade = pickling.from_pickle(pickle_name)
+    
+    db_path = 'database/backtest.db'
+    table_name = 'trade_data'
+    
+   
+    trade_df = pd.DataFrame([trade])  # Wrap trade dict in a list to convert to DataFrame
+    
+    conn = sql.connect(db_path)
+    cursor = conn.cursor()
+    
+    create_table_query = f'''
+    CREATE TABLE IF NOT EXISTS {table_name} (
+        volume REAL,
+        amount REAL,
+        txid TEXT PRIMARY KEY,
+        symbol TEXT,
+        date_time TEXT
+    )
+    '''
+    cursor.execute(create_table_query)
+    
+    # Delete existing record for the same symbol (if applicable)
+    delete_query = f'DELETE FROM {table_name} WHERE symbol = ?'
+    cursor.execute(delete_query, (trade['symbol'],))
+    
+    # Insert new trade data into the table
+    trade_df.to_sql(table_name, conn, if_exists='append', index=False)
+    
+    conn.commit()
+    conn.close()

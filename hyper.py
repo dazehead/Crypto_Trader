@@ -106,13 +106,33 @@ class Hyper(Strategy):
             accumulate = True
 
 
+        granularity_to_freq = {
+            'ONE_MINUTE': '1min',
+            'FIVE_MINUTE': '5min',
+            'FIFTEEN_MINUTE': '15min',
+            'THIRTY_MINUTE': '30min',
+            'ONE_HOUR': '1h',
+            'TWO_HOUR': '2h',
+            'SIX_HOUR': '6h',
+            'ONE_DAY': '1D'
+        }
+
+        # Convert granularity to frequency
+        freq = granularity_to_freq.get(self.granularity, None)
+        if freq is None:
+            raise ValueError(f"Unsupported granularity: {self.granularity}")
+
+        # Run the backtest
         pf = vbt.Portfolio.from_signals(
-            close = self.close,
-            entries = self.entries,
-            exits = self.exits,
-            size = size,
-            size_type= size_type,
-            accumulate= accumulate,
-            init_cash= init_cash)
+            close=self.close,
+            entries=self.entries,
+            exits=self.exits,
+            size=size,
+            freq=freq,
+            size_type=size_type,
+            accumulate=accumulate,
+            init_cash=init_cash
+        )
+       
 
         return pf
