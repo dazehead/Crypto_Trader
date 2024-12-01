@@ -2,6 +2,7 @@ import time
 import os
 import coinbase_wrapper
 import asyncio
+import sys
 import database_interaction
 from coinbase.websocket import WSClient, WSClientConnectionClosedException
 from coinbase.rest import RESTClient
@@ -14,7 +15,7 @@ from scanner import Scanner
 from risk import Risk_Handler
 from kraken_wrapper import Kraken
 from strategies.double.rsi_adx import RSI_ADX
-from strategies.gpu_optimized.rsi_adx_gpu import RSI_ADX_GPU
+from strategies.gpu_optimized.rsi_adx_np import RSI_ADX_GPU
 import datetime as dt
 import pandas as pd
 
@@ -32,23 +33,24 @@ def on_message():
     global df_manager
     print(f'counter: {counter}')
     
-    for k, v in df_manager.dict_df.items():
+    for k in df_manager.dict_df.keys():
 
         if dt.datetime.now() <= df_manager.next_update_time[k]:
             continue
         print(k)
         df_manager.data_for_live_trade(symbol=k, update=True)
-        current_dict = {k:v}
+        current_dict = {k: df_manager.dict_df[k]}
 
         strat = RSI_ADX_GPU(current_dict, risk, with_sizing=True, hyper=False, )
 
         strat.custom_indicator(strat.close_gpu, *risk.symbol_params[k])
 
-        trade = Trade(risk = risk,
-                    strat_object=strat,
-                    logbook=logbook)
+        # trade = Trade(risk = risk,
+        #             strat_object=strat,
+        #             logbook=logbook)
         
         df_manager.set_next_update(k)
+        print(df_manager.next_update_time[k])
         print('\n-------------------------------------------------------------------------------------\n')
         time.sleep(.5)
 
@@ -80,11 +82,14 @@ scanner.assign_attribute(df_manager=df_manager)
 
 
 for symbol in scanner.kraken_crypto:
+
     strat = RSI_ADX_GPU(dict_df= None, risk_object=risk)
     strat.symbol = symbol
     params = database_interaction.get_best_params(strat, df_manager,live_trading=True, best_of_all_granularities=True, minimum_trades=3)
     risk.symbol_params[symbol] = params
     df_manager.set_next_update(symbol, initial=True)
+
+
 logbook = LinkedList()
 
 

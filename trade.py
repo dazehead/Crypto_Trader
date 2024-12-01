@@ -66,7 +66,7 @@ class Trade():
             except TypeError as e:
                 print('no more open orders')
             time.sleep(.25)
-            database_interaction.trade_export(buy_order, self.get_balance_to_risk())
+            database_interaction.trade_export(buy_order, balance=self.client.get_account_balance())
 
             """edit the open order until it fills"""
         #print(buy_order)
@@ -95,7 +95,7 @@ class Trade():
                     )          
             )
             time.sleep(.25)
-        database_interaction.trade_export(sell_order, self.get_balance_to_risk())
+        database_interaction.trade_export(sell_order, balance=self.client.get_account_balance())
         
 
     def monitor_trade(self):

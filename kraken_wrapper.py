@@ -286,13 +286,6 @@ class Kraken():
 
         response = requests.request("POST",url, headers=self.headers, data=data)
         response_data = response.json()
-        database_interaction.trade_export(response_data)
-        # if pickle:
-        #     pickle_name = f'{type_of_order}_order_{symbol}_{time_date}'
-        #     pickling.to_pickle(pickle_name, store_data)
-        #     database_interaction.trade_export(pickle_name)
-
-
 
         return response_data
 
