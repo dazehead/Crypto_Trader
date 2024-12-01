@@ -21,7 +21,7 @@ class RSI_ADX_GPU(Strategy):
 
 
         # Calculate RSI
-        rsi = self.calculate_rsi_gpu(self.close_gpu, rsi_window)
+        rsi = self.calculate_rsi(self.close, rsi_window)
         rsi_np = np.asnumpy(rsi)
         # print(rsi_np[-5:])
         # print(len(rsi_np))
@@ -38,7 +38,7 @@ class RSI_ADX_GPU(Strategy):
         signals = utils.format_signals(signals)
 
         # Calculate ADX
-        adx = self.calculate_adx_gpu(self.high_gpu, self.low_gpu, self.close_gpu, adx_time_period)
+        adx = self.calculate_adx_gpu(self.high, self.low, self.close, adx_time_period)
         adx_np = np.asnumpy(adx)
 
         # Generate ADX signals
@@ -81,8 +81,8 @@ class RSI_ADX_GPU(Strategy):
         return final_signals
 
 
-    def calculate_rsi_gpu(self, close_gpu, rsi_window):
-        delta = close_gpu[1:] - close_gpu[:-1]
+    def calculate_rsi(self, close, rsi_window):
+        delta = close[1:] - close[:-1]
         gain = np.maximum(delta, 0)
         loss = np.maximum(-delta, 0)
 
@@ -94,19 +94,34 @@ class RSI_ADX_GPU(Strategy):
         rsi = 100 - (100/ (1 + rs))
 
         # Align output size
-        pad_length = close_gpu.shape[0] - rsi.shape[0]
+        pad_length = close.shape[0] - rsi.shape[0]
+        print(close.shape)
+        print(rsi.shape)
+        print(pad_length)
         rsi = np.concatenate([np.full(pad_length, np.nan), rsi])
         return rsi
     
-    def calculate_adx_gpu(self, high_gpu, low_gpu, close_gpu, adx_time_period):
-        tr1 = np.abs(high_gpu[1:] - low_gpu[1:])
-        tr2 = np.abs(high_gpu[1:] - close_gpu[:-1])
-        tr3 = np.abs(low_gpu[1:] - close_gpu[:-1])
+    def calculate_adx_gpu(self, high, low, close, adx_time_period):
+        """
+        Calculates the Average Directional Movement Index (ADX) using GPU acceleration.
+
+        Parameters:
+        - high (numpy.ndarray): An array of high prices.
+        - low (numpy.ndarray): An array of low prices.
+        - close (numpy.ndarray): An array of close prices.
+        - adx_time_period (int): The time period for calculating the ADX.
+
+        Returns:
+        - numpy.ndarray: An array of ADX values. The length of the array is equal to the length of the input arrays minus the time period.
+        """
+        tr1 = np.abs(high[1:] - low[1:])
+        tr2 = np.abs(high[1:] - close[:-1])
+        tr3 = np.abs(low[1:] - close[:-1])
         true_range = np.maximum(tr1, np.maximum(tr2, tr3))
 
         # Directional Movement
-        plus_dm = np.maximum(high_gpu[1:] - high_gpu[:-1], 0)
-        minus_dm = np.maximum(low_gpu[:-1] - low_gpu[1:], 0)
+        plus_dm = np.maximum(high[1:] - high[:-1], 0)
+        minus_dm = np.maximum(low[:-1] - low[1:], 0)
 
         plus_dm = np.where(plus_dm > minus_dm, plus_dm, 0)
         minus_dm = np.where(minus_dm > plus_dm, minus_dm, 0)
@@ -121,9 +136,10 @@ class RSI_ADX_GPU(Strategy):
         adx = np.convolve(dx, np.ones(adx_time_period) / adx_time_period, mode='valid')
 
         # Align output size
-        pad_length = high_gpu.shape[0] - adx.shape[0]
+        pad_length = high.shape[0] - adx.shape[0]
         adx = np.concatenate([np.full(pad_length, np.nan), adx])
         return adx
+
 
     def combine_signals(self, *signals):
         # Convert the list of signals to a 2D NumPy array
