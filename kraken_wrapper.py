@@ -20,11 +20,19 @@ class Kraken():
         self.api_key = os.getenv('API_KEY_KRAKEN') #API_ENV_KEY | KRAKEN
         self.api_secret = os.getenv('API_PRIVATE_KEY_KRAKEN') #API_SECRET_ENV_KEY | KRAKEN
         self.base_url = 'https://api.kraken.com'
+        self.future_base_url = 'https://futures.kraken.com'
         self.headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'API-Key': self.api_key,
             'API-Sign': self.api_secret
+        }
+
+        self.headers_futures = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'API-Key': self.api_key,
+            'API-Sign': self.api_key
         }
 
         self.granularity_map = {
@@ -285,6 +293,43 @@ class Kraken():
         self.get_kraken_signature(urlpath=url_path, data=data, secret=self.api_secret)
 
         response = requests.request("POST",url, headers=self.headers, data=data)
+        response_data = response.json()
+
+        return response_data
+
+    def add_order_futures(self, process_before:str, order_type:str, symbol, type_of_order:str, limit_price:int, stop_price:int):
+
+        if order_type not in ['lmt', 'post', 'ioc', 'mkt', 'stp', 'take_profit', 'trailing_stop']:
+            print('Order type needs to be "lmt", "post", "ioc", "mkt", "stp", "take_profit", "trailing_stop"')
+            return
+        
+        if type_of_order not in ['buy', 'sell']:
+            print('needs to be "buy" or "sell"')
+            return
+        
+        url_path = '/derivatives/api/v3/sendorder'
+        url = self.base_url + url_path
+        nonce = self.get_nonce()
+
+
+        data = {
+            "ProcessBefore": process_before, #"2023-11-08 19:56:35.441899+00:00",
+            "orderType": order_type,
+            "symbol": symbol,
+            "side": type_of_order,
+            "size": 0,
+            "limitPrice": limit_price,
+            "stopPrice": stop_price,
+            "cliOrdId": nonce,
+            "triggerSignal": "mark",
+            "reduceOnly": True,
+            "trailingStopMaxDeviation": 0,
+            "trailingStopDeviationUnit": "PERCENT",
+            "limitPriceOffsetValue": 0,
+            "limitPriceOffsetUnit": "QUOTE_CURRENCY"
+            }
+
+        response = requests.request("POST",url, headers=self.headers_futures, data=data)
         response_data = response.json()
 
         return response_data

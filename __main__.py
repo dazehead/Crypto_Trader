@@ -15,7 +15,7 @@ from scanner import Scanner
 from risk import Risk_Handler
 from kraken_wrapper import Kraken
 from strategies.double.rsi_adx import RSI_ADX
-from strategies.gpu_optimized.rsi_adx_np import RSI_ADX_GPU
+from strategies.gpu_optimized.rsi_adx_gpu import RSI_ADX_GPU
 import datetime as dt
 import pandas as pd
 
