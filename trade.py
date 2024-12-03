@@ -54,20 +54,24 @@ class Trade():
             try:
                 if buy_order is not None:
                     order_id =buy_order['result']['txid'][0]
-                    buy_order = self.client.edit_order(
-                        order_id = order_id,
-                        symbol = self.symbol,
-                        volume = self.risk.volume_to_risk,
-                        price = self.client.get_recent_spreads(
-                            symbol=self.symbol,
-                            type_of_order= 'buy'
-                            )          
+                    if buy_order is not None:
+                        buy_order = self.client.edit_order(
+                            order_id = order_id,
+                            symbol = self.symbol,
+                            volume = self.risk.volume_to_risk,
+                            price = self.client.get_recent_spreads(
+                                symbol=self.symbol,
+                                type_of_order= 'buy'
+                                )          
                     )
             except TypeError as e:
                 print('no more open orders')
             time.sleep(.25)
-            database_interaction.trade_export(buy_order, balance=self.client.get_account_balance())
 
+            try:
+                database_interaction.trade_export(buy_order, balance=self.client.get_account_balance())
+            except buy_order == None:
+                buy_order = buy_order
             """edit the open order until it fills"""
         #print(buy_order)
 

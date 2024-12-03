@@ -335,30 +335,32 @@ class Kraken():
         return response_data
 
     def edit_order(self, order_id, symbol, volume, price, pickle=False):
-        url_path = '/0/private/EditOrder'
-        url = self.base_url + url_path 
-        data = {
-            'nonce': self.get_nonce(),
-            'pair': symbol,
-            'txid': order_id,
-            'volume': volume,
-            'price':price
-        }
+        try:
+            url_path = '/0/private/EditOrder'
+            url = self.base_url + url_path 
+            data = {
+                'nonce': self.get_nonce(),
+                'pair': symbol,
+                'txid': order_id,
+                'volume': volume,
+                'price':price
+            }
 
-        self.get_kraken_signature(
-            urlpath = url_path,
-            data = data,
-            secret=self.api_secret)
-        
-        response = requests.request("POST",url=url, headers=self.headers, data=data)
-        response_data = response.json()
+            self.get_kraken_signature(
+                urlpath = url_path,
+                data = data,
+                secret=self.api_secret)
+            
+            response = requests.request("POST",url=url, headers=self.headers, data=data)
+            response_data = response.json()
 
 
-        if pickle:
-            pickling.to_pickle(f'updated_order_{symbol}', response_data)
-        print('order has been updated')
-        print(response_data)
-
+            if pickle:
+                pickling.to_pickle(f'updated_order_{symbol}', response_data)
+            print('order has been updated')
+            print(response_data)
+        except Exception:
+            print('Error occurred in edit_order()')
 
     def get_closed_orders(self):
         urlpath = '/0/private/ClosedOrders'
