@@ -267,17 +267,49 @@ class Strategy:
 
         if self.with_sizing:
             size = pd.Series(index=self.close.index, dtype='float')
+            print(f"printing size {size}")
+            print(f"printing self.close {self.close}")
+            print(f"printing self.close.shape{self.close.shape}")
             size[self.entries] = self.risk_object.percent_to_size #this sizing will be calculated through risk class
             size[self.exits] = np.inf
+            print(f"self.entries = {self.entries}")
+            print(f"self.exits = {self.exits}")
 
             size_type = 'value'
             accumulate = True
+
+        
+        # print(f"Shape of entries: {self.entries.shape}")
+        # print(f"Shape of exits: {self.exits.shape}")
+        # print(f"Shape of prices: {self.prices.shape}")
+
+        granularity_to_freq = {
+            'ONE_MINUTE': '1min',
+            'FIVE_MINUTE': '5min',
+            'FIFTEEN_MINUTE': '15min',
+            'THIRTY_MINUTE': '30min',
+            'ONE_HOUR': '1h',
+            'TWO_HOUR': '2h',
+            'SIX_HOUR': '6h',
+            'ONE_DAY': '1D'
+        }
+
+        # Convert granularity to frequency
+        freq = granularity_to_freq.get(self.granularity, None)
+        if freq is None:
+            raise ValueError(f"Unsupported granularity: {self.granularity}")
+
+        print(self.close.shape)
+        print(self.exits)
+        print(self.entries)
+        print(size.shape)
 
         self.portfolio = vbt.Portfolio.from_signals(
             close = self.close,
             entries = self.entries,
             exits = self.exits,
             size = size,
+            freq = freq,
             size_type= size_type,
             accumulate= accumulate,
             init_cash= init_cash)

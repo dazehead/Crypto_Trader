@@ -14,9 +14,11 @@ import database_interaction
 import pickling
 import uuid
 from datetime import datetime
+from dotenv import load_dotenv
 class Kraken():
 
     def __init__(self, granularity: str=None):
+        load_dotenv()
         self.api_key = os.getenv('API_KEY_KRAKEN') #API_ENV_KEY | KRAKEN
         self.api_secret = os.getenv('API_PRIVATE_KEY_KRAKEN') #API_SECRET_ENV_KEY | KRAKEN
         self.base_url = 'https://api.kraken.com'
@@ -291,7 +293,7 @@ class Kraken():
             'date_time' : time_date
         }
         self.get_kraken_signature(urlpath=url_path, data=data, secret=self.api_secret)
-
+        
         response = requests.request("POST",url, headers=self.headers, data=data)
         response_data = response.json()
 

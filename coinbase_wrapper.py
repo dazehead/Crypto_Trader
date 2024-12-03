@@ -8,11 +8,12 @@ import time
 from coinbase.rest import RESTClient
 import requests
 from requests.exceptions import RequestException
-
+from dotenv import load_dotenv
 
 
 class Coinbase_Wrapper():
     def __init__(self):
+        load_dotenv()
         self.api_key = os.getenv('API_KEY_COINBASE')
         self.api_secret = os.getenv('API_PRIVATE_KEY_COINBASE')
         self.client = RESTClient(api_key=self.api_key, api_secret=self.api_secret)

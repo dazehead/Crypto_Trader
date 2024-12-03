@@ -6,6 +6,7 @@ import uuid
 import requests
 from nacl.signing import SigningKey
 import os
+from dotenv import load_dotenv
 
 PUBLIC_KEY = os.getenv('PUBLIC_KEY_ROBIN')
 PRIVATE_KEY = os.getenv('PRIVATE_KEY_ROBIN')
@@ -13,6 +14,7 @@ API_KEY = os.getenv('API_KEY_ROBIN')
 
 class CryptoAPITrading:
     def __init__(self):
+        load_dotenv()
         self.api_key = API_KEY
         private_key_seed = base64.b64decode(PRIVATE_KEY)
         self.private_key = SigningKey(private_key_seed)

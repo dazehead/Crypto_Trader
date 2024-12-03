@@ -62,6 +62,7 @@ class RSI_ADX_GPU(Strategy):
             close_array = self.close.to_numpy(dtype=np.float64)
             signal_array = np.array(final_signals)
             final_signals = utils.calculate_with_sizing_numba(signal_array, close_array, percent_to_size)
+            print(final_signals)
 
         if not self.hyper:
             self.osc1_data = ('RSI', rsi_np)

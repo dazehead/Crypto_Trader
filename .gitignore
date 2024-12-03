@@ -5,9 +5,6 @@ ws_testbed.py
 database
 historical_data
 testbed.py
-<<<<<<< HEAD
-venv
-=======
 venv
 cupy
->>>>>>> trade_record
+.env

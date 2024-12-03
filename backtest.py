@@ -52,7 +52,7 @@ def test_multiple_strategy():
     
     logbook.export_multiple_pf_to_db()
 
-test_multiple_strategy()
+#test_multiple_strategy()
 
 
 def run_basic_backtest():
@@ -65,7 +65,7 @@ def run_basic_backtest():
     #         days = 365
 
     dict_df = database_interaction.get_historical_from_db(granularity='THIRTY_MINUTE',
-                                                        symbols=symbols,
+                                                        symbols=['XTZ-USD'],
                                                         num_days=365)
     for key, value in dict_df.items():
         current_dict = {key : value}
@@ -76,7 +76,8 @@ def run_basic_backtest():
         strat = RSI_ADX_GPU(
             dict_df=current_dict,
             risk_object=risk,
-            with_sizing=True
+            with_sizing=True,
+            hyper=False
         )
 
         params = database_interaction.get_best_params(
