@@ -6,4 +6,4 @@ services:
       - .env
     volumes:
       - .:/app  
-    command: python my_cryptobot.py
+    command: python __main__.py

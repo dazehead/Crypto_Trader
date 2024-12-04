@@ -19,8 +19,8 @@ class Kraken():
 
     def __init__(self, granularity: str=None):
         load_dotenv()
-        self.api_key = os.getenv('API_KEY_KRAKEN') #API_ENV_KEY | KRAKEN
-        self.api_secret = os.getenv('API_PRIVATE_KEY_KRAKEN') #API_SECRET_ENV_KEY | KRAKEN
+        self.api_key = os.getenv('DOTENV_API_KEY_KRAKEN') #API_ENV_KEY | KRAKEN
+        self.api_secret = os.getenv('DOTENV_API_PRIVATE_KEY_KRAKEN') #API_SECRET_ENV_KEY | KRAKEN
         self.base_url = 'https://api.kraken.com'
         self.future_base_url = 'https://futures.kraken.com'
         self.headers = {
