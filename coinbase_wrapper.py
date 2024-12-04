@@ -8,13 +8,18 @@ import time
 from coinbase.rest import RESTClient
 import requests
 from requests.exceptions import RequestException
+from dotenv import load_dotenv
 
-
+import os
+import sys
 
 class Coinbase_Wrapper():
     def __init__(self):
-        self.api_key = os.getenv('API_KEY_COINBASE')
-        self.api_secret = os.getenv('API_PRIVATE_KEY_COINBASE')
+        load_dotenv()
+
+        self.api_key = os.getenv('DOTENV_API_KEY_COINBASE')
+        self.api_secret = os.getenv('DOTENV_API_PRIVATE_KEY_COINBASE')
+        #print(self.api_secret)
         self.client = RESTClient(api_key=self.api_key, api_secret=self.api_secret)
         self.coinbase_robin_crypto = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
 
