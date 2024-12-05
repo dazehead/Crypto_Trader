@@ -13,6 +13,8 @@ from dotenv import load_dotenv
 
 class Coinbase_Wrapper():
     def __init__(self):
+        os.environ.pop('DOTENV_API_KEY_COINBASE', None)
+        os.environ.pop('DOTENV_API_PRIVATE_KEY_COINBASE', None)
         load_dotenv()
         self.api_key = os.getenv('DOTENV_API_KEY_COINBASE')
         self.api_secret = os.getenv('DOTENV_API_PRIVATE_KEY_COINBASE')

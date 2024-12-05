@@ -15,12 +15,19 @@ import pickling
 import uuid
 from datetime import datetime
 from dotenv import load_dotenv
+
+
+load_dotenv()
+os.environ.pop('DOTENV_API_KEY_KRAKEN', None)
+os.environ.pop('DOTENV_API_PRIVATE_KEY_KRAKEN', None)
 class Kraken():
 
     def __init__(self, granularity: str=None):
         load_dotenv()
-        self.api_key = os.getenv('DOTENV_API_KEY_KRAKEN') #API_ENV_KEY | KRAKEN
+        self.api_key =  os.getenv('DOTENV_API_KEY_KRAKEN') #API_ENV_KEY | KRAKEN
         self.api_secret = os.getenv('DOTENV_API_PRIVATE_KEY_KRAKEN') #API_SECRET_ENV_KEY | KRAKEN
+        print(f'API Key: {self.api_key}')
+        print(f'API Secret: {self.api_secret}')
         self.base_url = 'https://api.kraken.com'
         self.future_base_url = 'https://futures.kraken.com'
         self.headers = {
@@ -66,6 +73,7 @@ class Kraken():
         base_nonce = int(time.time() * 10000)
         nonce = base_nonce + self.nonce_counter
         self.nonce_counter += 1
+        print(f'nonce: {str(nonce)}')
         return str(nonce)
 
     def get_kraken_signature(self, urlpath, data, secret):
@@ -181,6 +189,7 @@ class Kraken():
         urlpath = '/0/private/Balance'
         url = self.base_url + urlpath
         nonce = self.get_nonce()
+        print(nonce)
         data = {'nonce': nonce}
 
         # Compute signature
