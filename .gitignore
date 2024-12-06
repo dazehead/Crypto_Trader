@@ -8,3 +8,4 @@ testbed.py
 venv
 cupy
 .env
+crypto_trader.egg-info/
