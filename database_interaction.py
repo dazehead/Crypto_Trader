@@ -99,10 +99,13 @@ def get_best_params(strategy_object, df_manager=None,live_trading=False, best_of
                 best_results = list_results
                 best_granularity = granularity
             else:
-                if best_results[-1] < list_results[-1]:
-                    best_results = list_results
-                    best_granularity = granularity
-
+                if list_results[-1] is None:
+                    print(f'No data found(best result) for {granularity} granularity in a given strategy')
+                else:
+                    if (best_results[-1] < list_results[-1]):
+                        best_results = list_results
+                        best_granularity = granularity
+                    
         if best_granularity != strategy_object.granularity or strategy_object.granularity is None:
             #if the granularity has changed then we update strat with new data
 

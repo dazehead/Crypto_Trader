@@ -44,7 +44,7 @@ class Trade():
         buy_order = self.client.add_order(
             type_of_order= 'buy',
             symbol = self.symbol,
-            volume= self.risk.volume_to_risk * 2,
+            volume= self.risk.volume_to_risk,
             price = self.current_asset_price,
             pickle=True)
         time.sleep(1)
@@ -53,16 +53,22 @@ class Trade():
         while self.client.any_open_orders():
             try:
                 if buy_order is not None:
+                    print(f'Buy Order ID: {buy_order["result"]["txid"][0]}')
+                    print(buy_order)
                     order_id =buy_order['result']['txid'][0]
-                    buy_order = self.client.edit_order(
-                        order_id = order_id,
-                        symbol = self.symbol,
-                        volume = self.risk.volume_to_risk,
-                        price = self.client.get_recent_spreads(
-                            symbol=self.symbol,
-                            type_of_order= 'buy'
-                            )          
-                    )
+
+                    if buy_order is not None:
+                        print(f'Buy Order ID: {buy_order["result"]["txid"][0]}')
+                        print(buy_order)
+                        buy_order = self.client.edit_order(
+                            order_id = order_id,
+                            symbol = self.symbol,
+                            volume = self.risk.volume_to_risk,
+                            price = self.client.get_recent_spreads(
+                                symbol=self.symbol,
+                                type_of_order= 'buy'
+                                )          
+                        )
             except TypeError as e:
                 print('no more open orders')
             time.sleep(.25)

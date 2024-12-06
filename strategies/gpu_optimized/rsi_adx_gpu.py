@@ -6,6 +6,10 @@ import utils
 
 class RSI_ADX_GPU(Strategy):
     def __init__(self, dict_df, risk_object=None, with_sizing=True, hyper=True):
+        if __file__.endswith("rsi_adx_np.py"):
+            self.is_numpy = True
+        else:
+            self.is_numpy = False
         super().__init__(dict_df=dict_df, risk_object=risk_object, with_sizing=with_sizing)
         self.hyper = hyper
 
@@ -62,7 +66,7 @@ class RSI_ADX_GPU(Strategy):
             close_array = self.close.to_numpy(dtype=np.float64)
             signal_array = np.array(final_signals)
             final_signals = utils.calculate_with_sizing_numba(signal_array, close_array, percent_to_size)
-            print(final_signals)
+            #print(final_signals)
 
         if not self.hyper:
             self.osc1_data = ('RSI', rsi_np)

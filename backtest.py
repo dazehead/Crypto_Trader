@@ -20,6 +20,7 @@ from strategies.single.adx import ADX
 from strategies.double.rsi_adx import RSI_ADX
 from strategies.combined_strategy import Combined_Strategy
 from strategies.gpu_optimized.rsi_adx_gpu import RSI_ADX_GPU
+#from strategies.gpu_optimized.rsi_adx_np import RSI_ADX_GPU
 from risk import Risk_Handler
 from log import LinkedList
 from hyper import Hyper

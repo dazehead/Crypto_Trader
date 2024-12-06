@@ -16,18 +16,17 @@ import uuid
 from datetime import datetime
 from dotenv import load_dotenv
 
-
-load_dotenv()
-os.environ.pop('DOTENV_API_KEY_KRAKEN', None)
-os.environ.pop('DOTENV_API_PRIVATE_KEY_KRAKEN', None)
+load_dotenv(override=True)
+# load_dotenv()
+# os.environ.pop('DOTENV_API_KEY_KRAKEN', None)
+# os.environ.pop('DOTENV_API_PRIVATE_KEY_KRAKEN', None)
 class Kraken():
 
     def __init__(self, granularity: str=None):
-        load_dotenv()
-        self.api_key =  os.getenv('DOTENV_API_KEY_KRAKEN') #API_ENV_KEY | KRAKEN
-        self.api_secret = os.getenv('DOTENV_API_PRIVATE_KEY_KRAKEN') #API_SECRET_ENV_KEY | KRAKEN
-        print(f'API Key: {self.api_key}')
-        print(f'API Secret: {self.api_secret}')
+
+        self.api_key = os.environ.pop('DOTENV_API_KEY_KRAKEN', None)  # Default to None if not found
+        self.api_secret = os.environ.pop('DOTENV_API_PRIVATE_KEY_KRAKEN', None)  # Default to None
+
         self.base_url = 'https://api.kraken.com'
         self.future_base_url = 'https://futures.kraken.com'
         self.headers = {
@@ -66,14 +65,14 @@ class Kraken():
         self.all_products = self.get_tradable_asset_pairs()
         self.time_to_wait = self.granularity_map[self.granularity] * 60
         self.nonce_counter = 1
-
+    
     def get_nonce(self):
+        """ if we get Error: ['EAPI:Invalid nonce'], the saved nonce may be too far in the future (*100000) """
         if self.nonce_counter > 14:
             self.conce_counter = 1
-        base_nonce = int(time.time() * 10000)
+        base_nonce = int(time.time() * 1000000)
         nonce = base_nonce + self.nonce_counter
         self.nonce_counter += 1
-        print(f'nonce: {str(nonce)}')
         return str(nonce)
 
     def get_kraken_signature(self, urlpath, data, secret):
@@ -85,6 +84,7 @@ class Kraken():
                 'API-Sign': self.api_secret
             }
             return
+
         postdata = urllib.parse.urlencode(data)
         encoded = (str(data['nonce']) + postdata).encode('utf-8')
         message = urlpath.encode('utf-8') + hashlib.sha256(encoded).digest()
@@ -189,7 +189,6 @@ class Kraken():
         urlpath = '/0/private/Balance'
         url = self.base_url + urlpath
         nonce = self.get_nonce()
-        print(nonce)
         data = {'nonce': nonce}
 
         # Compute signature
@@ -197,6 +196,7 @@ class Kraken():
         response = requests.post(url, headers=self.headers, data=data)
 
         response_data = response.json()
+        print(response_data)
         if response_data['error']:
             print(f"Error: {response_data['error']}")
         else:

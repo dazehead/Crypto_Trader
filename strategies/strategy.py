@@ -29,14 +29,19 @@ class Strategy:
             self.close = self.df['close']
             self.volume = self.df['volume']
             
-
-
             if self.__class__.__name__.split('_')[-1] == 'GPU':
-                self.close_gpu = cp.array(self.close)
-                self.high_gpu = cp.array(self.high)
-                self.low_gpu = cp.array(self.low)
-                self.open_gpu = cp.array(self.open)
-                self.volume_gpu = cp.array(self.volume)
+                if self.is_numpy:
+                    self.close_gpu = np.array(self.close)
+                    self.high_gpu = np.array(self.high)
+                    self.low_gpu = np.array(self.low)
+                    self.open_gpu = np.array(self.open)
+                    self.volume_gpu = np.array(self.volume)
+                else:
+                    self.close_gpu = cp.array(self.close)
+                    self.high_gpu = cp.array(self.high)
+                    self.low_gpu = cp.array(self.low)
+                    self.open_gpu = cp.array(self.open)
+                    self.volume_gpu = cp.array(self.volume)
 
             self.granularity = self.set_granularity()
         self.risk_object = risk_object

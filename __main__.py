@@ -85,7 +85,7 @@ for symbol in scanner.kraken_crypto:
 
     strat = RSI_ADX_GPU(dict_df= None, risk_object=risk)
     strat.symbol = symbol
-    params = database_interaction.get_best_params(strat, df_manager,live_trading=True, best_of_all_granularities=True, minimum_trades=3)
+    params = database_interaction.get_best_params(strat, df_manager,live_trading=True, best_of_all_granularities=True, minimum_trades=12)
     risk.symbol_params[symbol] = params
     df_manager.set_next_update(symbol, initial=True)
 

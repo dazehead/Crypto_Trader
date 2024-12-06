@@ -10,14 +10,12 @@ import requests
 from requests.exceptions import RequestException
 from dotenv import load_dotenv
 
-
+load_dotenv(override=True)
 class Coinbase_Wrapper():
     def __init__(self):
-        os.environ.pop('DOTENV_API_KEY_COINBASE', None)
-        os.environ.pop('DOTENV_API_PRIVATE_KEY_COINBASE', None)
-        load_dotenv()
-        self.api_key = os.getenv('DOTENV_API_KEY_COINBASE')
-        self.api_secret = os.getenv('DOTENV_API_PRIVATE_KEY_COINBASE')
+
+        self.api_key = os.environ.pop('DOTENV_API_KEY_COINBASE', None)
+        self.api_secret = os.environ.pop('DOTENV_API_PRIVATE_KEY_COINBASE', None)
         self.client = RESTClient(api_key=self.api_key, api_secret=self.api_secret)
         self.coinbase_robin_crypto = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
 
@@ -218,7 +216,7 @@ class Coinbase_Wrapper():
                     # Export data to the database
                     database_interaction.export_historical_to_db(combined_data, granularity=granularity)
             else:
-                print(f"No new data available for {symbol} in the specified date ranges.")
+                print(f"\nNo new data available for {symbol} in the specified date ranges.")
 
         # Resample data in the database
         database_interaction.resample_dataframe_from_db(granularity=granularity)
