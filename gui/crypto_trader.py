@@ -25,7 +25,7 @@ class CryptoTrader():
 
     def run_setup_tasks(self):
         self.livetrader.update_candle_data(callback=self.update_setup_label)
-        
+
         # this loads GPU as of right now need something to pick strategy
         #self.livetrader.load_strategy_params_for_strategy()
         
@@ -106,8 +106,7 @@ class CryptoTrader():
     def verify_trading(self):
         result = messagebox.askyesno(message='Are you sure you want to start live trading?', icon='question', title='Start Trading')
         if result:
-            livetrader = LiveTrader()
-            Thread(target=livetrader.main()).start()
+            print('We will start the live trading here')
 
 
 root = Tk()
