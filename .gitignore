@@ -2,10 +2,13 @@ venv310
 __pycache__
 rest_testbed.py
 ws_testbed.py
+core/database
 database
 historical_data
 testbed.py
 venv
+core/venv
 cupy
 .env
+core/.env
 crypto_trader.egg-info/
