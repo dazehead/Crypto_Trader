@@ -1,5 +1,6 @@
 import pandas as pd
 import datetime as dt
+import core.database_interaction as database_interaction
 
 
 class DF_Manager():

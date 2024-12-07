@@ -16,8 +16,12 @@ class CryptoTrader():
         style.theme_use('awdark')
 
         self.livetrader = LiveTrader()
-        self.create_content()
+        self.backtest_params = {'symbol': None,
+                                'granularity': None,
+                                'chosen_strat':None,
+                                'num_days': None}
 
+        self.create_content()
         #self.setup()
         self.show_main_window()
 
@@ -70,16 +74,30 @@ class CryptoTrader():
             self.graph_notebook.add(self.__getattribute__(frame_name), text=symbol)
 
         # backtest page content
+
         self.backtest_content = ttk.Labelframe(self.main_content, text='Backtest')
         self.backtest_content.lower(self.live_trade_content)
         self.backtest_graph = Canvas(self.backtest_content, width=500, height=400, background='grey')
-        self.symbols_frame = ttk.Labelframe(self.backtest_content, text='symbols')
-        self.symbols_var = StringVar(value=self.crypto_symbols)
-        self.symbol_listbox = Listbox(self.symbols_frame, width=8, height=14, listvariable=self.symbols_var)
-        self.granularity_var = StringVar(value = list(self.livetrader.df_manager.time_map.keys()))
-        self.granularity_frame = ttk.Labelframe(self.backtest_content, text='granularity')
-        self.granularity_listbox = Listbox(self.granularity_frame, width=20, height=14, listvariable=self.granularity_var)
-        
+        self.choose_window = ttk.Frame(self.backtest_content)
+
+        self.symbols_frame = ttk.Labelframe(self.choose_window, text='Symbols')
+        self.symbol_combobox = ttk.Combobox(self.symbols_frame, width=8, height=14, values=self.crypto_symbols)
+        self.symbol_combobox.bind("<<ComboboxSelected>>", self.check_backtest_symbol)
+
+        self.granularity_frame = ttk.Labelframe(self.choose_window, text='Granularity')
+        self.granularity_combobox = ttk.Combobox(self.granularity_frame, width=20, height=14, values=list(self.livetrader.df_manager.time_map.keys()))
+        self.granularity_combobox.bind("<<ComboboxSelected>>", self.check_backtest_granularity)
+
+        self.strat_frame = ttk.Labelframe(self.choose_window, text='Strategy')
+        self.strat_combobox = ttk.Combobox(self.strat_frame, width=8, height=14, values=self.livetrader.all_strats)
+        self.strat_combobox.bind("<<ComboboxSelected>>", self.check_backtest_strat)
+
+        self.days_frame = ttk.Labelframe(self.choose_window, text='Days To Run')
+        self.num_days = StringVar()
+        self.days_spinbox = ttk.Spinbox(self.days_frame, from_=30, to=365, textvariable=self.num_days)
+
+        self.start_backtest_button = ttk.Button(self.backtest_content, text='Start Backtest', state='disabled')
+
         
 
         # Layout configuration for main_window
@@ -92,10 +110,19 @@ class CryptoTrader():
         self.graph_notebook.grid(sticky=(N,W))
         self.start_trading_button.grid(column=0, row=2, sticky=(W,N))
         self.backtest_graph.grid(column=0, row=0, sticky=(N,W))
-        self.symbols_frame.grid(column=1, row=0,padx=2, pady=2, sticky=(N,W))
-        self.symbol_listbox.grid(column=0, row=0, padx=2, pady=1, sticky=(N,W))
-        self.granularity_frame.grid(column=2, row=0, padx=2, pady=2, sticky=(N,W))
-        self.granularity_listbox.grid(column=0, row=0, padx=2, pady=1, sticky=(N,W))
+        self.choose_window.grid(column=1, row=0, sticky=(N,W))
+
+        self.symbols_frame.grid(column=0, row=0,padx=2, pady=2, sticky=(N,W))
+        self.symbol_combobox.grid(column=0, row=0, padx=2, pady=1, sticky=(N,W))
+
+        self.granularity_frame.grid(column=1, row=0, padx=2, pady=2, sticky=(N,W))
+        self.granularity_combobox.grid(column=0, row=0, padx=2, pady=1, sticky=(N,W))
+
+        self.strat_frame.grid(column=0, row=1, padx=2, pady=2, sticky=(N,W))
+        self.strat_combobox.grid(column=0, row=0, padx=2, pady=1, sticky=(N,W))
+
+        self.days_frame.grid(column=1, row=1, padx=2, pady=2, sticky=(N,W))
+        self.days_spinbox.grid(column=0, row=0, padx=2, pady=1, sticky=(N,W))
 
 
         root.columnconfigure(0, weight=0)
@@ -122,10 +149,26 @@ class CryptoTrader():
 
 
     
+
     def verify_trading(self):
         result = messagebox.askyesno(message='Are you sure you want to start live trading?', icon='question', title='Start Trading')
         if result:
             print('We will start the live trading here')
+
+    def check_backtest_symbol(self, *args):
+        self.backtest_params['symbol'] = self.symbol_combobox.get()
+
+    def check_backtest_granularity(self, *args):
+        self.backtest_params['granularity'] = self.granularity_combobox.get()
+    
+    def check_backtest_strat(self, *args):
+        self.backtest_params['chosen_strat'] = self.strat_combobox.get()
+    
+    def check_backtest_days(self, *args):
+        self.backtest_params['num_days'] = self.days_combobox.get()
+    
+    def start_backtest(self):
+        pass
 
 
 root = Tk()
