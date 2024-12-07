@@ -12,6 +12,8 @@ from core.risk import Risk_Handler
 from core.kraken_wrapper import Kraken
 import core.database_interaction as database_interaction
 import os
+import importlib.util
+import inspect
 
 class LiveTrader:
     def __init__(self):
@@ -25,21 +27,30 @@ class LiveTrader:
         self.scanner = Scanner(client=self.kraken)
         self.df_manager = DF_Manager(self.scanner)
         self.scanner.assign_attribute(df_manager=self.df_manager)
-        self.all_strats = []
 
-        strat_path = 'core/strategies'
-        for x in os.listdir(strat_path):
-            if '.py' in x or '__' in x:
-                continue
-            else:
-                for y in os.listdir(strat_path + '/' + x):
-                    if '__' in y:
-                        continue
-                    else:
-                        self.all_strats.append(y.split('.')[0].upper())
+        self.strat_classes = {}
+        self.extract_classes_from_scripts()
 
         #self.update_candle_data()
         #self.load_strategy_params_for_strategy()
+    
+    def extract_classes_from_scripts(self):
+        strat_path = 'core/strategies'
+
+        for root, _, files in os.walk(strat_path):
+            for i, file in enumerate(files):
+                if file not in ['strategy.py', 'combined_strategy.py']:
+                    if file.endswith(".py"):
+                        file_path = os.path.join(root, file)
+                        module_name = file[:-3]
+
+                        spec = importlib.util.spec_from_file_location(module_name, file_path)
+                        module = importlib.util.module_from_spec(spec)
+                        spec.loader.exec_module(module)
+                        for name, obj in inspect.getmembers(module, inspect.isclass):
+                            if obj.__module__ == module_name:
+                                self.strat_classes[name] = obj
+
 
     def load_strategy_params_for_strategy(self):
         # Load strategy parameters for each symbol

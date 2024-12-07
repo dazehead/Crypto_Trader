@@ -5,7 +5,7 @@ class RSI_ADX(Strategy):
     def __init__(self, dict_df, risk_object=None, with_sizing=False):
         super().__init__(dict_df=dict_df, risk_object=risk_object, with_sizing=with_sizing)
 
-    def custom_indicator(self, close=None, rsi_window=20, buy_threshold=15, sell_threshold=70, adx_buy_threshold=20, adx_time_period=20):
+    def custom_indicator(self, close=None, rsi_window=14, buy_threshold=40, sell_threshold=60, adx_buy_threshold=23, adx_time_period=20):
 
         self.rsi_window = rsi_window
         self.buy_threshold = buy_threshold

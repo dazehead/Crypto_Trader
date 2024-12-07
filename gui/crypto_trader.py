@@ -4,6 +4,7 @@ from PIL import Image, ImageTk
 from threading import Thread
 from tkinter import messagebox
 from core.livetrader import LiveTrader
+from core.backtest import Backtest
 
 
 class CryptoTrader():
@@ -16,10 +17,9 @@ class CryptoTrader():
         style.theme_use('awdark')
 
         self.livetrader = LiveTrader()
-        self.backtest_params = {'symbol': None,
-                                'granularity': None,
-                                'chosen_strat':None,
-                                'num_days': None}
+        self.strat_classes = self.livetrader.strat_classes
+        self.backtest_params = {}
+        self.strat_objects = {}
 
         self.create_content()
         #self.setup()
@@ -89,14 +89,14 @@ class CryptoTrader():
         self.granularity_combobox.bind("<<ComboboxSelected>>", self.check_backtest_granularity)
 
         self.strat_frame = ttk.Labelframe(self.choose_window, text='Strategy')
-        self.strat_combobox = ttk.Combobox(self.strat_frame, width=8, height=14, values=self.livetrader.all_strats)
+        self.strat_combobox = ttk.Combobox(self.strat_frame, width=8, height=14, values=list(self.strat_classes.keys()))
         self.strat_combobox.bind("<<ComboboxSelected>>", self.check_backtest_strat)
 
         self.days_frame = ttk.Labelframe(self.choose_window, text='Days To Run')
         self.num_days = StringVar()
-        self.days_spinbox = ttk.Spinbox(self.days_frame, from_=30, to=365, textvariable=self.num_days)
+        self.days_spinbox = ttk.Spinbox(self.days_frame, from_=30, to=365, textvariable=self.num_days, command=self.check_backtest_days)
 
-        self.start_backtest_button = ttk.Button(self.backtest_content, text='Start Backtest', state='disabled')
+        self.start_backtest_button = ttk.Button(self.backtest_content, text='Start Backtest', state='disabled', command=self.setup_backtest_thread)
 
         
 
@@ -123,6 +123,8 @@ class CryptoTrader():
 
         self.days_frame.grid(column=1, row=1, padx=2, pady=2, sticky=(N,W))
         self.days_spinbox.grid(column=0, row=0, padx=2, pady=1, sticky=(N,W))
+
+        self.start_backtest_button.grid()
 
 
         root.columnconfigure(0, weight=0)
@@ -156,19 +158,42 @@ class CryptoTrader():
             print('We will start the live trading here')
 
     def check_backtest_symbol(self, *args):
-        self.backtest_params['symbol'] = self.symbol_combobox.get()
+        self.backtest_params['symbol'] = [f'{self.symbol_combobox.get()}-USD']
+        self.check_all_params()
 
     def check_backtest_granularity(self, *args):
         self.backtest_params['granularity'] = self.granularity_combobox.get()
+        self.check_all_params()
     
     def check_backtest_strat(self, *args):
-        self.backtest_params['chosen_strat'] = self.strat_combobox.get()
+        strat_name = self.strat_combobox.get()
+        strat_obj = self.strat_classes[strat_name]
+        self.backtest_params['strategy'] = strat_obj
+        self.check_all_params()
     
     def check_backtest_days(self, *args):
-        self.backtest_params['num_days'] = self.days_combobox.get()
-    
-    def start_backtest(self):
-        pass
+        self.backtest_params['num_days'] = int(self.days_spinbox.get())
+        self.check_all_params()
+
+    def check_all_params(self):
+        if len(self.backtest_params) == 4 and all(value is not None for value in self.backtest_params.values()):
+            self.start_backtest_button['state'] = 'normal'
+
+    def setup_backtest_thread(self):
+        def start_backtest():
+            backtest = Backtest()
+            backtest.run_basic_backtest(
+                symbol=self.backtest_params['symbol'],
+                granularity=self.backtest_params['granularity'],
+                strategy_obj=self.backtest_params['strategy'],
+                num_days = self.backtest_params['num_days']
+            )
+
+        thread = Thread(target=start_backtest)
+        thread.daemon = True
+        thread.start()
+
+        
 
 
 root = Tk()
