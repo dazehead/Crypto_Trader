@@ -18,7 +18,8 @@ class CryptoTrader():
         self.livetrader = LiveTrader()
         self.create_content()
 
-        self.setup()
+        #self.setup()
+        self.show_main_window()
 
     def update_setup_label(self, message):
         self.setup_label.config(text=message)
@@ -54,22 +55,31 @@ class CryptoTrader():
         self.screen_width, self.screen_height = self.root.wm_maxsize()
         self.root.configure(width=self.screen_width, height=self.screen_height)
         self.main_content = ttk.Frame(self.root, width=self.screen_width, height=self.screen_height)
-
-
+        
         self.nav_frame = ttk.Frame(self.main_content, borderwidth=4, width=300, height=self.screen_height)
         self.live_trade_button = ttk.Button(self.nav_frame, text='Live Trading', command=self.show_live_trade_content)
         self.backtest_button = ttk.Button(self.nav_frame, text='Backtest', command = self.show_backtest_content)
 
+        # live trade page content
         self.live_trade_content = ttk.Labelframe(self.main_content, text='Live Trading')
-        self.backtest_content = ttk.Labelframe(self.main_content, text='Backtest')
-        self.backtest_content.lower(self.live_trade_content)
         self.start_trading_button = ttk.Button(self.live_trade_content, text="Start Trading", command=self.verify_trading)
-
         self.graph_notebook = ttk.Notebook(self.live_trade_content)
         for symbol in self.crypto_symbols:
-            frame_name = f'{symbol}_graph'
+            frame_name = f'{symbol}_graph' 
             self.__setattr__(frame_name, Canvas(self.graph_notebook, width=500, height=400, background='gray'))
             self.graph_notebook.add(self.__getattribute__(frame_name), text=symbol)
+
+        # backtest page content
+        self.backtest_content = ttk.Labelframe(self.main_content, text='Backtest')
+        self.backtest_content.lower(self.live_trade_content)
+        self.backtest_graph = Canvas(self.backtest_content, width=500, height=400, background='grey')
+        self.symbols_frame = ttk.Labelframe(self.backtest_content, text='symbols')
+        self.symbols_var = StringVar(value=self.crypto_symbols)
+        self.symbol_listbox = Listbox(self.symbols_frame, width=8, height=14, listvariable=self.symbols_var)
+        self.granularity_var = StringVar(value = list(self.livetrader.df_manager.time_map.keys()))
+        self.granularity_frame = ttk.Labelframe(self.backtest_content, text='granularity')
+        self.granularity_listbox = Listbox(self.granularity_frame, width=20, height=14, listvariable=self.granularity_var)
+        
         
 
         # Layout configuration for main_window
@@ -81,6 +91,12 @@ class CryptoTrader():
         self.backtest_content.grid(column=1, row=0, sticky=(N,W,S,E))
         self.graph_notebook.grid(sticky=(N,W))
         self.start_trading_button.grid(column=0, row=2, sticky=(W,N))
+        self.backtest_graph.grid(column=0, row=0, sticky=(N,W))
+        self.symbols_frame.grid(column=1, row=0,padx=2, pady=2, sticky=(N,W))
+        self.symbol_listbox.grid(column=0, row=0, padx=2, pady=1, sticky=(N,W))
+        self.granularity_frame.grid(column=2, row=0, padx=2, pady=2, sticky=(N,W))
+        self.granularity_listbox.grid(column=0, row=0, padx=2, pady=1, sticky=(N,W))
+
 
         root.columnconfigure(0, weight=0)
         root.columnconfigure(1, weight=1)
@@ -90,6 +106,7 @@ class CryptoTrader():
         self.live_trade_content.rowconfigure(0,weight=0)
         self.backtest_content.columnconfigure(0, weight=0)
         self.backtest_content.rowconfigure(0, weight=0)
+
 
 
     def show_live_trade_content(self):
@@ -103,6 +120,8 @@ class CryptoTrader():
         self.setup_window.destroy()
         self.main_content.grid(column=0, row=0, sticky=(N,S,E,W))
 
+
+    
     def verify_trading(self):
         result = messagebox.askyesno(message='Are you sure you want to start live trading?', icon='question', title='Start Trading')
         if result:

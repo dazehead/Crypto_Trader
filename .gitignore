@@ -11,4 +11,3 @@ core/venv
 cupy
 .env
 core/.env
-crypto_trader.egg-info/
