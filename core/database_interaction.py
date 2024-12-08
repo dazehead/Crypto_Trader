@@ -218,7 +218,7 @@ def export_hyper_to_db(strategy: object, hyper: object):
                 backtest_dict[key] = value
 
         combined_df = pd.concat([combined_df,pd.DataFrame([backtest_dict])])
-    sys.quit()
+    # sys.quit()
 
     # Prepare table name
     table_name = f"{strategy.__class__.__name__}_{granularity}"
