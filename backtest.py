@@ -20,7 +20,7 @@ from strategies.single.adx import ADX
 from strategies.double.rsi_adx import RSI_ADX
 from strategies.combined_strategy import Combined_Strategy
 from strategies.gpu_optimized.rsi_adx_gpu import RSI_ADX_GPU
-#from strategies.gpu_optimized.rsi_adx_np import RSI_ADX_GPU
+from strategies.gpu_optimized.rsi_adx_np import RSI_ADX_NP
 from risk import Risk_Handler
 from log import LinkedList
 from hyper import Hyper
@@ -70,6 +70,7 @@ def run_basic_backtest():
                                                         num_days=365)
     for key, value in dict_df.items():
         current_dict = {key : value}
+       
 
         #current_dict = utils.heikin_ashi_transform(current_dict)
         risk = Risk_Handler()
@@ -114,7 +115,7 @@ def run_basic_backtest():
         fig.show()
 
 
-run_basic_backtest()
+#run_basic_backtest()
 
 
 
@@ -123,13 +124,13 @@ def run_hyper():
     risk = Risk_Handler()
     for granularity in granularites:
         if granularity == 'ONE_MINUTE':
-            days = 25
+            days = 15
         elif granularity == 'FIVE_MINUTE':
-            days = 100
+            days = 50
         elif granularity == 'FIFTEEN_MINUTE':
-            days = 250
+            days = 100
         else:
-            days = 365
+            days = 100
         dict_df = database_interaction.get_historical_from_db(granularity=granularity,
                                                             symbols=symbols,
                                                             num_days=days)
@@ -138,20 +139,22 @@ def run_hyper():
         #dict_df = utils.heikin_ashi_transform(dict_df)
 
         start_time = time.time()
+        time.sleep(1)  # Introduce a delay to avoid overwhelming the Coinbase API
+        print(f'...Starting hyperparameter tuning for {granularity} timeframe')
         for i,items in enumerate(dict_df.items()):
             key, value = items
             current_dict = {key:value}
             
-            strat = RSI_ADX(current_dict, risk_object=risk, with_sizing=True)
+            strat = RSI_ADX_GPU(current_dict, risk_object=risk, with_sizing=True)
 
             hyper = Hyper(
                 strategy_object=strat,
                 close=strat.close,
-                rsi_window=np.arange(10, 30, step=15),
-                buy_threshold=np.arange(5, 50, step=15),
-                sell_threshold = np.arange(50, 95, step=15),
-                adx_buy_threshold = np.arange(20, 60, step=20),
-                adx_time_period=np.arange(10, 30, step=15))
+                rsi_window=np.arange(10, 30, step=5),
+                buy_threshold=np.arange(5, 50, step=5),
+                sell_threshold = np.arange(50, 95, step=5),
+                adx_buy_threshold = np.arange(20, 60, step=10),
+                adx_time_period=np.arange(10, 30, step=5))
 
             database_interaction.export_hyper_to_db(
                 strategy=strat,
@@ -175,5 +178,5 @@ def run_hyper():
                 # x_level = 'cust_fast_window',
                 # y_level = 'cust_slow_window')
                 # fig.show()
-#run_hyper()
+run_hyper()
 

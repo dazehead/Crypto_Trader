@@ -29,19 +29,20 @@ class Strategy:
             self.close = self.df['close']
             self.volume = self.df['volume']
             
-            if self.__class__.__name__.split('_')[-1] == 'GPU':
-                if self.is_numpy:
-                    self.close_gpu = np.array(self.close)
-                    self.high_gpu = np.array(self.high)
-                    self.low_gpu = np.array(self.low)
-                    self.open_gpu = np.array(self.open)
-                    self.volume_gpu = np.array(self.volume)
-                else:
-                    self.close_gpu = cp.array(self.close)
-                    self.high_gpu = cp.array(self.high)
-                    self.low_gpu = cp.array(self.low)
-                    self.open_gpu = cp.array(self.open)
-                    self.volume_gpu = cp.array(self.volume)
+            # if self.__class__.__name__.split('_')[-1] == 'GPU':
+            #     if self.is_numpy:
+            #         self.close_np = np.array(self.close)
+            #         self.high_np = np.array(self.high)
+            #         self.low_np = np.array(self.low)
+            #         self.open_np = np.array(self.open)
+            #         self.volume_np = np.array(self.volume)
+                    
+            #     else:
+            #         self.close_gpu = cp.array(self.close)
+            #         self.high_gpu = cp.array(self.high)
+            #         self.low_gpu = cp.array(self.low)
+            #         self.open_gpu = cp.array(self.open)
+            #         self.volume_gpu = cp.array(self.volume)
 
             self.granularity = self.set_granularity()
         self.risk_object = risk_object
@@ -272,21 +273,11 @@ class Strategy:
 
         if self.with_sizing:
             size = pd.Series(index=self.close.index, dtype='float')
-            print(f"printing size {size}")
-            print(f"printing self.close {self.close}")
-            print(f"printing self.close.shape{self.close.shape}")
             size[self.entries] = self.risk_object.percent_to_size #this sizing will be calculated through risk class
             size[self.exits] = np.inf
-            print(f"self.entries = {self.entries}")
-            print(f"self.exits = {self.exits}")
 
             size_type = 'value'
             accumulate = True
-
-        
-        # print(f"Shape of entries: {self.entries.shape}")
-        # print(f"Shape of exits: {self.exits.shape}")
-        # print(f"Shape of prices: {self.prices.shape}")
 
         granularity_to_freq = {
             'ONE_MINUTE': '1min',
@@ -303,11 +294,6 @@ class Strategy:
         freq = granularity_to_freq.get(self.granularity, None)
         if freq is None:
             raise ValueError(f"Unsupported granularity: {self.granularity}")
-
-        print(self.close.shape)
-        print(self.exits)
-        print(self.entries)
-        print(size.shape)
 
         self.portfolio = vbt.Portfolio.from_signals(
             close = self.close,
