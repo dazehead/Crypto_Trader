@@ -1,0 +1,8 @@
+services:
+  cryptobot:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - .:/app  
+    command: python __main__.py
