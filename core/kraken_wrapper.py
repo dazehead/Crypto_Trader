@@ -11,12 +11,12 @@ import base64
 import core.pickling as pickling
 import uuid
 from datetime import datetime
-#from dotenv import load_dotenv
+from dotenv import load_dotenv
 
 class Kraken():
 
     def __init__(self, granularity: str=None):
-        #load_dotenv()
+        load_dotenv()
         self.api_key = os.getenv('API_KEY_KRAKEN') #API_ENV_KEY | KRAKEN
         self.api_secret = os.getenv('API_PRIVATE_KEY_KRAKEN') #API_SECRET_ENV_KEY | KRAKEN
         self.base_url = 'https://api.kraken.com'

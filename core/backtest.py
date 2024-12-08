@@ -1,4 +1,6 @@
+import sys
 import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import pandas as pd
 import core.utils as utils
 import datetime as dt
@@ -19,6 +21,7 @@ from core.strategies.single.adx import ADX
 from core.strategies.double.rsi_adx import RSI_ADX
 from core.strategies.combined_strategy import Combined_Strategy
 from core.strategies.gpu_optimized.rsi_adx_gpu import RSI_ADX_GPU
+from core.strategies.gpu_optimized.rsi_adx_np import RSI_ADX_NP
 from core.risk import Risk_Handler
 from core.log import LinkedList
 from core.hyper import Hyper
@@ -163,5 +166,5 @@ class Backtest():
                     # y_level = 'cust_slow_window')
                     # fig.show()
 
-# test = Backtest()
-# test.run_basic_backtest()
+test = Backtest()
+test.run_basic_backtest("BTC-USD", "ONE_MINUTE", RSI_ADX_NP, 50, best_params=True)

@@ -75,7 +75,10 @@ def get_best_params(strategy_object, df_manager=None,live_trading=False, best_of
         best_results = []
         best_granularity = ''
         for granularity in granularities:
-            table = f"{strategy_object.__class__.__name__}_{granularity}"
+            if strategy_object.__class__.__name__ == "RSI_ADX_NP":
+                table =f"RSI_ADX_GPU_{granularity}"
+            else:    
+                table = f"{strategy_object.__class__.__name__}_{granularity}"
             params = inspect.signature(strategy_object.custom_indicator)
             params = list(dict(params.parameters).keys())[1:]
             parameters = ', '.join(params)
