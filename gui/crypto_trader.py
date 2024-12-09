@@ -81,7 +81,8 @@ class CryptoTrader():
 
         self.backtest_content = ttk.Labelframe(self.main_content, text='Backtest')
         self.backtest_content.lower(self.live_trade_content)
-        self.backtest_graph = Canvas(self.backtest_content, width=500, height=400, background='grey')
+        self.backtest_graph_frame = ttk.Frame(self.backtest_content, width=500, height=400)
+        self.backtest_graph = Canvas(self.backtest_graph_frame, width=500, height=400, background='grey')
         self.choose_window = ttk.Frame(self.backtest_content)
 
         self.symbols_frame = ttk.Labelframe(self.choose_window, text='Symbols')
@@ -113,7 +114,8 @@ class CryptoTrader():
         self.backtest_content.grid(column=1, row=0, sticky=(N,W,S,E))
         self.graph_notebook.grid(sticky=(N,W))
         self.start_trading_button.grid(column=0, row=2, sticky=(W,N))
-        self.backtest_graph.grid(column=0, row=0, sticky=(N,W))
+        self.backtest_graph_frame.grid(column=0, row=0, sticky=(N,W))
+        self.backtest_graph.grid(column=0, row=0, sticky=(N,W,S,E))
         self.choose_window.grid(column=1, row=0, sticky=(N,W))
 
         self.symbols_frame.grid(column=0, row=0,padx=2, pady=2, sticky=(N,W))
@@ -184,14 +186,27 @@ class CryptoTrader():
             self.start_backtest_button['state'] = 'normal'
 
     def setup_backtest_thread(self):
+        def update_graph(graph):
+            self.backtest_progress.stop()
+            self.backtest_progress.destroy()
+
+
+
         def start_backtest():
+            self.backtest_progress = ttk.Progressbar(self.backtest_graph, orient='horizontal', length=200, mode='indeterminate', maximum=100.0)
+            self.backtest_progress.place(relx=0.5, rely=0.5, anchor='center')  # Center in Canvas
+            self.backtest_progress.start()
+
+
             backtest = Backtest()
             backtest.run_basic_backtest(
                 symbol=self.backtest_params['symbol'],
                 granularity=self.backtest_params['granularity'],
                 strategy_obj=self.backtest_params['strategy'],
-                num_days = self.backtest_params['num_days']
+                num_days = self.backtest_params['num_days'],
+                graph_callback=update_graph
             )
+
 
         thread = Thread(target=start_backtest)
         thread.daemon = True

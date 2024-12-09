@@ -38,7 +38,7 @@ def get_historical_from_db(granularity, symbols: list = [], num_days: int = None
 
     if convert:
         symbols = convert_symbols(lone_symbol=symbols)
-    conn = sql.connect(f'{database_path}{granularity}.db')
+    conn = sql.connect(f'core/database/{granularity}.db')
     query = "SELECT name FROM sqlite_master WHERE type='table';"
     tables = pd.read_sql_query(query, conn)
     tables_data = {}
@@ -73,7 +73,7 @@ def get_historical_from_db(granularity, symbols: list = [], num_days: int = None
 
 def get_best_params(strategy_object, df_manager=None,live_trading=False, best_of_all_granularities=False, minimum_trades=None, with_lowest_losing_average=False):
     granularities = ['ONE_MINUTE', 'FIVE_MINUTE', 'FIFTEEN_MINUTE', 'THIRTY_MINUTE', 'ONE_HOUR', 'TWO_HOUR', 'SIX_HOUR', 'ONE_DAY']
-    conn = sql.connect(f'{database_path}/hyper.db')
+    conn = sql.connect(f'core/database/hyper.db')
     if best_of_all_granularities:
         best_results = []
         best_granularity = ''

@@ -57,7 +57,7 @@ class Backtest():
 
 
 
-    def run_basic_backtest(self, symbol, granularity, strategy_obj, num_days, best_params=False):
+    def run_basic_backtest(self, symbol, granularity, strategy_obj, num_days, best_params=False, graph_callback=None):
 
         dict_df = database_interaction.get_historical_from_db(granularity=granularity,
                                                             symbols=symbol,
@@ -89,25 +89,28 @@ class Backtest():
             pf = strat.portfolio
             print(pf.stats())
 
-            fig = pf.plot(subplots = [
-            'orders',
-            'trade_pnl',
-            'cum_returns',
-            'drawdowns',
-            'underwater',
-            'gross_exposure'])
-            fig.update_layout(
-                title={
-                    'text': f"{strat.__class__.__name__} for {strat.symbol} on {strat.granularity} timeframe",  # Replace with your desired title
-                    'x': 0.5,  # Centers the title
-                    'xanchor': 'center',
-                    'yanchor': 'top'
-                },
-                margin={
-                    't': 100  # Adjust the top margin to create space for the title
-                }
-            )
-            fig.show()
+            # fig = pf.plot(subplots = [
+            # 'orders',
+            # 'trade_pnl',
+            # 'cum_returns',
+            # 'drawdowns',
+            # 'underwater',
+            # 'gross_exposure'])
+            # fig.update_layout(
+            #     title={
+            #         'text': f"{strat.__class__.__name__} for {strat.symbol} on {strat.granularity} timeframe",  # Replace with your desired title
+            #         'x': 0.5,  # Centers the title
+            #         'xanchor': 'center',
+            #         'yanchor': 'top'
+            #     },
+            #     margin={
+            #         't': 100  # Adjust the top margin to create space for the title
+            #     }
+            # )
+            if graph_callback:
+                fig = pf.plot(subplots =['orders'])
+                fig.write_image('gui/images/backtest_graph/graph.png', format="png", width=500, height=400)
+                fig.show()
 
     def run_hyper(self):
         risk = Risk_Handler()
@@ -166,5 +169,5 @@ class Backtest():
                     # y_level = 'cust_slow_window')
                     # fig.show()
 
-test = Backtest()
-test.run_basic_backtest("BTC-USD", "ONE_MINUTE", RSI_ADX_NP, 50, best_params=True)
+# test = Backtest()
+# test.run_basic_backtest("BTC-USD", "ONE_MINUTE", RSI_ADX_NP, 50, best_params=True)
