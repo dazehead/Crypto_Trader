@@ -25,6 +25,8 @@ from core.strategies.gpu_optimized.rsi_adx_np import RSI_ADX_NP
 from core.risk import Risk_Handler
 from core.log import LinkedList
 from core.hyper import Hyper
+import plotly
+import io
 #pd.set_option('display.max_rows', None)
 #pd.set_option('display.max_columns', None)
 
@@ -109,8 +111,19 @@ class Backtest():
             # )
             if graph_callback:
                 fig = pf.plot(subplots =['orders'])
-                fig.write_image('gui/images/backtest_graph/graph.png', format="png", width=500, height=400)
                 fig.show()
+                try:
+                    print(os.environ["PATH"])
+                    plotly.io.orca.config.executable =r"C:\Users\dazet\AppData\Local\Programs\orca\orca.exe"
+                    plotly.io.orca.config.save()
+                    print(plotly.io.orca.config.executable)
+                    plotly.io.write_image(fig=fig, file='gui/images/backtest_graph/graph.png', format="png", width=500, height=400, engine='orca')
+                    #buffer = io.BytesIO(image_bytes)
+                    print('converted plotly to image')
+                    graph_callback()
+                except Exception as e:
+                    print(f"Error: {e}")
+                
 
     def run_hyper(self):
         risk = Risk_Handler()

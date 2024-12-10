@@ -186,11 +186,15 @@ class CryptoTrader():
             self.start_backtest_button['state'] = 'normal'
 
     def setup_backtest_thread(self):
-        def update_graph(graph):
+        def update_graph(graph_img=None):
             self.backtest_progress.stop()
             self.backtest_progress.destroy()
 
+            myimg = Image.open('gui/images/backtest_graph/graph.png')
+            myimg = ImageTk.PhotoImage(myimg)
 
+            self.backtest_graph.create_image(10, 10, image=myimg, anchor='nw')
+            self.backtest_graph.grid()
 
         def start_backtest():
             self.backtest_progress = ttk.Progressbar(self.backtest_graph, orient='horizontal', length=200, mode='indeterminate', maximum=100.0)
