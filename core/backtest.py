@@ -73,13 +73,13 @@ class Backtest():
             strat = strategy_obj(
                 dict_df=current_dict,
                 risk_object=risk,
-                with_sizing=True
+                with_sizing=True,
             )
             if best_params:
                 params = database_interaction.get_best_params(
                     strategy_object=strat, 
                     best_of_all_granularities=True,
-                    minimum_trades=3)
+                    minimum_trades=12)
                 print(params)
 
                 strat.custom_indicator(None, *params)

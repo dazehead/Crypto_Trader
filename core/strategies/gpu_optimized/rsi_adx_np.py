@@ -4,11 +4,7 @@ import pandas as pd
 import core.utils as utils
 
 class RSI_ADX_NP(Strategy):
-    def __init__(self, dict_df, risk_object=None, with_sizing=True, hyper=True):
-        # if __file__.endswith("rsi_adx_np.py"):
-        #     self.is_numpy = True
-        # else:
-        #     self.is_numpy = False
+    def __init__(self, dict_df, risk_object=None, with_sizing=True, hyper=None):
         super().__init__(dict_df=dict_df, risk_object=risk_object, with_sizing=with_sizing)
         self.hyper = hyper
 
@@ -18,6 +14,17 @@ class RSI_ADX_NP(Strategy):
         self.open_np = np.array(self.open)
         self.volume_np = np.array(self.volume)
 
+        # print(self.close_np.shape)
+        # print(self.high_np.shape)
+        # print(self.low_np.shape)
+        # print(self.open_np.shape)
+        # print(self.volume_np.shape)
+
+        # print(self.close_np[:10])
+        # print(self.high_np[:10])
+        # print(self.low_np[:10])
+        # print(self.open_np[:10])
+        # print(self.volume_np[:10])
     def custom_indicator(self, close=None, rsi_window=20, buy_threshold=15, sell_threshold=70,
                          adx_buy_threshold=30, adx_time_period=20):
         if not self.hyper:
@@ -36,7 +43,10 @@ class RSI_ADX_NP(Strategy):
         buy_signal = rsi_np < buy_threshold
         sell_signal = rsi_np > sell_threshold
 
+
         signals = np.zeros_like(self.close_np, dtype=int)
+        #print(signals.tolist())
+        
         signals[buy_signal] = 1
         signals[sell_signal] = -1
 
@@ -55,8 +65,11 @@ class RSI_ADX_NP(Strategy):
         signals_adx[sell_signal_adx] = -1
 
         # Combine RSI and ADX signals
+        # print(f"signals: ", signals.tolist())
+        # print(f"signals_adx: {signals_adx.tolist()}")
         final_signals = self.combine_signals(signals, signals_adx)
         final_signals = utils.format_signals(final_signals)
+        #print(f"final signals: {final_signals}")
 
         if self.with_sizing:
             percent_to_size = self.risk_object.percent_to_size
@@ -89,15 +102,15 @@ class RSI_ADX_NP(Strategy):
         delta = close[1:] - close[:-1]
         gain = np.maximum(delta, 0)
         loss = np.maximum(-delta, 0)
-        # print("delta", delta)
-        # print("gain", gain)
-        # print("loss", loss)
-        # print("close[:25]", close)
+        print("delta", delta)
+        print("gain", gain)
+        print("loss", loss)
+        print("close[:25]", close)
 
-        # print("np.ones(rsi_window)", np.ones(rsi_window))
+        print("np.ones(rsi_window)", np.ones(rsi_window))
         
-        # print("np.convolve")
-        # print(np.convolve(gain, np.ones(rsi_window) / rsi_window, mode='valid').tolist())
+        print("np.convolve")
+        print(np.convolve(gain, np.ones(rsi_window) / rsi_window, mode='valid').tolist())
         avg_gain = np.convolve(gain, np.ones(rsi_window) / rsi_window, mode='valid')
         avg_loss = np.convolve(loss, np.ones(rsi_window) / rsi_window, mode='valid')
         

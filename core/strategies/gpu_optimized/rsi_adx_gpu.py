@@ -5,11 +5,7 @@ import pandas as pd
 import core.utils as utils
 
 class RSI_ADX_GPU(Strategy):
-    def __init__(self, dict_df, risk_object=None, with_sizing=True, hyper=True):
-        if __file__.endswith("rsi_adx_np.py"):
-            self.is_numpy = True
-        else:
-            self.is_numpy = False
+    def __init__(self, dict_df, risk_object=None, with_sizing=True, hyper=None):
         super().__init__(dict_df=dict_df, risk_object=risk_object, with_sizing=with_sizing)
         self.hyper = hyper
 
@@ -136,25 +132,3 @@ class RSI_ADX_GPU(Strategy):
         combined_signals[all_ones] = 1
         combined_signals[all_neg_ones] = -1
         return combined_signals
-    
-    # def format_signals(self, signals):
-    #     """
-    #     Formats signals to avoid double buys or sells.
-    #     Optimized using NumPy arrays with a loop.
-    #     """
-    #     # Ensure signals is a NumPy array
-    #     signals = np.array(signals)
-    #     formatted_signals = np.zeros_like(signals)
-    #     in_position = False
-
-    #     for i in range(len(signals)):
-    #         if signals[i] == 1 and not in_position:
-    #             formatted_signals[i] = 1
-    #             in_position = True
-    #         elif signals[i] == -1 and in_position:
-    #             formatted_signals[i] = -1
-    #             in_position = False
-    #         # Else, no change; formatted_signals[i] remains 0
-    #         # in_position remains the same
-
-    #     return formatted_signals

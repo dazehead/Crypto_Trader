@@ -35,7 +35,7 @@ def on_message():
         df_manager.data_for_live_trade(symbol=k, update=True)
         current_dict = {k: df_manager.dict_df[k]}
 
-        strat = RSI_ADX_GPU(current_dict, risk, with_sizing=True, hyper=False, )
+        strat = RSI_ADX_GPU(current_dict, risk, with_sizing=True, hyper=False)
 
         strat.custom_indicator(strat.close, *risk.symbol_params[k])
 

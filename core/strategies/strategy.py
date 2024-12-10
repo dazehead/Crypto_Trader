@@ -29,15 +29,6 @@ class Strategy:
             self.close = self.df['close']
             self.volume = self.df['volume']
             
-
-
-            if self.__class__.__name__.split('_')[-1] == 'GPU':
-                self.close_gpu = cp.array(self.close)
-                self.high_gpu = cp.array(self.high)
-                self.low_gpu = cp.array(self.low)
-                self.open_gpu = cp.array(self.open)
-                self.volume_gpu = cp.array(self.volume)
-
             self.granularity = self.set_granularity()
         self.risk_object = risk_object
 
@@ -272,6 +263,7 @@ class Strategy:
 
             size_type = 'value'
             accumulate = True
+        
 
         self.portfolio = vbt.Portfolio.from_signals(
             close = self.close,
