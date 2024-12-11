@@ -17,8 +17,8 @@ class Coinbase_Wrapper():
         load_dotenv()
 
         self.db_path = os.getenv('DATABASE_PATH')
-        self.api_key = os.getenv('ENV_API_KEY_COINBASE')
-        self.api_secret = os.getenv('ENV_API_PRIVATE_KEY_COINBASE')
+        self.api_key = os.getenv('DOTENV_API_KEY_COINBASE')
+        self.api_secret = os.getenv('DOTENV_API_PRIVATE_KEY_COINBASE')
         self.client = RESTClient(api_key=self.api_key, api_secret=self.api_secret)
         self.coinbase_robin_crypto = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
 
@@ -110,7 +110,7 @@ class Coinbase_Wrapper():
                     granularity=granularity
                 )
                 # Convert the response to a DataFrame
-                df = utils.to_df(btc_candles.to_dict())
+                df = utils.to_df(btc_candles)
                 return df
 
             except RequestException as e:
@@ -321,11 +321,11 @@ class Coinbase_Wrapper():
 
 
 
-# granularity = 'ONE_MINUTE'
-# coinbase = Coinbase_Wrapper()
+granularity = 'ONE_MINUTE'
+coinbase = Coinbase_Wrapper()
 
-# coinbase.get_candles_for_db(
-#     symbols=coinbase.coinbase_robin_crypto,
-#     granularity=granularity,
-#     days=365
-#     )
+coinbase.get_candles_for_db(
+    symbols=coinbase.coinbase_robin_crypto,
+    granularity=granularity,
+    days=365
+    )

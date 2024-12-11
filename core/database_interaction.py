@@ -59,6 +59,7 @@ def get_best_params(strategy_object, df_manager=None,live_trading=False, best_of
         best_results = []
         best_granularity = ''
         for granularity in granularities:
+            table = ""
             if strategy_object.__class__.__name__ == "RSI_ADX_NP":
                 table =f"RSI_ADX_GPU_{granularity}"
             else:    
@@ -85,6 +86,7 @@ def get_best_params(strategy_object, df_manager=None,live_trading=False, best_of
                 best_results = list_results
                 best_granularity = granularity
             else:
+                print(symbol)
                 if best_results[-1] < list_results[-1]:
                     best_results = list_results
                     best_granularity = granularity
@@ -127,6 +129,9 @@ def get_best_params(strategy_object, df_manager=None,live_trading=False, best_of
                 symbol = strategy_object.symbol
 
             query = f'SELECT {parameters},MAX("Total Return [%]") FROM {table} WHERE symbol="{symbol}"'
+            if minimum_trades is not None:
+                query += f' AND "Total Trades" >= {minimum_trades}'
+            print(query)
             result = pd.read_sql_query(query, conn)
 
             list_results = []

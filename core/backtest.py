@@ -60,7 +60,7 @@ class Backtest():
 
 
 
-    def run_basic_backtest(self, symbol, granularity, strategy_obj, num_days, best_params=False, graph_callback=None):
+    def run_basic_backtest(self, symbol, granularity, strategy_obj, num_days, best_params=True, graph_callback=None):
 
         dict_df = database_interaction.get_historical_from_db(granularity=granularity,
                                                             symbols=symbol,
@@ -77,12 +77,8 @@ class Backtest():
                 with_sizing=True,
             )
             if best_params:
-                params = database_interaction.get_best_params(
-                    strategy_object=strat, 
-                    best_of_all_granularities=True,
-                    minimum_trades=12)
+                params = database_interaction.get_best_params(strat, minimum_trades=12)
                 print(params)
-
                 strat.custom_indicator(None, *params)
             else:
                 strat.custom_indicator()
