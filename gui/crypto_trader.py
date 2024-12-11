@@ -171,19 +171,16 @@ class CryptoTrader():
 
     def check_backtest_symbol(self, *args):
         self.backtest_params['symbol'] = [f'{self.symbol_combobox.get()}-USD']
-        print(self.backtest_params['symbol'])
         self.check_all_params()
 
     def check_backtest_granularity(self, *args):
         self.backtest_params['granularity'] = self.granularity_combobox.get()
-        print(self.backtest_params['granularity'])
         self.check_all_params()
     
     def check_backtest_strat(self, *args):
         strat_name = self.strat_combobox.get()
         strat_obj = self.strat_classes[strat_name]
         self.backtest_params['strategy'] = strat_obj
-        print(self.backtest_params['strategy'])
         self.check_all_params()
     
     def check_backtest_days(self, *args):
@@ -218,7 +215,6 @@ class CryptoTrader():
             self.backtest_graph.grid()
 
         def start_backtest():
-            print("Starting backtest...")
             self.backtest_progress = ttk.Progressbar(self.backtest_graph, orient='horizontal', length=200, mode='indeterminate', maximum=100.0)
             self.backtest_progress.place(relx=0.5, rely=0.5, anchor='center')  # Center in Canvas
             self.backtest_progress.start()
