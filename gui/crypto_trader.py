@@ -8,6 +8,8 @@ import os
 import plotly
 from io import BytesIO
 from PIL import Image
+import asyncio
+import core.utils as utils
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from core.livetrader import LiveTrader
@@ -162,12 +164,34 @@ class CryptoTrader():
         self.main_content.grid(column=0, row=0, sticky=(N,S,E,W))
 
 
-    
+    def update_graph(self, fig, strat):
+            strat_symbol = utils.convert_symbols(strat, to_robinhood=True)
+            plotly.io.orca.config.executable =r"C:\Users\dazet\AppData\Local\Programs\orca\orca.exe"
+            plotly.io.orca.config.save()
 
+            # plotly.io.write_image(fig=fig, file='gui/images/backtest_graph/graph.png', format="png", width=500, height=400, engine='orca')
+            # print('converted plotly to image')
+
+            image_buffer = BytesIO()
+            plotly.io.write_image(fig, image_buffer, format='png', width=500, height=400, engine='orca')
+            image_buffer.seek(0)
+            image = Image.open(image_buffer)
+            setattr(self, f"{strat_symbol}_graph_image", ImageTk.PhotoImage(image)) 
+
+            getattr(self, f"{strat_symbol}_graph").create_image(0, 0, image=getattr(self, f"{strat_symbol}_graph_image"), anchor='nw')
+
+    
+    def start_live_trade(self):
+        trader = LiveTrader()
+        asyncio.run(trader.main(graph_callback=self.update_graph))
+        
     def verify_trading(self):
         result = messagebox.askyesno(message='Are you sure you want to start live trading?', icon='question', title='Start Trading')
         if result:
-            print('We will start the live trading here')
+                thread = Thread(target=self.start_live_trade)
+                thread.daemon = True
+                thread.start()
+            
 
     def check_backtest_symbol(self, *args):
         self.backtest_params['symbol'] = [f'{self.symbol_combobox.get()}-USD']
@@ -186,7 +210,6 @@ class CryptoTrader():
     def check_backtest_days(self, *args):
         try:
             self.backtest_params['num_days'] = int(self.days_spinbox.get())
-            print(self.backtest_params['num_days'])
         except ValueError:
             print('Invalid number of days')
         self.check_all_params()

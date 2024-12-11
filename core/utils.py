@@ -10,6 +10,44 @@ from numba import njit
 pd.set_option('future.no_silent_downcasting', True)
 
 
+def convert_symbols(strategy_object: object = None, lone_symbol: str = None, to_kraken: bool = False, to_robinhood: bool = False):
+    # Define symbol mappings
+    coinbase_crypto = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
+    robinhood_crypto = ['BTC', 'ETH', 'DOGE', 'SHIB', 'AVAX', 'BCH', 'LINK', 'UNI', 'LTC', 'XLM', 'ETC', 'AAVE', 'XTZ', 'COMP']
+    kraken_crypto = ['XXBTZUSD', 'XETHZUSD', 'XDGUSD', 'SHIBUSD', 'AVAXUSD', 'BCHUSD', 'LINKUSD', 'UNIUSD', 'XLTCZUSD', 'XXLMZUSD', 'XETCZUSD', 'AAVEUSD', 'XTZUSD', 'COMPUSD']
+
+    # Determine the current symbol
+    if strategy_object is not None:
+        current_symbol = strategy_object.symbol
+    elif lone_symbol is not None:
+        current_symbol = lone_symbol
+    else:
+        raise ValueError("Either a strategy_object or lone_symbol must be provided.")
+
+    # Determine the source symbol list
+    if current_symbol in coinbase_crypto:
+        source_list = coinbase_crypto
+    elif current_symbol in robinhood_crypto:
+        source_list = robinhood_crypto
+    elif current_symbol in kraken_crypto:
+        source_list = kraken_crypto
+    else:
+        raise ValueError(f"Symbol '{current_symbol}' not found in any known lists.")
+
+    # Get the index of the current symbol
+    try:
+        symbol_index = source_list.index(current_symbol)
+    except ValueError:
+        raise ValueError(f"Symbol '{current_symbol}' not found in the source list.")
+
+    # Convert to the target symbol
+    if to_kraken:
+        return kraken_crypto[symbol_index]
+    elif to_robinhood:
+        return robinhood_crypto[symbol_index]
+    else:
+        return coinbase_crypto[symbol_index]
+
 @njit
 def format_signals(signals):
     """
@@ -124,10 +162,8 @@ def heikin_ashi_transform(dict_df):
 def to_df(data_dict: dict):
     if not data_dict:
         return pd.DataFrame()  # Return empty DataFrame if data_dict is empty
-
     key = next(iter(data_dict))  # gets the first key
     df = pd.DataFrame(data_dict[key])  # converts to df
-
     if key == 'candles':
         if not df.empty:
             df.columns = ['start', 'low', 'high', 'open', 'close', 'volume']
@@ -136,9 +172,6 @@ def to_df(data_dict: dict):
             df.loc[:, df.columns != 'date'] = df.loc[:, df.columns != 'date'].apply(pd.to_numeric, errors='coerce')
             df = df.ffill()
 
-            # convertts volume to full amount
-            move_decimal = lambda val: int(''.join(f"{val:.10f}".rstrip('0').split('.'))) if isinstance(val, float) else val
-            df['volume'] = df['volume'].apply(move_decimal)
         else:
             pass
             #print(f"No candle data available.")

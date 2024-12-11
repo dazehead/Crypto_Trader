@@ -2,7 +2,7 @@ import talib as ta
 from core.strategies.strategy import Strategy
 
 class RSI_ADX(Strategy):
-    def __init__(self, dict_df, risk_object=None, with_sizing=False):
+    def __init__(self, dict_df, risk_object=None, with_sizing=False, hyper=False):
         super().__init__(dict_df=dict_df, risk_object=risk_object, with_sizing=with_sizing)
 
     def custom_indicator(self, close=None, rsi_window=14, buy_threshold=40, sell_threshold=60, adx_buy_threshold=23, adx_time_period=20):

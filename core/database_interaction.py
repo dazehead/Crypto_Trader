@@ -10,30 +10,13 @@ import sys
 from datetime import datetime
 import os
 
-def convert_symbols(strategy_object:object=None, lone_symbol=None, to_kraken=False):
-    coinbase_crypto = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
-    robinhood_crypto = ['BTC', 'ETH', 'DOGE', 'SHIB', 'AVAX', 'BCH', 'LINK', 'UNI', 'LTC', 'XLM', 'ETC', 'AAVE', 'XTZ', 'COMP']
-    kraken_crypto = ['XXBTZUSD', 'XETHZUSD', 'XDGUSD', 'SHIBUSD', 'AVAXUSD', 'BCHUSD', 'LINKUSD', 'UNIUSD', 'XLTCZUSD', 'XXLMZUSD', 'XETCZUSD', 'AAVEUSD', 'XTZUSD', 'COMPUSD']
-
-    if strategy_object is not None:
-        current_symbol =  strategy_object.symbol
-    elif lone_symbol is not None:
-        current_symbol = lone_symbol
-    if to_kraken:
-        symbol_index = coinbase_crypto.index(current_symbol)
-        return kraken_crypto.index(current_symbol)
-    else:
-        symbol_index = kraken_crypto.index(current_symbol)
-        return coinbase_crypto[symbol_index]
-
-
 
 
 def get_historical_from_db(granularity, symbols: list = [], num_days: int = None, convert=False):
     original_symbol = symbols
 
     if convert:
-        symbols = convert_symbols(lone_symbol=symbols)
+        symbols = utils.convert_symbols(lone_symbol=symbols)
     conn = sql.connect(f'core/database/{granularity}.db')
     query = "SELECT name FROM sqlite_master WHERE type='table';"
     tables = pd.read_sql_query(query, conn)
@@ -84,7 +67,7 @@ def get_best_params(strategy_object, df_manager=None,live_trading=False, best_of
 
             # we have already sent it the correct symbols that it did not get from client
             if strategy_object.risk_object.client is not None:
-                symbol = convert_symbols(strategy_object = strategy_object)
+                symbol = utils.convert_symbols(strategy_object = strategy_object)
             else:
                 symbol = strategy_object.symbol
 
@@ -137,7 +120,7 @@ def get_best_params(strategy_object, df_manager=None,live_trading=False, best_of
 
             # we have already sent it the correct symbols that it did not get from client
             if strategy_object.risk_object.client is not None:
-                symbol = convert_symbols(strategy_object = strategy_object)
+                symbol = utils.convert_symbols(strategy_object = strategy_object)
             else:
                 symbol = strategy_object.symbol
 

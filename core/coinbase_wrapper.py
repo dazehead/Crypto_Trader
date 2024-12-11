@@ -110,7 +110,7 @@ class Coinbase_Wrapper():
                     granularity=granularity
                 )
                 # Convert the response to a DataFrame
-                df = utils.to_df(btc_candles)
+                df = utils.to_df(btc_candles.to_dict())
                 return df
 
             except RequestException as e:
@@ -303,7 +303,6 @@ class Coinbase_Wrapper():
         combined_data = {}
         for symbol in symbols:
             combined_df = pd.DataFrame()
-
             for start, end in timestamps:
                 df = self._fetch_data(symbol, start, end, granularity)
 

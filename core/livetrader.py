@@ -2,6 +2,7 @@ import time
 import asyncio
 import datetime as dt
 from core.dataframe_manager import DF_Manager
+from core.log import LinkedList
 from core.strategies.strategy import Strategy
 from core.strategies.single.rsi import RSI
 from core.strategies.double.rsi_adx import RSI_ADX
@@ -27,11 +28,12 @@ class LiveTrader:
         self.scanner = Scanner(client=self.kraken)
         self.df_manager = DF_Manager(self.scanner)
         self.scanner.assign_attribute(df_manager=self.df_manager)
+        self.logbook = LinkedList()
 
         self.strat_classes = {}
         self.extract_classes_from_scripts()
 
-        #self.update_candle_data()
+        #self.update_candle_data() # the gui does this during start up now no need for this any more
         self.load_strategy_params_for_strategy()
     
     def extract_classes_from_scripts(self):
@@ -90,8 +92,11 @@ class LiveTrader:
             current_dict = {k: self.df_manager.dict_df[k]}
 
             # Instantiate strategy
-            strat = RSI_ADX_GPU(current_dict, self.risk, with_sizing=True, hyper=False)
+            strat = RSI_ADX(current_dict, self.risk, with_sizing=True, hyper=False)
             strat.custom_indicator(strat.close, *self.risk.symbol_params[k])
+
+            fig = strat.graph(self.graph_callback)
+            self.graph_callback(fig, strat)
 
             # Execute trade logic
             Trade(risk=self.risk, strat_object=strat, logbook=self.logbook)
@@ -116,7 +121,8 @@ class LiveTrader:
             print(f"Execution time: {execution_time:.2f} seconds. Sleeping for {sleep_time:.2f} seconds.\n")
             await asyncio.sleep(sleep_time)
 
-    async def main(self):
+    async def main(self, graph_callback=None):
+        self.graph_callback = graph_callback
         await self.fetch_data_periodically()
 
 

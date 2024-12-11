@@ -187,7 +187,7 @@ class Strategy:
           
 
 
-    def graph(self):
+    def graph(self, graph_callback=None):
  
         # Start by plotting the first figure (Close price)
         param_number = 0
@@ -261,7 +261,10 @@ class Strategy:
         fig_combined.update_layout(height=800, title_text=f"{self.__class__.__name__} strategy for {self.symbol} on {self.granularity} timeframe", xaxis_rangeslider_visible=False)
 
         # Display the combined figure
-        fig_combined.show()
+        if graph_callback:
+            return fig_combined
+        else:
+            fig_combined.show()
 
     def generate_backtest(self):
         """Performs backtest and returns the stats"""

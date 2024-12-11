@@ -1,6 +1,6 @@
 import pandas as pd
 import datetime as dt
-import core.database_interaction as database_interaction
+import core.utils as utils
 
 
 class DF_Manager():
@@ -42,7 +42,7 @@ class DF_Manager():
     def data_for_live_trade(self,symbol, update=False):
         """dataframe needs to be indexed by symbol"""
 
-        coinbase_symbol = database_interaction.convert_symbols(lone_symbol=symbol)
+        coinbase_symbol = utils.convert_symbols(lone_symbol=symbol)
         granularity = self.products_granularity[symbol]
 
         timestamps = self.coinbase._get_unix_times(
