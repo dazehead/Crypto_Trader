@@ -26,7 +26,8 @@ from core.risk import Risk_Handler
 from core.log import LinkedList
 from core.hyper import Hyper
 import plotly
-import io
+from io import BytesIO
+from PIL import Image
 #pd.set_option('display.max_rows', None)
 #pd.set_option('display.max_columns', None)
 
@@ -36,7 +37,7 @@ class Backtest():
     def __init__(self):
         self.symbols = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
         self.granularites = ['ONE_MINUTE','FIVE_MINUTE','FIFTEEN_MINUTE','THIRTY_MINUTE','ONE_HOUR','TWO_HOUR','SIX_HOUR','ONE_DAY']
-        self.product = ['BTC-USD']
+        self.product = ['XTZ-USD']
         self.granularity = 'ONE_MINUTE'
         
 
@@ -90,6 +91,10 @@ class Backtest():
             strat.generate_backtest()
             pf = strat.portfolio
             print(pf.stats())
+            if graph_callback:
+                fig = pf.plot(subplots =['orders'])
+                #fig.show()
+                graph_callback(fig)
 
             # fig = pf.plot(subplots = [
             # 'orders',
@@ -109,20 +114,6 @@ class Backtest():
             #         't': 100  # Adjust the top margin to create space for the title
             #     }
             # )
-            if graph_callback:
-                fig = pf.plot(subplots =['orders'])
-                fig.show()
-                try:
-                    print(os.environ["PATH"])
-                    plotly.io.orca.config.executable =r"C:\Users\dazet\AppData\Local\Programs\orca\orca.exe"
-                    plotly.io.orca.config.save()
-                    print(plotly.io.orca.config.executable)
-                    plotly.io.write_image(fig=fig, file='gui/images/backtest_graph/graph.png', format="png", width=500, height=400, engine='orca')
-                    #buffer = io.BytesIO(image_bytes)
-                    print('converted plotly to image')
-                    graph_callback()
-                except Exception as e:
-                    print(f"Error: {e}")
                 
 
     def run_hyper(self):
@@ -138,7 +129,7 @@ class Backtest():
                 days = 365
             dict_df = database_interaction.get_historical_from_db(granularity=granularity,
                                                                 symbols=self.symbols,
-                                                                num_days=days)
+                                                                num_days=25)
             print(f'...Running hyper on {len(self.symbols)} symbols')
 
             #dict_df = utils.heikin_ashi_transform(dict_df)
@@ -163,24 +154,21 @@ class Backtest():
                     strategy=strat,
                     hyper=hyper)
                 
-                #print(f"Execution Time: {time.time() - start_time}")
+                print(f"Execution Time: {time.time() - start_time}")
                 utils.progress_bar_with_eta(
                     progress=i,
                     data=dict_df.keys(),
                     start_time=start_time)
                 del hyper
                 gc.collect()
-                
-                # fig = hyper.returns.vbt.volume(# this line is now volume for a 3D
-                #     x_level = 'cust_fast_window',
-                #     y_level = 'cust_slow_window',
-                #     z_level = 'cust_efrato_window',
-                # )
+            
+            # fig = hyper.returns.vbt.volume(# this line is now volume for a 3D
+            #     x_level = 'cust_fast_window',
+            #     y_level = 'cust_slow_window',
+            #     z_level = 'cust_efrato_window',
+            # )
 
-                    # fig = hyper.returns.vbt.heatmap(
-                    # x_level = 'cust_fast_window',
-                    # y_level = 'cust_slow_window')
-                    # fig.show()
-
-# test = Backtest()
-# test.run_basic_backtest("BTC-USD", "ONE_MINUTE", RSI_ADX_NP, 50, best_params=True)
+                # fig = hyper.returns.vbt.heatmap(
+                # x_level = 'cust_fast_window',
+                # y_level = 'cust_slow_window')
+                # fig.show()

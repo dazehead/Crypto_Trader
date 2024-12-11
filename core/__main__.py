@@ -77,7 +77,7 @@ scanner.coinbase.get_candles_for_db(scanner.coinbase_crypto, kraken.granularity,
 
 for symbol in scanner.kraken_crypto:
 
-    strat = RSI_ADX_GPU(dict_df= None, risk_object=risk)
+    strat = RSI_ADX(dict_df= None, risk_object=risk)
     strat.symbol = symbol
     params = database_interaction.get_best_params(strat, df_manager,live_trading=True, best_of_all_granularities=True, minimum_trades=3)
     risk.symbol_params[symbol] = params

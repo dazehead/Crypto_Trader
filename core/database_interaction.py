@@ -204,7 +204,7 @@ def export_hyper_to_db(strategy: object, hyper: object):
     data = hyper.pf.stats(silence_warnings=True,
                           agg_func=None)
 
-    conn = sql.connect(f'{database_path}hyper.db')
+    conn = sql.connect(f'core/database/hyper.db')
 
     symbol = strategy.symbol
     granularity = strategy.granularity
@@ -216,8 +216,8 @@ def export_hyper_to_db(strategy: object, hyper: object):
     for i in range(len(data)):
         stats = data.iloc[i]
         backtest_dict = {'symbol': symbol}
-        # for j,param in enumerate(params):
-        #     backtest_dict[param] = stats.name[j]
+        for j,param in enumerate(params):
+            backtest_dict[param] = stats.name[j]
 
         for key, value in stats.items():
             if key in stats_to_export:

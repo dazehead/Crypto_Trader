@@ -28,7 +28,12 @@ class Strategy:
             self.low = self.df['low']
             self.close = self.df['close']
             self.volume = self.df['volume']
-            
+
+            self.close_np = np.array(self.close)
+            self.high_np = np.array(self.high)
+            self.low_np = np.array(self.low)
+            self.open_np = np.array(self.open)
+            self.volume_np = np.array(self.volume)            
 
 
             if self.__class__.__name__.split('_')[-1] == 'GPU':
@@ -296,6 +301,7 @@ class Strategy:
                 time_diff = pd.Timedelta(minutes=1)
             time_differences.append(time_diff)
         time_diff = max(time_differences, key=time_differences.count)
+        #print(time_diff)
         time_map = {
             pd.Timedelta(minutes=1): 'ONE_MINUTE',
             pd.Timedelta(minutes=5): 'FIVE_MINUTE',

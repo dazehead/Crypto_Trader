@@ -5,6 +5,9 @@ from threading import Thread
 from tkinter import messagebox
 import sys
 import os
+import plotly
+from io import BytesIO
+from PIL import Image
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from core.livetrader import LiveTrader
@@ -186,14 +189,22 @@ class CryptoTrader():
             self.start_backtest_button['state'] = 'normal'
 
     def setup_backtest_thread(self):
-        def update_graph(graph_img=None):
+        def update_graph(fig):
             self.backtest_progress.stop()
             self.backtest_progress.destroy()
 
-            myimg = Image.open('gui/images/backtest_graph/graph.png')
-            myimg = ImageTk.PhotoImage(myimg)
+            plotly.io.orca.config.executable =r"C:\Users\dazet\AppData\Local\Programs\orca\orca.exe"
+            plotly.io.orca.config.save()
 
-            self.backtest_graph.create_image(10, 10, image=myimg, anchor='nw')
+            # plotly.io.write_image(fig=fig, file='gui/images/backtest_graph/graph.png', format="png", width=500, height=400, engine='orca')
+            # print('converted plotly to image')
+
+            image_buffer = BytesIO()
+            plotly.io.write_image(graph_img, image_buffer, format='png', width=500, height=400, engine='orca')
+            image_buffer.seek(0)
+            image = Image.open(image_buffer)
+            self.graph_image = ImageTk.PhotoImage(image)    
+            self.backtest_graph.create_image(0, 0, image=self.graph_image, anchor='nw')
             self.backtest_graph.grid()
 
         def start_backtest():

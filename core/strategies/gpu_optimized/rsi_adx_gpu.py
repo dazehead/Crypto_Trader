@@ -13,11 +13,6 @@ class RSI_ADX_GPU(Strategy):
         super().__init__(dict_df=dict_df, risk_object=risk_object, with_sizing=with_sizing)
         self.hyper = hyper
 
-        self.close_gpu = cp.array(self.close)
-        self.high_gpu = cp.array(self.high)
-        self.low_gpu = cp.array(self.low)
-        self.open_gpu = cp.array(self.open)
-        self.volume_gpu = cp.array(self.volume)
     def custom_indicator(self, close=None, rsi_window=20, buy_threshold=15, sell_threshold=70,
                             adx_buy_threshold=30, adx_time_period=20):
         if not self.hyper:
