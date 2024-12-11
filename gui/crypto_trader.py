@@ -13,9 +13,11 @@ import core.utils as utils
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from core.livetrader import LiveTrader
 from core.backtest import Backtest
+from dotenv import load_dotenv
 
-
-
+load_dotenv()
+path_to_orca = os.getenv('ORCA_PATH')
+print(path_to_orca)
 class CryptoTrader():
     def __init__(self, root):
         self.root = root
@@ -166,7 +168,7 @@ class CryptoTrader():
 
     def update_graph(self, fig, strat):
             strat_symbol = utils.convert_symbols(strat, to_robinhood=True)
-            plotly.io.orca.config.executable =r"C:\Users\dazet\AppData\Local\Programs\orca\orca.exe"
+            plotly.io.orca.config.executable = path_to_orca
             plotly.io.orca.config.save()
 
             # plotly.io.write_image(fig=fig, file='gui/images/backtest_graph/graph.png', format="png", width=500, height=400, engine='orca')
@@ -223,7 +225,7 @@ class CryptoTrader():
             self.backtest_progress.stop()
             self.backtest_progress.destroy()
 
-            plotly.io.orca.config.executable =r"C:\Users\dazet\AppData\Local\Programs\orca\orca.exe"
+            plotly.io.orca.config.executable = path_to_orca
             plotly.io.orca.config.save()
 
             # plotly.io.write_image(fig=fig, file='gui/images/backtest_graph/graph.png', format="png", width=500, height=400, engine='orca')
