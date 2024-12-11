@@ -10,10 +10,6 @@ import sys
 from datetime import datetime
 import os
 
-from dotenv import load_dotenv
-load_dotenv()
-
-database_path = os.getenv('DATABASE_PATH')
 def convert_symbols(strategy_object:object=None, lone_symbol=None, to_kraken=False):
     coinbase_crypto = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
     robinhood_crypto = ['BTC', 'ETH', 'DOGE', 'SHIB', 'AVAX', 'BCH', 'LINK', 'UNI', 'LTC', 'XLM', 'ETC', 'AAVE', 'XTZ', 'COMP']
@@ -248,7 +244,7 @@ def export_hyper_to_db(strategy: object, hyper: object):
     return
 
 def export_historical_to_db(dict_df, granularity):
-    conn = sql.connect(f'{database_path}{granularity}.db')
+    conn = sql.connect(f'core/database/{granularity}.db')
     cursor = conn.cursor()
     
     for symbol, df in dict_df.items():
@@ -375,7 +371,7 @@ def get_metrics_from_backtest(strategy_object, multiple=False, multiple_dict=Non
 
 def export_backtest_to_db(object, multiple_table_name=None):
     """ object can either be a Strategy Class or a pd.DataFrame """
-    conn = sql.connect(f'{database_path}backtest.db')
+    conn = sql.connect(f'core/database/backtest.db')
 
     if not isinstance(object, pd.DataFrame):
         # Handle Strategy object
@@ -458,7 +454,7 @@ def trade_export(response_json, balance):
     trade_df = pd.DataFrame([trade_data])
 
     # Database interaction
-    db_path = f'{database_path}trades.db'
+    db_path = f'core/database/trades.db'
     table_name = 'trade_data'
 
     conn = sql.connect(db_path)
