@@ -210,7 +210,7 @@ class CryptoTrader():
             # print('converted plotly to image')
 
             image_buffer = BytesIO()
-            plotly.io.write_image(graph_img, image_buffer, format='png', width=500, height=400, engine='orca')
+            plotly.io.write_image(fig, image_buffer, format='png', width=500, height=400, engine='orca')
             image_buffer.seek(0)
             image = Image.open(image_buffer)
             self.graph_image = ImageTk.PhotoImage(image)    
