@@ -28,7 +28,6 @@ class RSI_ADX_NP(Strategy):
 
 
         signals = np.zeros_like(self.close_np, dtype=int)
-        #print(signals.tolist())
         
         signals[buy_signal] = 1
         signals[sell_signal] = -1
@@ -48,22 +47,15 @@ class RSI_ADX_NP(Strategy):
         signals_adx[sell_signal_adx] = -1
 
         # Combine RSI and ADX signals
-        # print(f"signals: ", signals.tolist())
-        # print(f"signals_adx: {signals_adx.tolist()}")
         final_signals = self.combine_signals(signals, signals_adx)
         final_signals = utils.format_signals(final_signals)
-        #print(f"final signals: {final_signals}")
+
 
         if self.with_sizing:
             percent_to_size = self.risk_object.percent_to_size
             # close_array = self.close_np.to_numpy(dtype=np.float64)
             signal_array = np.array(final_signals)
             final_signals = utils.calculate_with_sizing_numba(signal_array, self.close_np, percent_to_size)
-            # print(final_signals.tolist())
-            # np.savetxt("output_close_array_numpy.txt", close_array.tolist(), fmt="%d")
-            # np.savetxt("output_signal_array_numpy.txt", signal_array.tolist(), fmt="%d")
-            # print(f"signal array: {signal_array.tolist()}")
-            # print(f"percent_to_size: {percent_to_size}")
 
         if not self.hyper:
             self.osc1_data = ('RSI', rsi_np)
@@ -85,15 +77,7 @@ class RSI_ADX_NP(Strategy):
         delta = close[1:] - close[:-1]
         gain = np.maximum(delta, 0)
         loss = np.maximum(-delta, 0)
-        print("delta", delta)
-        print("gain", gain)
-        print("loss", loss)
-        print("close[:25]", close)
-
-        print("np.ones(rsi_window)", np.ones(rsi_window))
         
-        print("np.convolve")
-        print(np.convolve(gain, np.ones(rsi_window) / rsi_window, mode='valid').tolist())
         avg_gain = np.convolve(gain, np.ones(rsi_window) / rsi_window, mode='valid')
         avg_loss = np.convolve(loss, np.ones(rsi_window) / rsi_window, mode='valid')
         
@@ -109,7 +93,6 @@ class RSI_ADX_NP(Strategy):
         pad_length = close.shape[0] - rsi.shape[0]
         rsi = np.concatenate([np.full(pad_length, np.nan), rsi])
 
-        #print(f"rsi: {rsi.tolist()}")
 
         return rsi
 
@@ -131,7 +114,7 @@ class RSI_ADX_NP(Strategy):
         plus_dm_avg = np.convolve(plus_dm, np.ones(adx_time_period) / adx_time_period, mode='valid')
         minus_dm_avg = np.convolve(minus_dm, np.ones(adx_time_period) / adx_time_period, mode='valid')
 
-        # print(f"plus_dm_avg: {plus_dm_avg.tolist()}")
+
 
         # Adjust lengths to ensure alignment
         length = min(len(atr), len(plus_dm_avg), len(minus_dm_avg))
@@ -141,12 +124,9 @@ class RSI_ADX_NP(Strategy):
 
         # np.savetxt("output_ADX.txt", atr.tolist())
 
-        #print(plus_dm_avg.tolist())
         plus_di = 100 * plus_dm_avg / atr
         minus_di = 100 * minus_dm_avg / atr
 
-        # print(f"plus_di: {plus_di.tolist()}")
-        # print(f"minus_di: {minus_di.tolist}")
         dx = np.where((plus_di + minus_di) != None, 
                   np.abs(plus_di - minus_di) / (plus_di + minus_di) * 100, 
                   0)

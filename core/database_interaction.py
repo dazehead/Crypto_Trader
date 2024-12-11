@@ -10,14 +10,16 @@ import sys
 from datetime import datetime
 import os
 
+from dotenv import load_dotenv
+load_dotenv()
 
-
+db_path = os.getenv('DATABASE_PATH')
 def get_historical_from_db(granularity, symbols: list = [], num_days: int = None, convert=False):
     original_symbol = symbols
 
     if convert:
         symbols = utils.convert_symbols(lone_symbol=symbols)
-    conn = sql.connect(f'core/database/{granularity}.db')
+    conn = sql.connect(f'{db_path}/{granularity}.db')
     query = "SELECT name FROM sqlite_master WHERE type='table';"
     tables = pd.read_sql_query(query, conn)
     tables_data = {}
@@ -52,7 +54,7 @@ def get_historical_from_db(granularity, symbols: list = [], num_days: int = None
 
 def get_best_params(strategy_object, df_manager=None,live_trading=False, best_of_all_granularities=False, minimum_trades=None, with_lowest_losing_average=False):
     granularities = ['ONE_MINUTE', 'FIVE_MINUTE', 'FIFTEEN_MINUTE', 'THIRTY_MINUTE', 'ONE_HOUR', 'TWO_HOUR', 'SIX_HOUR', 'ONE_DAY']
-    conn = sql.connect(f'core/database/hyper.db')
+    conn = sql.connect(f'{db_path}/hyper.db')
     if best_of_all_granularities:
         best_results = []
         best_granularity = ''
@@ -183,7 +185,7 @@ def export_hyper_to_db(strategy: object, hyper: object):
     data = hyper.pf.stats(silence_warnings=True,
                           agg_func=None)
 
-    conn = sql.connect(f'core/database/hyper.db')
+    conn = sql.connect(f'{db_path}/hyper.db')
 
     symbol = strategy.symbol
     granularity = strategy.granularity
@@ -227,7 +229,7 @@ def export_hyper_to_db(strategy: object, hyper: object):
     return
 
 def export_historical_to_db(dict_df, granularity):
-    conn = sql.connect(f'core/database/{granularity}.db')
+    conn = sql.connect(f'{db_path}/{granularity}.db')
     cursor = conn.cursor()
     
     for symbol, df in dict_df.items():
@@ -354,7 +356,7 @@ def get_metrics_from_backtest(strategy_object, multiple=False, multiple_dict=Non
 
 def export_backtest_to_db(object, multiple_table_name=None):
     """ object can either be a Strategy Class or a pd.DataFrame """
-    conn = sql.connect(f'core/database/backtest.db')
+    conn = sql.connect(f'{db_path}/backtest.db')
 
     if not isinstance(object, pd.DataFrame):
         # Handle Strategy object

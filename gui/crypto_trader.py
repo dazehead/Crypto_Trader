@@ -11,9 +11,9 @@ from PIL import Image
 import asyncio
 import core.utils as utils
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from core.livetrader import LiveTrader
 from core.backtest import Backtest
+
 
 
 class CryptoTrader():

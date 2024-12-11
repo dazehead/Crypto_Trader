@@ -23,8 +23,6 @@ class RSI_ADX_GPU(Strategy):
         rsi_np = cp.asnumpy(rsi)
         rsi_np = np.nan_to_num(rsi_np, nan=0.0)  # Replace NaN with 0
 
-
-        np.savetxt("output_rsi_array_cupy.txt", rsi_np.tolist(), fmt="%d")
         # Generate RSI Signals
         buy_signal = rsi_np < buy_threshold
         sell_signal = rsi_np > sell_threshold

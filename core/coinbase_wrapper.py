@@ -8,17 +8,17 @@ import time
 from coinbase.rest import RESTClient
 import requests
 from requests.exceptions import RequestException
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 import os
 import sys
 
 class Coinbase_Wrapper():
     def __init__(self):
-        #load_dotenv()
+        load_dotenv()
 
-        self.api_key = os.getenv('API_KEY_COINBASE')
-        self.api_secret = os.getenv('API_PRIVATE_KEY_COINBASE')
-        #print(self.api_secret)
+        self.db_path = os.getenv('DATABASE_PATH')
+        self.api_key = os.getenv('ENV_API_KEY_COINBASE')
+        self.api_secret = os.getenv('ENV_API_PRIVATE_KEY_COINBASE')
         self.client = RESTClient(api_key=self.api_key, api_secret=self.api_secret)
         self.coinbase_robin_crypto = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
 
@@ -79,7 +79,7 @@ class Coinbase_Wrapper():
 
     def _get_data_from_db(self, symbol, granularity):
         """Retrieve existing data for a symbol from the database."""
-        conn = sql.connect(f'core/database/{granularity}.db')
+        conn = sql.connect(f'{self.db_path}/{granularity}.db')
         cursor = conn.cursor()
         symbol_for_table = symbol.replace('-', '_')
         # Get the list of tables that contain the symbol
