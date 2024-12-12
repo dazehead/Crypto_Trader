@@ -64,7 +64,7 @@ class LiveTrader:
                 self.df_manager,
                 live_trading=True,
                 best_of_all_granularities=True,
-                minimum_trades=3
+                minimum_trades=12
             )
             self.risk.symbol_params[symb] = params
             self.df_manager.set_next_update(symb, initial=True)
@@ -92,7 +92,7 @@ class LiveTrader:
             current_dict = {k: self.df_manager.dict_df[k]}
 
             # Instantiate strategy
-            strat = RSI_ADX(current_dict, self.risk, with_sizing=True, hyper=False)
+            strat = RSI_ADX_GPU(current_dict, self.risk, with_sizing=True, hyper=False)
             strat.custom_indicator(strat.close, *self.risk.symbol_params[k])
 
             fig = strat.graph(self.graph_callback)

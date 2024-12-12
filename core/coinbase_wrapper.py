@@ -110,7 +110,7 @@ class Coinbase_Wrapper():
                     granularity=granularity
                 )
                 # Convert the response to a DataFrame
-                df = utils.to_df(btc_candles)
+                df = utils.to_df(btc_candles.to_dict())
                 return df
 
             except RequestException as e:
