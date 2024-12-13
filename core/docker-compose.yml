@@ -5,4 +5,5 @@ services:
       - .env
     volumes:
       - .:/app  
+      - ${DATABASE_PATH}:/app/database 
     command: python __main__.py
