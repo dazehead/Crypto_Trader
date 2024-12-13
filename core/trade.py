@@ -41,39 +41,52 @@ class Trade():
 
     def buy(self):
         print('BUY')
-        buy_order = self.client.add_order(
-            type_of_order= 'buy',
-            symbol = self.symbol,
-            volume= self.risk.volume_to_risk * 2,
-            price = self.current_asset_price,
-            pickle=True)
-        time.sleep(1)
+        try:
+            # Create buy order
+            buy_order = self.client.add_order(
+                type_of_order='buy',
+                symbol=self.symbol,
+                volume=self.risk.volume_to_risk * 2,
+                price=self.current_asset_price
+                )
+            time.sleep(1)
 
-        # if True it will keep looping until there are no open orders
-        while self.client.any_open_orders():
-            try:
-                if buy_order is not None:
-                    order_id =buy_order['result']['txid'][0]
-                    if buy_order is not None:
+            # Edit open orders until filled
+            while self.client.any_open_orders():
+                try:
+                    if buy_order and 'result' in buy_order and 'txid' in buy_order['result']:
+                        order_id = buy_order['result']['txid'][0]
                         buy_order = self.client.edit_order(
-                            order_id = order_id,
-                            symbol = self.symbol,
-                            volume = self.risk.volume_to_risk,
-                            price = self.client.get_recent_spreads(
+                            order_id=order_id,
+                            symbol=self.symbol,
+                            volume=self.risk.volume_to_risk,
+                            price=self.client.get_recent_spreads(
                                 symbol=self.symbol,
-                                type_of_order= 'buy'
-                                )          
-                    )
-            except TypeError as e:
-                print('no more open orders')
-            time.sleep(.25)
+                                type_of_order='buy'
+                            )
+                        )
+                    else:
+                        print("Invalid buy_order structure or no txid:", buy_order)
+                        break
+                except Exception as e:
+                    print(f"Error while editing order: {e}")
+                    break
+                time.sleep(0.25)
 
-            try:
-                database_interaction.trade_export(buy_order, balance=self.client.get_account_balance())
-            except buy_order == None:
-                buy_order = buy_order
-            """edit the open order until it fills"""
-        #print(buy_order)
+            # Export trade details to the database
+            if buy_order:
+                try:
+                    database_interaction.trade_export(
+                        buy_order,
+                        balance=self.client.get_account_balance()
+                    )
+                except Exception as e:
+                    print(f"Error while exporting trade: {e}")
+            else:
+                print("Buy order is None, skipping export.")
+        except Exception as e:
+            print(f"Error in buy method: {e}")
+
 
     def sell(self):
         print('SELL')

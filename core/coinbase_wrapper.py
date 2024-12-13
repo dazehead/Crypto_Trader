@@ -110,7 +110,7 @@ class Coinbase_Wrapper():
                     granularity=granularity
                 )
                 # Convert the response to a DataFrame
-                df = utils.to_df(btc_candles.to_dict())
+                df = utils.to_df(btc_candles)
                 return df
 
             except RequestException as e:
@@ -321,11 +321,11 @@ class Coinbase_Wrapper():
 
 
 
-granularity = 'ONE_MINUTE'
-coinbase = Coinbase_Wrapper()
+# granularity = 'ONE_MINUTE'
+# coinbase = Coinbase_Wrapper()
 
-coinbase.get_candles_for_db(
-    symbols=coinbase.coinbase_robin_crypto,
-    granularity=granularity,
-    days=365
-    )
+# coinbase.get_candles_for_db(
+#     symbols=coinbase.coinbase_robin_crypto,
+#     granularity=granularity,
+#     days=365
+#     )

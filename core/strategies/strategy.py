@@ -12,7 +12,7 @@ import core.utils as utils
 
 class Strategy:
     """Class to store strategy resources"""
-    def __init__(self, dict_df, risk_object=None, with_sizing=False):
+    def __init__(self, dict_df, risk_object=None, with_sizing=None):
         self.granularity = None
         if dict_df is not None:
             if not isinstance(dict_df, dict):

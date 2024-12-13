@@ -86,7 +86,6 @@ def get_best_params(strategy_object, df_manager=None,live_trading=False, best_of
                 best_results = list_results
                 best_granularity = granularity
             else:
-                print(symbol)
                 if best_results[-1] < list_results[-1]:
                     best_results = list_results
                     best_granularity = granularity

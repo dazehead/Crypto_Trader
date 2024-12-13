@@ -64,7 +64,7 @@ class LiveTrader:
                 self.df_manager,
                 live_trading=True,
                 best_of_all_granularities=True,
-                minimum_trades=12
+                minimum_trades=4
             )
             self.risk.symbol_params[symb] = params
             self.df_manager.set_next_update(symb, initial=True)

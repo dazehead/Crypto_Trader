@@ -265,7 +265,7 @@ class Kraken():
         response = requests.request("POST", url, headers=self.headers, data=data)
         print(response.text)
 
-    def add_order(self, type_of_order, symbol, volume, price, pickle=True):
+    def add_order(self, type_of_order, symbol, volume, price):
         if type_of_order not in ['buy', 'sell']:
             print('needs to be "buy" or "sell"')
         url_path = '/0/private/AddOrder'
