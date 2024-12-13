@@ -31,8 +31,8 @@ class Kraken():
         self.headers_futures = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'API-Key': self.api_key,
-            'API-Sign': self.api_key
+            'APIKey': self.api_key,
+            'Authent': self.api_key
         }
 
         self.granularity_map = {
@@ -330,6 +330,32 @@ class Kraken():
             }
 
         response = requests.request("POST",url, headers=self.headers_futures, data=data)
+        response_data = response.json()
+
+        return response_data
+
+    def set_leverage(self, symbol:str, laverage:int):
+
+        url_path = '/derivatives/api/v3/leveragepreferences'
+        url = self.base_url + url_path
+
+        data ={
+            "symbol": symbol,
+            "leverage": laverage
+        }
+
+        response = requests.request("POST",url, headers=self.headers_futures, data=data)
+        response_data = response.json()
+
+        return response_data
+    def get_leverage(self):
+
+        url_path = '/derivatives/api/v3/leveragepreferences'
+        url = self.base_url + url_path
+
+        data ={}
+
+        response = requests.request("GET",url, headers=self.headers_futures, data=data)
         response_data = response.json()
 
         return response_data

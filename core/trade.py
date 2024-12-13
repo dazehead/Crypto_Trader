@@ -118,7 +118,6 @@ class Trade():
         # Define variables for the futures order
         process_before = "2024-12-31 23:59:59.000000+00:00"  # Example timestamp
         order_type = "lmt"  # Order type: 'lmt', 'post', 'ioc', 'mkt', etc.
-        symbol = "BTC-USD"  # Example symbol
         type_of_order = "buy"  # 'buy' or 'sell'
         limit_price = 40000  # Example limit price
         stop_price = 39000  # Example stop price
@@ -126,7 +125,7 @@ class Trade():
             future_order = self.add_order_futures(
                 process_before=process_before,
                 order_type=order_type,
-                symbol=symbol,
+                symbol=self.symbol,
                 type_of_order=type_of_order,
                 limit_price=limit_price,
                 stop_price=stop_price
