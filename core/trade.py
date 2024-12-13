@@ -114,7 +114,40 @@ class Trade():
             time.sleep(.25)
         database_interaction.trade_export(sell_order, balance=self.client.get_account_balance())
         
+    def futures_trade(self):
+        # Define variables for the futures order
+        process_before = "2024-12-31 23:59:59.000000+00:00"  # Example timestamp
+        order_type = "lmt"  # Order type: 'lmt', 'post', 'ioc', 'mkt', etc.
+        symbol = "BTC-USD"  # Example symbol
+        type_of_order = "buy"  # 'buy' or 'sell'
+        limit_price = 40000  # Example limit price
+        stop_price = 39000  # Example stop price
+        try:
+            future_order = self.add_order_futures(
+                process_before=process_before,
+                order_type=order_type,
+                symbol=symbol,
+                type_of_order=type_of_order,
+                limit_price=limit_price,
+                stop_price=stop_price
+            )
 
+            if future_order:
+                try:
+                    database_interaction.trade_export(
+                        future_order,
+                        balance=self.client.get_account_balance()
+                    )
+                except Exception as e:
+                    print(f"Error while exporting trade: {e}")
+            else:
+                print("Buy order is None, skipping export.")
+
+    # Handle and return the response
+        except Exception as e:
+            print(f"Error in futures_trade method: {e}")
+
+ 
     def monitor_trade(self):
         print('monitoring')
         pass
