@@ -14,10 +14,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from core.livetrader import LiveTrader
 from core.backtest import Backtest
 from dotenv import load_dotenv
+import traceback
 
 load_dotenv()
 path_to_orca = os.getenv('ORCA_PATH')
-print(path_to_orca)
 class CryptoTrader():
     def __init__(self, root):
         self.root = root
@@ -32,6 +32,7 @@ class CryptoTrader():
         self.backtest_params = {}
         self.strat_objects = {}
 
+        self.setup_done = False
         self.create_content()
         #self.setup()
         self.show_main_window()
@@ -161,9 +162,28 @@ class CryptoTrader():
         self.backtest_content.tkraise(self.live_trade_content)
 
     def show_main_window(self):
-        self.setup_progress.stop()
-        self.setup_window.destroy()
-        self.main_content.grid(column=0, row=0, sticky=(N,S,E,W))
+        if hasattr(self, 'setup_done') and self.setup_done:
+            print("Setup already completed. Skipping...")
+            return
+
+        try:
+            if hasattr(self, 'setup_progress') and self.setup_progress:
+                print(f"Stopping Progressbar: {self.setup_progress}")
+                self.setup_progress.stop()
+            
+            if hasattr(self, 'setup_window') and self.setup_window:
+                print(f"Destroying Setup Window: {self.setup_window}")
+                self.setup_window.destroy()
+            
+            # Set the flag to prevent re-entry
+            self.setup_done = True
+            
+            # Display main content
+            self.main_content.grid(column=0, row=0, sticky=(N, S, E, W))
+        except Exception as e:
+            print(f"Error in show_main_window: {e}")
+            traceback.print_exc()
+
 
 
     def update_graph(self, fig, strat):

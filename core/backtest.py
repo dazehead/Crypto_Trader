@@ -9,6 +9,8 @@ import core.database_interaction as database_interaction
 import time
 import gc
 import gc
+import io
+import base64
 from coinbase.rest import RESTClient
 from core.strategies.strategy import Strategy
 from core.strategies.single.efratio import EFratio
@@ -86,12 +88,19 @@ class Backtest():
             strat.graph()
             strat.generate_backtest()
             pf = strat.portfolio
+
+            stats = pf.stats().to_dict()
+
             print(pf.stats())
             if graph_callback:
-                fig = pf.plot(subplots =['orders'])
-                #fig.show()
-                graph_callback(fig)
+                fig = pf.plot(subplots=['orders'])
+                img_buf = io.BytesIO()
+                fig.savefig(img_buf, format='png')
+                img_buf.seek(0)
+                graph_base64 = base64.b64encode(img_buf.getvalue()).decode('utf-8')
+                img_buf.close()
 
+            return stats, graph_base64
             # fig = pf.plot(subplots = [
             # 'orders',
             # 'trade_pnl',

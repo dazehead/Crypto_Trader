@@ -33,7 +33,7 @@ class LiveTrader:
         self.strat_classes = {}
         self.extract_classes_from_scripts()
 
-        #self.update_candle_data() # the gui does this during start up now no need for this any more
+        self.update_candle_data() # the gui does this during start up now no need for this any more
         self.load_strategy_params_for_strategy()
     
     def extract_classes_from_scripts(self):
@@ -70,14 +70,15 @@ class LiveTrader:
             self.df_manager.set_next_update(symb, initial=True)
 
     def update_candle_data(self, callback=None):
-        # Load initial candle data
-        self.scanner.coinbase.get_candles_for_db(
-            self.scanner.coinbase_crypto,
-            self.kraken.granularity,
-            days=30,
-            callback=callback
-        )
-
+        try:
+            self.scanner.coinbase.get_candles_for_db(
+                self.scanner.coinbase_crypto,
+                self.kraken.granularity,
+                days=30,
+                callback=callback
+            )
+        except Exception as e:
+            print(f'Error fetching candle data: {e} - in update_candle_data()')
     def on_message(self):
         print('--------------------------------------------------------------------------------------\n')
         print(f'counter: {self.counter}')
