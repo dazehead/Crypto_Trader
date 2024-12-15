@@ -94,11 +94,8 @@ class Backtest():
             print(pf.stats())
             if graph_callback:
                 fig = pf.plot(subplots=['orders'])
-                img_buf = io.BytesIO()
-                fig.savefig(img_buf, format='png')
-                img_buf.seek(0)
-                graph_base64 = base64.b64encode(img_buf.getvalue()).decode('utf-8')
-                img_buf.close()
+                
+                graph_base64 = graph_callback(fig)
 
             return stats, graph_base64
             # fig = pf.plot(subplots = [
