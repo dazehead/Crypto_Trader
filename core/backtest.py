@@ -62,7 +62,8 @@ class Backtest():
 
 
 
-    def run_basic_backtest(self, symbol, granularity, strategy_obj, num_days, best_params=True, graph_callback=None):
+    def run_basic_backtest(self, symbol, granularity, strategy_obj, num_days, best_params=True, graph_callback=None, to_web:bool=False):
+
 
         dict_df = database_interaction.get_historical_from_db(granularity=granularity,
                                                             symbols=symbol,
@@ -79,7 +80,7 @@ class Backtest():
                 with_sizing=True,
             )
             if best_params:
-                params = database_interaction.get_best_params(strat, minimum_trades=12)
+                params = database_interaction.get_best_params(strat, minimum_trades=4)
                 print(params)
                 strat.custom_indicator(None, *params)
             else:
@@ -95,9 +96,13 @@ class Backtest():
             if graph_callback:
                 fig = pf.plot(subplots=['orders'])
                 
-                graph_base64 = graph_callback(fig)
+                graph_callback(fig)
 
-            return stats, graph_base64
+            if to_web:
+                fig = pf.plot(subplots=['orders'])
+                
+                graph_base64 = graph_callback(fig)
+                return stats, graph_base64
             # fig = pf.plot(subplots = [
             # 'orders',
             # 'trade_pnl',

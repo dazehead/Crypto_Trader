@@ -20,7 +20,7 @@ def backtest():
         img_buf.close()
         return graph_base64
 
-    stats, graph_base64 = Backtest.run_basic_backtest(*params, graph_callback=to_png)
+    stats, graph_base64 = Backtest.run_basic_backtest(*params, graph_callback=to_png, to_web=True)
 
     return jsonify({
         "status": "success",

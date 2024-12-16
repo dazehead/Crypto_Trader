@@ -148,34 +148,28 @@ class Strategy:
 
 
     def combine_signals(self, *signals):
-        # Convert the list of signals to a 2D NumPy array
-        signals_array = np.array(signals)  # Shape: (num_signals, signal_length)
         
-        # Check where all signals are 1
+        signals_array = np.array(signals)  
+
         all_ones = np.all(signals_array == 1, axis=0)
-        
-        # Check where all signals are -1
+
         all_neg_ones = np.all(signals_array == -1, axis=0)
         
-        # Initialize combined_signals with zeros
         combined_signals = np.zeros(signals_array.shape[1], dtype=int)
         
-        # Set combined_signals to 1 where all signals are 1
         combined_signals[all_ones] = 1
         
-        # Set combined_signals to -1 where all signals are -1
         combined_signals[all_neg_ones] = -1
         
         combined_signals = utils.format_signals(combined_signals)
         if self.with_sizing:
-            # extracting information too work with njit
             percent_to_size = self.risk_object.percent_to_size
             close_array = self.close.to_numpy(dtype=np.float64)
             signal_array = np.array(combined_signals)
             combined_signals = utils.calculate_with_sizing_numba(signal_array, close_array, percent_to_size)
 
-        self.entries = np.zeros_like(self.close, dtype=bool) #from signal to signal_length
-        self.exits = np.zeros_like(self.close, dtype=bool)#from signal to signal_length
+        self.entries = np.zeros_like(self.close, dtype=bool) 
+        self.exits = np.zeros_like(self.close, dtype=bool)
 
         self.entries[combined_signals == 1] = True
         self.exits[combined_signals == -1] = True
@@ -280,7 +274,7 @@ class Strategy:
 
             size_type = 'value'
             accumulate = True
-        
+        print("Printing close", self.close)
 
         self.portfolio = vbt.Portfolio.from_signals(
             close = self.close,

@@ -266,6 +266,7 @@ class CryptoTrader():
 
 
             backtest = Backtest()
+            print(self.backtest_params['strategy'])
             backtest.run_basic_backtest(
                 symbol=self.backtest_params['symbol'],
                 granularity=self.backtest_params['granularity'],

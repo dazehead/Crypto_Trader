@@ -36,7 +36,7 @@ def get_historical_from_db(granularity, symbols: list = [], num_days: int = None
         data['date'] = pd.to_datetime(data['date'], errors='coerce')
         data.set_index('date', inplace=True)
 
-        # If num_days is provided, filter the data based on the most recent date
+
         if num_days is not None:
             last_date = data.index.max()  # Find the most recent date in the dataset
             start_date = last_date - pd.Timedelta(days=num_days)
@@ -47,6 +47,7 @@ def get_historical_from_db(granularity, symbols: list = [], num_days: int = None
             tables_data[original_symbol] = data
         else:
             tables_data[clean_table_name] = data
+
     
     conn.close()
     return tables_data
