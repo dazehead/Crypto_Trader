@@ -105,12 +105,22 @@ class CryptoTrader():
         self.strat_combobox = ttk.Combobox(self.strat_frame, width=8, height=14, values=list(self.strat_classes.keys()))
         self.strat_combobox.bind("<<ComboboxSelected>>", self.check_backtest_strat)
 
+        self.second_strat_combobox = ttk.Combobox(self.strat_frame, width=8, height=14, values=list(self.strat_classes.keys()))
+        self.second_strat_combobox.bind("<<ComboboxSelected>>", self.check_backtest_strat_second)
+        self.second_strat_combobox['state'] = 'disabled'
+
         self.days_frame = ttk.Labelframe(self.choose_window, text='Days To Run')
         self.num_days = StringVar()
         self.days_spinbox = ttk.Spinbox(self.days_frame, from_=30, to=365, textvariable=self.num_days, command=self.check_backtest_days)
         self.days_spinbox.pack()
         self.days_spinbox.bind("<FocusOut>", lambda e: self.check_backtest_days())
         self.num_days.trace_add("write", lambda *args: self.check_backtest_days())
+        self.add_strategy = BooleanVar(value=False)
+        self.add_strategy_check = ttk.Checkbutton(self.choose_window, text='Add Another Strategy', onvalue=True, offvalue=False, variable=self.add_strategy, command=self.second_strat_checked)
+        self.with_best_params = BooleanVar(value=False)
+        self.get_params_check = ttk.Checkbutton(self.choose_window, text='Perform with Optimized Params', onvalue=True, offvalue=False, variable=self.with_best_params)
+        self.with_sizing_var = BooleanVar(value=True)
+        self.with_sizing_check = ttk.Checkbutton(self.choose_window, text='Perform with Sizing', onvalue=True, offvalue=False, variable=self.with_sizing_var)
         
         self.start_backtest_button = ttk.Button(self.backtest_content, text='Start Backtest', state='disabled', command=self.setup_backtest_thread)
 
@@ -137,9 +147,14 @@ class CryptoTrader():
 
         self.strat_frame.grid(column=0, row=1, padx=2, pady=2, sticky=(N,W))
         self.strat_combobox.grid(column=0, row=0, padx=2, pady=1, sticky=(N,W))
+        self.second_strat_combobox.grid(column=0, row=3, padx=2, pady=2, sticky=(N,W))
 
         self.days_frame.grid(column=1, row=1, padx=2, pady=2, sticky=(N,W))
         self.days_spinbox.grid(column=0, row=0, padx=2, pady=1, sticky=(N,W))
+
+        self.add_strategy_check.grid(column=0, row=2, padx=2, pady=2,columnspan=2, sticky=(N,W))
+        self.get_params_check.grid(column=0, row=3, padx=2, pady=2, columnspan=2, sticky=(N,W))
+        self.with_sizing_check.grid(column=0, row=4, padx=2, pady=2, columnspan=2, sticky=(N,W))
 
         self.start_backtest_button.grid()
 
@@ -153,7 +168,11 @@ class CryptoTrader():
         self.backtest_content.columnconfigure(0, weight=0)
         self.backtest_content.rowconfigure(0, weight=0)
 
-
+    def second_strat_checked(self):
+        if self.add_strategy.get():
+            self.second_strat_combobox['state'] = 'normal'
+        else:
+            self.second_strat_combobox['state'] = 'disabled'
 
     def show_live_trade_content(self):
         self.live_trade_content.tkraise(self.backtest_content)
@@ -185,9 +204,12 @@ class CryptoTrader():
             traceback.print_exc()
 
 
+    def update_graph(self, fig, strat=None):
+            if strat:
+                strat_symbol = utils.convert_symbols(strat, to_robinhood=True)
+            else:
+                strat_symbol = "NOT SURE YET"
 
-    def update_graph(self, fig, strat):
-            strat_symbol = utils.convert_symbols(strat, to_robinhood=True)
             plotly.io.orca.config.executable = path_to_orca
             plotly.io.orca.config.save()
 
@@ -229,6 +251,12 @@ class CryptoTrader():
         self.backtest_params['strategy'] = strat_obj
         self.check_all_params()
     
+    def check_backtest_strat_second(self, *args):
+        strat_name = self.second_strat_combobox.get()
+        second_strat_obj = self.strat_classes[strat_name]
+        self.backtest_params['second_strategy'] = second_strat_obj
+        self.check_all_params()
+    
     def check_backtest_days(self, *args):
         try:
             self.backtest_params['num_days'] = int(self.days_spinbox.get())
@@ -237,7 +265,11 @@ class CryptoTrader():
         self.check_all_params()
 
     def check_all_params(self):
-        if len(self.backtest_params) == 4 and all(value is not None for value in self.backtest_params.values()):
+        if self.add_strategy.get():
+            self.start_backtest_button['state'] = 'disabled'
+            if len(self.backtest_params) == 5 and all(value is not None for value in self.backtest_params.values()):
+                self.start_backtest_button['state'] = 'normal'
+        elif len(self.backtest_params) == 4 and all(value is not None for value in self.backtest_params.values()):
             self.start_backtest_button['state'] = 'normal'
 
     def setup_backtest_thread(self):
@@ -266,14 +298,27 @@ class CryptoTrader():
 
 
             backtest = Backtest()
-            print(self.backtest_params['strategy'])
-            backtest.run_basic_backtest(
-                symbol=self.backtest_params['symbol'],
-                granularity=self.backtest_params['granularity'],
-                strategy_obj=self.backtest_params['strategy'],
-                num_days = self.backtest_params['num_days'],
-                graph_callback=update_graph
-            )
+            if self.add_strategy.get():
+                strat1 = self.backtest_params['strategy']
+                strat2 = self.backtest_params['second_strategy']
+                backtest.run_multiple_strategy(
+                    symbol=self.backtest_params['symbol'],
+                    granularity=self.backtest_params['granularity'],
+                    num_days=self.backtest_params['num_days'],
+                    sizing=self.with_sizing_var.get(),
+                    strategies=[strat1, strat2],
+                    graph_callback=update_graph,
+                    )
+            else:
+                backtest.run_basic_backtest(
+                    symbol=self.backtest_params['symbol'],
+                    granularity=self.backtest_params['granularity'],
+                    strategy_obj=self.backtest_params['strategy'],
+                    num_days = self.backtest_params['num_days'],
+                    sizing = self.with_sizing_var.get(),
+                    best_params=self.with_best_params.get(),
+                    graph_callback=update_graph
+                )
 
 
         thread = Thread(target=start_backtest)

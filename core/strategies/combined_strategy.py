@@ -13,14 +13,13 @@ class Combined_Strategy(Strategy):
     """
     def __init__(self, dict_df,risk_object=None, with_sizing=False, *strategies):
         super().__init__(dict_df=dict_df,risk_object=risk_object, with_sizing=with_sizing)
-        choice = 'N'
-        if choice != 'Y':
-            choice = input("\nThe Combined_Strategy class uses the default values assigned in the custom indicator function for the respective strategies being used.\nHave you set your desired values?\nY or N: ").upper()
-        if choice == 'N':
-            sys.exit(1)
+        # choice = 'N'
+        # if choice != 'Y':
+        #     choice = input("\nThe Combined_Strategy class uses the default values assigned in the custom indicator function for the respective strategies being used.\nHave you set your desired values?\nY or N: ").upper()
+        # if choice == 'N':
+        #     sys.exit(1)
         self.strategies = [strategy(dict_df) for strategy in strategies]
-        self.granularity = None
-        self.set_granularity()
+        self.granularity = self.set_granularity()
 
             # we are initializing the strategies saved in self.strategies
             # even though we having manually done it the strategies saved in self.strategies are now initialized and available for use
@@ -56,7 +55,7 @@ class Combined_Strategy(Strategy):
                 setattr(self, f"{strategy_name}_sell_threshold", strategy.sell_threshold)
 
 
-    def graph(self):
+    def graph(self, graph_callback=None):
         """
         Dynamically graphs ti_data, osc_data, buy_threshold, and sell_threshold for each strategy in Combined_Strategy.
         """
@@ -151,4 +150,7 @@ class Combined_Strategy(Strategy):
         fig_combined.update_layout(height=800, title_text=f"{self.__class__.__name__} strategy for {self.symbol} on {self.granularity} timeframe" )
 
         # Display the combined figure
-        fig_combined.show()
+        if graph_callback:
+            graph_callback(fig_combined)
+        else:
+            fig_combined.show()

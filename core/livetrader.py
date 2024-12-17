@@ -27,13 +27,14 @@ class LiveTrader:
         self.risk = Risk_Handler(self.kraken)
         self.scanner = Scanner(client=self.kraken)
         self.df_manager = DF_Manager(self.scanner)
+
         self.scanner.assign_attribute(df_manager=self.df_manager)
         self.logbook = LinkedList()
 
         self.strat_classes = {}
         self.extract_classes_from_scripts()
 
-        self.update_candle_data() # the gui does this during start up now no need for this any more
+        #self.update_candle_data() # the gui does this during start up now no need for this any more
         self.load_strategy_params_for_strategy()
     
     def extract_classes_from_scripts(self):
@@ -57,7 +58,7 @@ class LiveTrader:
     def load_strategy_params_for_strategy(self):
         # Load strategy parameters for each symbol
         for symb in self.scanner.kraken_crypto:
-            strat = RSI_ADX_GPU(dict_df=None, risk_object=self.risk)
+            strat = RSI_ADX(dict_df=None, risk_object=self.risk)
             strat.symbol = symb
             params = database_interaction.get_best_params(
                 strat,
@@ -93,7 +94,7 @@ class LiveTrader:
             current_dict = {k: self.df_manager.dict_df[k]}
 
             # Instantiate strategy
-            strat = RSI_ADX_GPU(current_dict, self.risk, with_sizing=True, hyper=False)
+            strat = RSI_ADX(current_dict, self.risk, with_sizing=True, hyper=False)
             strat.custom_indicator(strat.close, *self.risk.symbol_params[k])
 
             fig = strat.graph(self.graph_callback)

@@ -43,26 +43,27 @@ class Backtest():
         self.granularity = 'ONE_MINUTE'
         
 
-    def test_multiple_strategy(self):
+    def run_multiple_strategy(self, symbol: str, granularity: str, num_days: int, sizing:bool, graph_callback =None, strategies:list = []):
         logbook = LinkedList()
-        df_dict = database_interaction.get_historical_from_db(granularity=self.granularity, symbols=self.symbols, num_days=50)
+        dict_df = database_interaction.get_historical_from_db(granularity=granularity, symbols=symbol, num_days=num_days)
+        risk = Risk_Handler()
 
-        for symbol, df in df_dict.items():
-            current_dict_df = {symbol:df}
+        #for sym, df in df_dict.items():
+            #current_dict_df = {sym:df}
 
-            combined_strat = Combined_Strategy(current_dict_df, RSI, ADX)
-            combined_strat.generate_combined_signals()
-            combined_strat.graph()
-            combined_strat.generate_backtest()
-            print(combined_strat.portfolio.stats())
+        combined_strat = Combined_Strategy(dict_df, risk, sizing,*strategies)
+        combined_strat.generate_combined_signals()
+        combined_strat.graph(graph_callback)
+        combined_strat.generate_backtest()
+        print(combined_strat.portfolio.stats(silence_warnings=True))
 
-            logbook.insert_beginning(combined_strat)
+        logbook.insert_beginning(combined_strat)
         
         logbook.export_multiple_pf_to_db()
 
 
 
-    def run_basic_backtest(self, symbol, granularity, strategy_obj, num_days, best_params=True, graph_callback=None, to_web:bool=False):
+    def run_basic_backtest(self, symbol, granularity, strategy_obj, num_days, sizing, best_params=True, graph_callback=None, to_web:bool=False):
 
 
         dict_df = database_interaction.get_historical_from_db(granularity=granularity,
@@ -77,11 +78,10 @@ class Backtest():
             strat = strategy_obj(
                 dict_df=current_dict,
                 risk_object=risk,
-                with_sizing=True,
+                with_sizing=sizing,
             )
             if best_params:
                 params = database_interaction.get_best_params(strat, minimum_trades=4)
-                print(params)
                 strat.custom_indicator(None, *params)
             else:
                 strat.custom_indicator()
