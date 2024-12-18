@@ -60,21 +60,26 @@ class Combined_Strategy(Strategy):
         Dynamically graphs ti_data, osc_data, buy_threshold, and sell_threshold for each strategy in Combined_Strategy.
         """
         # Start by plotting the first figure (Close price)
-        #fig1 = self.close.vbt.plot(trace_kwargs=dict(name='Close'))
-        fig1 = go.Figure(data=[go.Candlestick(x=self.close.index,
-                                        open=self.open,
-                                        high=self.high,
-                                        low=self.low,
-                                        close=self.close)])
+        fig1 = go.Figure(data=[go.Candlestick(
+            x=self.close.index,
+            open=self.open,
+            high=self.high,
+            low=self.low,
+            close=self.close
+        )])
         fig2 = None
 
         # Temporary storage for buy/sell thresholds
         temp_buy_thresholds = []
         temp_sell_thresholds = []
+        strategy_details = []  # To store strategy names and associated details
 
         # Loop over each strategy in self.strategies
         for strategy in self.strategies:
             strategy_name = strategy.__class__.__name__
+
+            # Add strategy name to strategy_details
+            strategy_details.append(strategy_name)
 
             # Plot the technical indicators (ti_data) dynamically for each strategy
             param_number = 0
@@ -146,11 +151,16 @@ class Combined_Strategy(Strategy):
         for sell_threshold in temp_sell_thresholds:
             fig_combined.add_hline(y=sell_threshold, line_color='red', line_width=1.5, row=2, col=1)
 
+        # Generate title text with strategy details
+        strategy_details_text = ", ".join(strategy_details)
+        title_text = f"Combined Strategy: {strategy_details_text} for {self.symbol} on {self.granularity} timeframe"
+
         # Update the layout of the combined figure
-        fig_combined.update_layout(height=800, title_text=f"{self.__class__.__name__} strategy for {self.symbol} on {self.granularity} timeframe" )
+        fig_combined.update_layout(height=800, title_text=title_text)
 
         # Display the combined figure
         if graph_callback:
             graph_callback(fig_combined)
         else:
             fig_combined.show()
+

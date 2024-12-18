@@ -359,8 +359,8 @@ def get_metrics_from_backtest(strategy_object, multiple=False, multiple_dict=Non
 
 
 
-def export_backtest_to_db(object, multiple_table_name=None):
-    """ object can either be a Strategy Class or a pd.DataFrame """
+def export_backtest_to_db(object, multiple_table_name=None, is_combined=False):
+    """Exports strategy backtest results to the database."""
     conn = sql.connect(f'{db_path}/backtest.db')
 
     if not isinstance(object, pd.DataFrame):
@@ -369,7 +369,13 @@ def export_backtest_to_db(object, multiple_table_name=None):
         granularity = strategy_object.granularity
         backtest_df, value_list, params = get_metrics_from_backtest(strategy_object)
         symbol = backtest_df['symbol'].unique()[0]
-        table_name = f"{strategy_object.__class__.__name__}_{granularity}"
+
+        # Determine table name
+        if is_combined and hasattr(strategy_object, "strategies"):
+            strat_names = "_".join([str(type(s).__name__) for s in strategy_object.strategies])
+            table_name = f"{strat_names}_COMBINED_{granularity}"
+        else:
+            table_name = f"{strategy_object.__class__.__name__}_{granularity}"
 
         # Ensure the table exists
         _create_table_if_not_exists(table_name, backtest_df, conn)

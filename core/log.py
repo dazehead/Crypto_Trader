@@ -62,12 +62,14 @@ class LinkedList:
             current_node = current_node.get_next_node()
         return string_list
     
-    def export_multiple_pf_to_db(self):
-        """not finished"""
+    def export_multiple_pf_to_db(self, is_combined=False):
+        """Exports all strategies in the linked list to the database."""
         current_node = self.get_head_node()
         while current_node:
             strat = current_node.get_value()
-            # this is where we are going to call the util function for exporting
-            database_interaction.export_backtest_to_db(strat)
+            print(f"Exporting strategy: {strat}")
+            
+            database_interaction.export_backtest_to_db(strat, is_combined=is_combined)
 
             current_node = current_node.get_next_node()
+

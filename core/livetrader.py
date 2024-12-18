@@ -58,7 +58,7 @@ class LiveTrader:
     def load_strategy_params_for_strategy(self):
         # Load strategy parameters for each symbol
         for symb in self.scanner.kraken_crypto:
-            strat = RSI_ADX(dict_df=None, risk_object=self.risk)
+            strat = RSI_ADX_GPU(dict_df=None, risk_object=self.risk)
             strat.symbol = symb
             params = database_interaction.get_best_params(
                 strat,

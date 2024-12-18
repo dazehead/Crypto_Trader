@@ -59,7 +59,7 @@ class Backtest():
 
         logbook.insert_beginning(combined_strat)
         
-        logbook.export_multiple_pf_to_db()
+        logbook.export_multiple_pf_to_db(is_combined=True)
 
 
 

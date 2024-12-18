@@ -55,15 +55,16 @@ class Kama(EFratio):
             kama.append(0)
         
         # Initial KAMA value is the price at start_index - 1
-        initial_kama = close[start_index - 1]
+        initial_kama = close.iloc[start_index - 1]
+
         kama.append(initial_kama)
-        
+
         # Calculate KAMA from start_index onwards
         for i in range(start_index + 1, kama_length):
             sc_i = sc[i]
             kama_prev = kama[i - 1]
-            price_i = close[i]
+            price_i = close.iloc[i]  # Use .iloc for positional indexing
             kama_i = kama_prev + sc_i * (price_i - kama_prev)
             kama.append(kama_i)
-        
+
         return kama
