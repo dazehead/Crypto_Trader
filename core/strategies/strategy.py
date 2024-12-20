@@ -274,7 +274,6 @@ class Strategy:
 
             size_type = 'value'
             accumulate = True
-        print("Printing close", self.close)
 
         self.portfolio = vbt.Portfolio.from_signals(
             close = self.close,

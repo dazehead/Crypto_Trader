@@ -34,7 +34,7 @@ class LiveTrader:
         self.strat_classes = {}
         self.extract_classes_from_scripts()
 
-        #self.update_candle_data() # the gui does this during start up now no need for this any more
+        self.update_candle_data() # the gui does this during start up now no need for this any more
         self.load_strategy_params_for_strategy()
     
     def extract_classes_from_scripts(self):

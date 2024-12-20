@@ -63,46 +63,60 @@ class Backtest():
 
 
 
-    def run_basic_backtest(self, symbol, granularity, strategy_obj, num_days, sizing, best_params=True, graph_callback=None, to_web:bool=False):
+    def run_basic_backtest(self, symbol, granularity, strategy_obj, num_days, sizing, best_params=True, graph_callback=None):
+        print(symbol, granularity, strategy_obj, num_days, sizing, best_params, graph_callback)
+        print("Getting historical data...")
+        dict_df = database_interaction.get_historical_from_db(
+            granularity=granularity,
+            symbols=symbol,
+            num_days=num_days
+        )
+        if not dict_df:
+            raise ValueError("No historical data found for the given parameters.")
+        print("Fetched historical data:", dict_df)
 
+        stats = {}
+        graph_base64 = None
 
-        dict_df = database_interaction.get_historical_from_db(granularity=granularity,
-                                                            symbols=symbol,
-                                                            num_days=num_days)
         for key, value in dict_df.items():
-            current_dict = {key : value}
+            try:
+                current_dict = {key: value}
+                risk = Risk_Handler()
+                strat = strategy_obj(
+                    dict_df=current_dict,
+                    risk_object=risk,
+                    with_sizing=sizing,
+                )
+                if best_params:
+                    params = database_interaction.get_best_params(strat, minimum_trades=4)
+                    strat.custom_indicator(None, *params)
+                else:
+                    strat.custom_indicator()
 
-            #current_dict = utils.heikin_ashi_transform(current_dict)
-            risk = Risk_Handler()
-            
-            strat = strategy_obj(
-                dict_df=current_dict,
-                risk_object=risk,
-                with_sizing=sizing,
-            )
-            if best_params:
-                params = database_interaction.get_best_params(strat, minimum_trades=4)
-                strat.custom_indicator(None, *params)
-            else:
-                strat.custom_indicator()
-                
-            strat.graph()
-            strat.generate_backtest()
-            pf = strat.portfolio
+                strat.graph()
+                strat.generate_backtest()
+                pf = strat.portfolio
+                stats = pf.stats().to_dict()
 
-            stats = pf.stats().to_dict()
+                if graph_callback:
+                    try:
+                        fig = pf.plot(subplots=['orders'])
+                        graph_base64 = graph_callback(fig)
+                    except Exception as e:
+                        print(f"Graph generation failed: {e}")
+                        graph_base64 = ""
 
-            print(pf.stats())
-            if graph_callback:
-                fig = pf.plot(subplots=['orders'])
-                
-                graph_callback(fig)
+            except Exception as e:
+                print(f"Error in backtest iteration for {key}: {e}")
 
-            if to_web:
-                fig = pf.plot(subplots=['orders'])
-                
-                graph_base64 = graph_callback(fig)
-                return stats, graph_base64
+        if not stats:
+            stats = {"error": "No stats generated"}
+        if not graph_base64:
+            graph_base64 = ""
+
+        return stats, graph_base64
+
+
             # fig = pf.plot(subplots = [
             # 'orders',
             # 'trade_pnl',
