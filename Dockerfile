@@ -1,6 +1,11 @@
 # Use an official Python image as the base
 FROM python:3.10-buster
 
+ARG GITHUB_USERNAME
+ARG GITHUB_TOKEN
+
+RUN pip install --no-cache-dir git+https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/dazehead/Coinbase_Trader.git@db2bd1c55e431f2e7e2c1787b472bda8b5f89825#egg=coinbase_trader
+
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -29,6 +34,9 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 # Copy application files
 COPY . /app
 WORKDIR /app
+
+# Copy the database into the image
+COPY database /app/database
 
 # Expose the port your application runs on
 EXPOSE 5000
