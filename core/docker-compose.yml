@@ -1,9 +1,13 @@
+version: '3.8'
+
 services:
   cryptobot:
     build: .
     env_file:
       - .env
     volumes:
-      - .:/app  
-      - ${DATABASE_PATH}:/app/database 
-    command: python __main__.py
+      - .:/app
+      - ${DATABASE_PATH:-./database}:/app/database
+    ports:
+      - "5000:5000"
+    command: python -m core.webapp.app

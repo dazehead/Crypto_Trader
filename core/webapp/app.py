@@ -6,6 +6,7 @@ from ..strategies.gpu_optimized.rsi_adx_gpu import RSI_ADX_GPU
 import base64
 import io
 from io import BytesIO
+import plotly.io as pio
 
 app = Flask(__name__)
 CORS(app, resources={
@@ -46,11 +47,9 @@ def backtest():
     
     def to_png(fig):
         try:
-            img_buf = io.BytesIO()
-            fig.savefig(img_buf, format='png')
-            img_buf.seek(0)
-            graph_base64 = base64.b64encode(img_buf.getvalue()).decode('utf-8')
-            img_buf.close()
+            img_bytes = pio.to_image(fig, format="png")
+            graph_base64 = base64.b64encode(img_bytes).decode('utf-8')
+
             return graph_base64
         except Exception as e:
             raise ValueError(f"Error converting graph to base64: {e}")
@@ -82,6 +81,7 @@ def backtest():
 
     if stats is None:
         return jsonify({"status": "error", "message": "Backtest returned no stats"}), 500
+    print("Generated graph base64:", graph_base64[:100])  # Log the first 100 chars
 
     return jsonify({
         "status": "success",
