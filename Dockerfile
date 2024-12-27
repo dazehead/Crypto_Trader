@@ -28,10 +28,11 @@ RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz && \
 RUN ldconfig
 
 # Install Python dependencies
-COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+COPY requirements2.txt /app/requirements2.txt
+RUN pip install --no-cache-dir -r /app/requirements2.txt
 
 # Copy application files
+COPY .env /app/.env
 COPY . /app
 WORKDIR /app
 

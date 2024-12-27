@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 db_path = os.getenv('DATABASE_PATH')
+print(db_path)
 def get_historical_from_db(granularity, symbols: list = [], num_days: int = None, convert=False):
     original_symbol = symbols
 
@@ -56,6 +57,8 @@ def get_historical_from_db(granularity, symbols: list = [], num_days: int = None
 def get_best_params(strategy_object, df_manager=None,live_trading=False, best_of_all_granularities=False, minimum_trades=None, with_lowest_losing_average=False):
     granularities = ['ONE_MINUTE', 'FIVE_MINUTE', 'FIFTEEN_MINUTE', 'THIRTY_MINUTE', 'ONE_HOUR', 'TWO_HOUR', 'SIX_HOUR', 'ONE_DAY']
     conn = sql.connect(f'{db_path}/hyper.db')
+    print("getting BEST PARAMS")
+    print(db_path)
     if best_of_all_granularities:
         best_results = []
         best_granularity = ''

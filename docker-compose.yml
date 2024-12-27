@@ -2,7 +2,7 @@ services:
   cryptobot:
     build: .
     env_file:
-      - core/.env
+      - .env
     ports:
       - "5000:5000"
     command: python -m core.webapp.app

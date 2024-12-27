@@ -19,6 +19,9 @@ class Coinbase_Wrapper():
         self.db_path = os.getenv('DATABASE_PATH')
         self.api_key = os.getenv('DOTENV_API_KEY_COINBASE')
         self.api_secret = os.getenv('DOTENV_API_PRIVATE_KEY_COINBASE')
+
+        print(self.api_key)
+        print(self.api_secret)
         self.client = RESTClient(api_key=self.api_key, api_secret=self.api_secret)
         self.coinbase_robin_crypto = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
 
