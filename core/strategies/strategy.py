@@ -8,8 +8,8 @@ import talib as ta
 import cupy as cp
 from numba import njit
 import core.utils as utils
-import logging 
-logging.basicConfig(level=logging.DEBUG)
+# import logging 
+# logging.basicConfig(level=logging.DEBUG)
 
 class Strategy:
     """Class to store strategy resources"""
@@ -262,7 +262,7 @@ class Strategy:
             fig_combined.show()
 
     def generate_backtest(self):
-        logging.debug("Generating backtest")
+        # logging.debug("Generating backtest")
         """Performs backtest and returns the stats"""
         init_cash = self.risk_object.total_balance
         size = None
@@ -277,14 +277,14 @@ class Strategy:
             size_type = 'value'
             accumulate = True
 
-        logging.debug(f"close: {self.close}")
-        logging.debug(f"entries: {self.entries}")
-        logging.debug(f"exits: {self.exits}")
-        logging.debug(f"size: {size}")
-        logging.debug(f"size_type: {size_type}")
-        logging.debug(f"accumulate: {accumulate}")
-        logging.debug(f"init_cash: {init_cash}")
-        logging.debug(f"strategy: {self.__class__.__name__}")
+        # logging.debug(f"close: {self.close}")
+        # logging.debug(f"entries: {self.entries}")
+        # logging.debug(f"exits: {self.exits}")
+        # logging.debug(f"size: {size}")
+        # logging.debug(f"size_type: {size_type}")
+        # logging.debug(f"accumulate: {accumulate}")
+        # logging.debug(f"init_cash: {init_cash}")
+        # logging.debug(f"strategy: {self.__class__.__name__}")
         self.portfolio = vbt.Portfolio.from_signals(
             close = self.close,
             entries = self.entries,

@@ -32,8 +32,8 @@ from io import BytesIO
 from PIL import Image
 #pd.set_option('display.max_rows', None)
 #pd.set_option('display.max_columns', None)
-import logging
-logging.basicConfig(level=logging.DEBUG)
+# import logging
+# logging.basicConfig(level=logging.DEBUG)
 
 
 
@@ -74,7 +74,7 @@ class Backtest():
             symbols=symbol,
             num_days=num_days
         )
-        logging.debug(f"dict_df: {dict_df}")
+        # logging.debug(f"dict_df: {dict_df}")
         if not dict_df:
             raise ValueError("No historical data found for the given parameters.")
         print("Fetched historical data:", dict_df)
@@ -85,35 +85,62 @@ class Backtest():
         # logging.debug(f"Running backtest for {len(dict_df)} symbols")
 
         for key, value in dict_df.items():
-            logging.debug(f"Key: {key}, Value: {value}")
+            # logging.debug(f"Key: {key}, Value: {value}")
             try:
                 current_dict = {key: value}
+                print(f"key: {key}, value: {value}")
+                print(current_dict)
                 risk = Risk_Handler()
                 strat = strategy_obj(
                     dict_df=current_dict,
                     risk_object=risk,
                     with_sizing=sizing,
                 )
-                logging.debug(strat)
-                logging.debug(current_dict)
-                logging.debug(risk)
-                logging.debug(sizing)
-                logging.debug(best_params)
+                # logging.debug(strat)
+                # logging.debug(current_dict)
+                # logging.debug(risk)
+                # logging.debug(sizing)
+                # logging.debug(best_params)
                 
                 if best_params:
+                    print("getting best parameters ...")
                     params = database_interaction.get_best_params(strat, minimum_trades=4)
                     # logging.debug(f"Best params: {params}")
                     strat.custom_indicator(None, *params)
                 else:
-                    print(f"else")
-                    strat.custom_indicator()
+                    try:
+                        print("running custom indicator ...")
+                        strat.custom_indicator()
+                    except Exception as e:
+                        print(f"Error running custom indicator: {e}")
+                        continue
+                try:
+                    print("graphing ...")
+                    strat.graph()
+                except Exception as e:
+                    print(f"Error graphing: {e}")    
 
-                strat.graph()
-                logging.debug(f"Running backtest for {key} with strategy {strat}")
-                strat.generate_backtest()
-                logging.debug(f"Portfolio after backtest: {strat.portfolio}")
-                pf = strat.portfolio
-                stats = pf.stats().to_dict()
+                try: 
+                    print("generating backtest...")
+                    strat.generate_backtest()
+                    print("generating backtest ...")
+                    # logging.debug(f"Portfolio after backtest: {strat.portfolio}")
+                    pf = strat.portfolio
+                    print("assigning portfolio")
+                    stats = pf.stats().to_dict()
+                    print("generating stats ...")
+                    print(f"stats: ")
+                    print(stats)
+                except Exception as e:
+                    print(f"Error in backtest iteration for {key}: {e}")
+                # strat.generate_backtest()
+                # print("generating backtest ...")
+                # # logging.debug(f"Portfolio after backtest: {strat.portfolio}")
+                # pf = strat.portfolio
+                # print("assigning portfolio")
+                # stats = pf.stats().to_dict()
+                # print("generating stats ...")
+                # print(f"stats: {stats}")
 
                 if graph_callback:
                     try:
