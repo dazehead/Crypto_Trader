@@ -8,6 +8,8 @@ from ..strategies.gpu_optimized.rsi_bollinger_np import BollingerBands_RSI
 import base64
 import plotly.io as pio
 import logging
+import datetime
+import jwt
 import core.database_interaction as database_interaction
 from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
@@ -15,7 +17,9 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'your_secret_key'
 CORS(app, resources={r"/api/*": {"origins": "http://localhost:8080"}})
+
 
 @app.errorhandler(Exception)
 def handle_exception(e):
@@ -40,6 +44,11 @@ def backtest():
         "RSI": RSI,
         "RSI_ADX_NP": BollingerBands_RSI,
     }
+
+    # Ensure the strategy exists
+    if params["strategy_obj"] not in strategy_mapping:
+        return jsonify({"status": "error", "message": "Invalid strategy"}), 400
+
     strategy_obj = strategy_mapping[params["strategy_obj"]]
 
     backtest_instance = Backtest()
@@ -59,6 +68,29 @@ def backtest():
 
     if stats is None:
         return jsonify({"status": "error", "message": "Backtest returned no stats"}), 500
+
+    # Save backtest to the database
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({"status": "error", "message": "Token is missing"}), 403
+
+    try:
+        decoded = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+        email = decoded['email']
+        database_interaction.save_backtest(
+            email=email,
+            symbol=params["symbol"],
+            strategy=params["strategy_obj"],
+            result=stats,
+            date=datetime.datetime.now().isoformat()  # Use UTC for consistency
+        )
+    except jwt.ExpiredSignatureError:
+        return jsonify({"status": "error", "message": "Token has expired"}), 403
+    except jwt.InvalidTokenError:
+        return jsonify({"status": "error", "message": "Invalid token"}), 403
+    except Exception as e:
+        app.logger.error(f"Failed to save backtest: {str(e)}")
+        return jsonify({"status": "error", "message": "Failed to save backtest"}), 500
 
     return jsonify({"status": "success", "stats": stats, "graph": graph_base64})
 
@@ -82,6 +114,7 @@ def register():
     encrypted_password = generate_password_hash(password)
 
     # Perform your registration logic here, save to DB
+    
     database_interaction.save_user(email, encrypted_password)
     app.logger.info(f"Registering user: {email}")
     return jsonify({"status": "success", "message": "User registered successfully"}), 201
@@ -110,8 +143,29 @@ def login():
 
     # Authentication successful
     app.logger.info(f"Logging in user: {email}")
-    return jsonify({"status": "success", "message": "Login successful", "token": "dummy-token"}), 200
 
+    token = jwt.encode(
+    {"email": email, "exp": datetime.datetime.now() + datetime.timedelta(hours=1)},
+    app.config['SECRET_KEY'],
+    algorithm="HS256"
+    )
+    return jsonify({"status": "success", "token": token}), 200
 
+@app.route('/api/backtests', methods=['GET'])
+def get_history():
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({"status": "error", "message": "Token is missing"}), 403
+    
+    try:
+        decoded = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+        email = decoded['email']
+        history = database_interaction.get_backtest_history(email)
+        return jsonify({"status": "success", "history": history}), 200
+    except jwt.ExpiredSignatureError:
+        return jsonify({"status": "error", "message": "Token has expired"}), 403
+    except jwt.InvalidTokenError:
+        return jsonify({"status": "error", "message": "Invalid token"}), 403
+    
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

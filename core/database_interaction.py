@@ -210,9 +210,27 @@ def get_users():
     users_dict = dict(zip(users['email'], users['password']))
     return users_dict
 def save_user(email, password):
+    _create_table_if_not_exists('users', pd.DataFrame(columns=['email', 'password']), sql.connect(f'{db_path}/users.db'))
     conn = sql.connect(f'{db_path}/users.db')
     cursor = conn.cursor()
     cursor.execute("INSERT INTO users (email, password) VALUES (?, ?);", (email, password))
+    conn.commit()
+    conn.close()
+def get_backtest_history(email):
+    _create_table_if_not_exists('backtests', pd.DataFrame(columns=['email', 'symbol', 'strategy', 'result', 'date']), sql.connect(f'{db_path}/backtests.db'))
+    conn = sql.connect(f'{db_path}/backtests.db')
+    query = f"SELECT * FROM backtests WHERE email = ?;"
+    history = pd.read_sql_query(query, conn, params=(email,))
+    conn.close()
+    return history.to_dict(orient="records")
+def save_backtest(email, symbol, strategy, result, date):
+    _create_table_if_not_exists('backtests', pd.DataFrame(columns=['email','symbol','strategy','result', 'date']), sql.connect(f'{db_path}/backtests.db'))
+    conn = sql.connect(f'{db_path}/backtests.db')
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO backtests (email, symbol, strategy, result, date)
+        VALUES (?, ?, ?, ?, ?);
+    """, (email, symbol, strategy, result, date))
     conn.commit()
     conn.close()
 
