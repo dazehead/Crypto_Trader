@@ -8,6 +8,9 @@ from ..strategies.gpu_optimized.rsi_bollinger_np import BollingerBands_RSI
 import base64
 import plotly.io as pio
 import logging
+import core.database_interaction as database_interaction
+from werkzeug.security import generate_password_hash
+from werkzeug.security import check_password_hash
 logging.basicConfig(level=logging.DEBUG)
 
 
@@ -58,6 +61,57 @@ def backtest():
         return jsonify({"status": "error", "message": "Backtest returned no stats"}), 500
 
     return jsonify({"status": "success", "stats": stats, "graph": graph_base64})
+
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+    
+    # Ensure the email is provided
+    if not email or not password:
+        return jsonify({"status": "error", "message": "Email and password are required"}), 400
+    
+    # Get all users from the database
+    users = database_interaction.get_users()
+    
+    if email in users:
+        return jsonify({"status": "error", "message": "User already exists"}), 400
+    
+    # Encrypt the password before saving it
+    encrypted_password = generate_password_hash(password)
+
+    # Perform your registration logic here, save to DB
+    database_interaction.save_user(email, encrypted_password)
+    app.logger.info(f"Registering user: {email}")
+    return jsonify({"status": "success", "message": "User registered successfully"}), 201
+
+# Login route
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+
+    # Ensure the email is provided
+    if not email or not password:
+        return jsonify({"status": "error", "message": "Email and password are required"}), 400
+
+    # Get all users from the database
+    users = database_interaction.get_users()
+    
+    if email not in users:
+        return jsonify({"status": "error", "message": "User not found"}), 404
+    
+    # Check if the password matches the hashed password in the database
+    hashed_password = users[email]
+    if not check_password_hash(hashed_password, password):
+        return jsonify({"status": "error", "message": "Invalid password"}), 401
+
+    # Authentication successful
+    app.logger.info(f"Logging in user: {email}")
+    return jsonify({"status": "success", "message": "Login successful", "token": "dummy-token"}), 200
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

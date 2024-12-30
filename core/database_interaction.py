@@ -202,6 +202,19 @@ def _create_table_if_not_exists(table_name, df, conn):
         conn.commit()
         print(f"Table {table_name} created successfully.")
         return
+def get_users():
+    conn = sql.connect(f'{db_path}/users.db')
+    query = "SELECT email, password FROM users;"
+    users = pd.read_sql_query(query, conn)
+    conn.close()
+    users_dict = dict(zip(users['email'], users['password']))
+    return users_dict
+def save_user(email, password):
+    conn = sql.connect(f'{db_path}/users.db')
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO users (email, password) VALUES (?, ?);", (email, password))
+    conn.commit()
+    conn.close()
 
 def export_hyper_to_db(strategy: object, hyper: object):
     stats_to_export = [
