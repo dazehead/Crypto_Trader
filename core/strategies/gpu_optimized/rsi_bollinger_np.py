@@ -48,19 +48,60 @@ class BollingerBands_RSI(Strategy):
         return final_signals
 
     def calculate_bollinger_bands(self, close, period, dev):
-        upper_band, middle_band, lower_band = ta.BBANDS(close, timeperiod=period, nbdevup=dev, nbdevdn=dev)
+        """
+        Calculate Bollinger Bands manually using NumPy.
+        
+        :param close: Array of closing prices.
+        :param period: The period for the moving average.
+        :param dev: The number of standard deviations for the bands.
+        :return: Tuple of (upper_band, middle_band, lower_band).
+        """
+        # Calculate the moving average (middle band)
+        middle_band = np.convolve(close, np.ones(period) / period, mode='valid')
+
+        # Calculate the rolling standard deviation
+        rolling_std = np.array([
+            np.std(close[i - period + 1:i + 1]) if i >= period - 1 else np.nan
+            for i in range(len(close))
+        ])
+
+        # Calculate upper and lower bands
+        upper_band = middle_band + (dev * rolling_std[period - 1:])
+        lower_band = middle_band - (dev * rolling_std[period - 1:])
+
+        # Padding to align with the original close array length
+        pad_length = len(close) - len(middle_band)
+        middle_band = np.concatenate([np.full(pad_length, np.nan), middle_band])
+        upper_band = np.concatenate([np.full(pad_length, np.nan), upper_band])
+        lower_band = np.concatenate([np.full(pad_length, np.nan), lower_band])
+
         return upper_band, middle_band, lower_band
 
+
     def calculate_rsi(self, close, window):
+        """
+        Calculate RSI using NumPy.
+        
+        :param close: Array of closing prices.
+        :param window: Lookback period for RSI calculation.
+        :return: Array of RSI values.
+        """
         delta = np.diff(close, prepend=close[0])
         gain = np.maximum(delta, 0)
         loss = np.abs(np.minimum(delta, 0))
 
+        # Calculate rolling averages of gains and losses
         avg_gain = np.convolve(gain, np.ones(window) / window, mode='valid')
         avg_loss = np.convolve(loss, np.ones(window) / window, mode='valid')
 
-        rs = np.where(avg_loss == 0, 0, avg_gain / avg_loss)
-        rsi = 100 - (100 / (1 + rs))
+        # Safely calculate RS and RSI
+        rsi = np.zeros_like(avg_gain)  # Initialize RSI with zeros
+        with np.errstate(divide='ignore', invalid='ignore'):  # Suppress warnings for division
+            rs = avg_gain / avg_loss
+            rsi = np.where(avg_loss == 0, 100, 100 - (100 / (1 + rs)))
 
+        # Pad the result to align with the original input length
         pad_length = close.shape[0] - rsi.shape[0]
         return np.concatenate([np.full(pad_length, np.nan), rsi])
+
+

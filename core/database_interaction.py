@@ -9,6 +9,8 @@ import gc
 import sys
 from datetime import datetime
 import os
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -54,97 +56,119 @@ def get_historical_from_db(granularity, symbols: list = [], num_days: int = None
     return tables_data
 
 
-def get_best_params(strategy_object, df_manager=None,live_trading=False, best_of_all_granularities=False, minimum_trades=None, with_lowest_losing_average=False):
+def get_best_params(strategy_object, df_manager=None, live_trading=False, best_of_all_granularities=False, minimum_trades=None, with_lowest_losing_average=False):
     granularities = ['ONE_MINUTE', 'FIVE_MINUTE', 'FIFTEEN_MINUTE', 'THIRTY_MINUTE', 'ONE_HOUR', 'TWO_HOUR', 'SIX_HOUR', 'ONE_DAY']
-    conn = sql.connect(f'{db_path}/hyper.db')
-    print("getting BEST PARAMS")
-    print("DATABASE_PATH (best params) :", db_path)
-    if best_of_all_granularities:
-        best_results = []
-        best_granularity = ''
-        for granularity in granularities:
-            table = ""
-            if strategy_object.__class__.__name__ == "RSI_ADX_NP":
-                table =f"RSI_ADX_GPU_{granularity}"
-            else:    
-                table = f"{strategy_object.__class__.__name__}_{granularity}"
-            params = inspect.signature(strategy_object.custom_indicator)
-            params = list(dict(params.parameters).keys())[1:]
-            parameters = ', '.join(params)
+    
+    try:
+        conn = sql.connect(f'{db_path}/hyper.db')
+        logging.info('Connected to the database successfully.')
+    except Exception as e:
+        logging.error('Failed to connect to the database: %s', e)
+        return None
+    
+    logging.info('Getting best params')
+    logging.info('DATABASE_PATH (best params): %s/hyper.db', db_path)
 
-            # we have already sent it the correct symbols that it did not get from client
-            if strategy_object.risk_object.client is not None:
-                symbol = utils.convert_symbols(strategy_object = strategy_object)
-            else:
-                symbol = strategy_object.symbol
-
-            query = f'SELECT {parameters},MAX("Total Return [%]") FROM {table} WHERE symbol="{symbol}"'
-            if minimum_trades is not None:
-                query += f' AND "Total Trades" >= {minimum_trades}'
-            result = pd.read_sql_query(query, conn)
-            list_results = []
-            for param in result:
-                list_results.append(result[param][0])
+    try:
+        if best_of_all_granularities:
+            best_results = []
+            best_granularity = ''
             
-            if not best_results:
-                best_results = list_results
-                best_granularity = granularity
-            else:
-                if best_results[-1] < list_results[-1]:
-                    best_results = list_results
-                    best_granularity = granularity
+            for granularity in granularities:
+                try:
+                    logging.info('Processing granularity: %s', granularity)
+                    table = f"RSI_ADX_GPU_{granularity}" if strategy_object.__class__.__name__ == "RSI_ADX_NP" else f"{strategy_object.__class__.__name__}_{granularity}"
+                    
+                    params = inspect.signature(strategy_object.custom_indicator)
+                    param_keys = list(dict(params.parameters).keys())[1:]
+                    parameters = ', '.join(param_keys)
+                    
+                    if strategy_object.risk_object.client is not None:
+                        symbol = utils.convert_symbols(strategy_object=strategy_object)
+                    else:
+                        symbol = strategy_object.symbol
+                    
+                    query = f'SELECT {parameters}, MAX("Total Return [%]") FROM {table} WHERE symbol="{symbol}"'
+                    if minimum_trades is not None:
+                        query += f' AND "Total Trades" >= {minimum_trades}'
+                    
+                    logging.info('Executing query: %s', query)
+                    result = pd.read_sql_query(query, conn)
+                    logging.info('Query result: %s', result)
+                    
+                    list_results = [result[param][0] for param in result]
+                    
+                    if not best_results or best_results[-1] < list_results[-1]:
+                        best_results = list_results
+                        best_granularity = granularity
 
-        if best_granularity != strategy_object.granularity or strategy_object.granularity is None:
-            #if the granularity has changed then we update strat with new data
+                except Exception as e:
+                    logging.error('Error processing granularity %s: %s', granularity, e)
 
-            if live_trading:
-                dict_df = get_historical_from_db(granularity=best_granularity,
-                                                symbols = strategy_object.symbol,
-                                                num_days=30,
-                                                convert=True)
-            else:
-                num_days = int(((strategy_object.df.index[-1] - strategy_object.df.index[0]).total_seconds() // 86400))
-                dict_df = get_historical_from_db(granularity=best_granularity,
-                                symbols = strategy_object.symbol,
-                                num_days=30)
+            try:
+                if best_granularity != strategy_object.granularity or strategy_object.granularity is None:
+                    logging.info('Granularity has changed. Updating strategy with new data.')
+                    if live_trading:
+                        dict_df = get_historical_from_db(
+                            granularity=best_granularity,
+                            symbols=strategy_object.symbol,
+                            num_days=30,
+                            convert=True
+                        )
+                    else:
+                        num_days = int((strategy_object.df.index[-1] - strategy_object.df.index[0]).total_seconds() // 86400)
+                        dict_df = get_historical_from_db(
+                            granularity=best_granularity,
+                            symbols=strategy_object.symbol,
+                            num_days=num_days
+                        )
+                    
+                    if hasattr(strategy_object, 'df'):
+                        strategy_object.update(dict_df)
+                    
+                    if live_trading and df_manager:
+                        df_manager.add_to_manager(dict_df)
+                        df_manager.products_granularity[list(dict_df.keys())[0]] = best_granularity
+                
+                best_results = best_results[:-1]
+            except Exception as e:
+                logging.error('Error updating strategy or DF manager: %s', e)
             
-            if hasattr(strategy_object, 'df'):
-                strategy_object.update(dict_df)
-            if live_trading:
-                df_manager.add_to_manager(dict_df)
-                df_manager.products_granularity[list(dict_df.keys())[0]] = best_granularity
+        else:
+            try:
+                table = f"{strategy_object.__class__.__name__}_{strategy_object.granularity}"
+                params = inspect.signature(strategy_object.custom_indicator)
+                param_keys = list(dict(params.parameters).keys())[1:]
+                parameters = ', '.join(param_keys)
 
-        best_results = best_results[:-1]
-        conn.close()
-        return best_results
-        
+                if strategy_object.risk_object.client is not None:
+                    symbol = utils.convert_symbols(strategy_object=strategy_object)
+                else:
+                    symbol = strategy_object.symbol
 
-    else:
-            table = f"{strategy_object.__class__.__name__}_{strategy_object.granularity}"
-            params = inspect.signature(strategy_object.custom_indicator)
-            params = list(dict(params.parameters).keys())[1:]
-            parameters = ', '.join(params)
+                query = f'SELECT {parameters}, MAX("Total Return [%]") FROM {table} WHERE symbol="{symbol}"'
+                if minimum_trades is not None:
+                    query += f' AND "Total Trades" >= {minimum_trades}'
 
-            # we have already sent it the correct symbols that it did not get from client
-            if strategy_object.risk_object.client is not None:
-                symbol = utils.convert_symbols(strategy_object = strategy_object)
-            else:
-                symbol = strategy_object.symbol
+                logging.info('Executing query: %s', query)
+                result = pd.read_sql_query(query, conn)
+                logging.info('Query result: %s', result)
 
-            query = f'SELECT {parameters},MAX("Total Return [%]") FROM {table} WHERE symbol="{symbol}"'
-            if minimum_trades is not None:
-                query += f' AND "Total Trades" >= {minimum_trades}'
-            print(query)
-            result = pd.read_sql_query(query, conn)
+                list_results = [result[param][0] for param in result]
+                list_results = list_results[:-1]
+            except Exception as e:
+                logging.error('Error querying for specific granularity: %s', e)
+                return None
 
-            list_results = []
+    finally:
+        try:
+            conn.close()
+            logging.info('Database connection closed successfully.')
+        except Exception as e:
+            logging.warning('Failed to close the database connection: %s', e)
 
-            for param in result:
-                list_results.append(result[param][0])
-            list_results = list_results[:-1] 
+    return best_results if best_of_all_granularities else list_results
 
-    conn.close()
-    return list_results
 
 
 def _create_table_if_not_exists(table_name, df, conn):

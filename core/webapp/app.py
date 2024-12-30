@@ -3,8 +3,13 @@ from flask_cors import CORS
 from ..backtest import Backtest
 from ..strategies.single.rsi import RSI
 from ..strategies.gpu_optimized.rsi_adx_np import RSI_ADX_NP
+from ..strategies.gpu_optimized.rsi_adx_gpu import RSI_ADX_GPU
+from ..strategies.gpu_optimized.rsi_bollinger_np import BollingerBands_RSI
 import base64
 import plotly.io as pio
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "http://localhost:8080"}})
@@ -19,6 +24,7 @@ def to_png(fig):
         img_bytes = pio.to_image(fig, format="png")
         return base64.b64encode(img_bytes).decode('utf-8')
     except Exception as e:
+        logging.error(f"Error converting graph to PNG: {str(e)}")
         app.logger.error(f"Error converting graph to PNG: {str(e)}")
         raise ValueError("Graph conversion failed.")
 
@@ -29,7 +35,7 @@ def backtest():
 
     strategy_mapping = {
         "RSI": RSI,
-        "RSI_ADX_NP": RSI_ADX_NP,
+        "RSI_ADX_NP": BollingerBands_RSI,
     }
     strategy_obj = strategy_mapping[params["strategy_obj"]]
 

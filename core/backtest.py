@@ -20,10 +20,12 @@ from core.strategies.single.atr import ATR
 from core.strategies.single.macd import MACD
 from core.strategies.single.kama import Kama
 from core.strategies.single.adx import ADX
+from core.strategies.single.bollinger import BollingerBands
 from core.strategies.double.rsi_adx import RSI_ADX
 from core.strategies.combined_strategy import Combined_Strategy
 from core.strategies.gpu_optimized.rsi_adx_gpu import RSI_ADX_GPU
 from core.strategies.gpu_optimized.rsi_adx_np import RSI_ADX_NP
+from core.strategies.gpu_optimized.rsi_bollinger_np import BollingerBands_RSI
 from core.risk import Risk_Handler
 from core.log import LinkedList
 from core.hyper import Hyper
@@ -32,8 +34,8 @@ from io import BytesIO
 from PIL import Image
 #pd.set_option('display.max_rows', None)
 #pd.set_option('display.max_columns', None)
-# import logging
-# logging.basicConfig(level=logging.DEBUG)
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 
 
@@ -74,7 +76,6 @@ class Backtest():
             symbols=symbol,
             num_days=num_days
         )
-        # logging.debug(f"dict_df: {dict_df}")
         if not dict_df:
             raise ValueError("No historical data found for the given parameters.")
         print("Fetched historical data:", dict_df)
@@ -82,49 +83,47 @@ class Backtest():
         stats = {}
         graph_base64 = None
 
-        # logging.debug(f"Running backtest for {len(dict_df)} symbols")
+        logging.info(f"Running backtest for {len(dict_df)} symbols")
 
         for key, value in dict_df.items():
-            # logging.debug(f"Key: {key}, Value: {value}")
             try:
                 current_dict = {key: value}
-                print(f"key: {key}, value: {value}")
-                print(current_dict)
                 risk = Risk_Handler()
                 strat = strategy_obj(
                     dict_df=current_dict,
                     risk_object=risk,
                     with_sizing=sizing,
                 )
-                # logging.debug(strat)
-                # logging.debug(current_dict)
-                # logging.debug(risk)
-                # logging.debug(sizing)
-                # logging.debug(best_params)
+
                 
                 if best_params:
                     print("getting best parameters ...")
+                    logging.info(f"Getting best parameters for {strat.__class__.__name__}")
                     params = database_interaction.get_best_params(strat, minimum_trades=4)
-                    # logging.debug(f"Best params: {params}")
+                    logging.info(f"Best params: {params}")
                     strat.custom_indicator(None, *params)
                 else:
                     try:
                         print("running custom indicator ...")
+                        logging.info(f"Running custom indicator for {strat.__class__.__name__}")
                         strat.custom_indicator()
                     except Exception as e:
+                        logging.error(f"Error running custom indicator: {e}")
                         print(f"Error running custom indicator: {e}")
                         continue
                 try:
                     print("graphing ...")
+                    logging.info(f"Graphing for {strat.__class__.__name__}")
                     strat.graph()
                 except Exception as e:
+                    logging.error(f"Error graphing: {e}")
                     print(f"Error graphing: {e}")    
 
-                try: 
+                try:
+                    logging.info(f"Generating backtest for {strat.__class__.__name__}") 
                     print("generating backtest...")
                     strat.generate_backtest()
-                    print("generating backtest ...")
-                    # logging.debug(f"Portfolio after backtest: {strat.portfolio}")
+                    logging.info(f"Portfolio after backtest: {strat.portfolio}")
                     pf = strat.portfolio
                     print("assigning portfolio")
                     stats = pf.stats().to_dict()
@@ -133,20 +132,13 @@ class Backtest():
                     print(stats)
                 except Exception as e:
                     print(f"Error in backtest iteration for {key}: {e}")
-                # strat.generate_backtest()
-                # print("generating backtest ...")
-                # # logging.debug(f"Portfolio after backtest: {strat.portfolio}")
-                # pf = strat.portfolio
-                # print("assigning portfolio")
-                # stats = pf.stats().to_dict()
-                # print("generating stats ...")
-                # print(f"stats: {stats}")
 
                 if graph_callback:
                     try:
                         fig = pf.plot(subplots=['orders'])
                         graph_base64 = graph_callback(fig)
                     except Exception as e:
+                        logging.error(f"Graph generation failed: {e}")
                         print(f"Graph generation failed: {e}")
                         graph_base64 = ""
 
@@ -156,6 +148,7 @@ class Backtest():
         if not stats:
             stats = {"error": "No stats generated"}
         if not graph_base64:
+            logging.info("No graph generated")
             graph_base64 = ""
 
         return stats, graph_base64
@@ -204,16 +197,18 @@ class Backtest():
                 key, value = items
                 current_dict = {key:value}
                 
-                strat = RSI_ADX(current_dict, risk_object=risk, with_sizing=True)
+                strat = BollingerBands_RSI(current_dict, risk_object=risk, with_sizing=True)
 
                 hyper = Hyper(
                     strategy_object=strat,
                     close=strat.close,
-                    rsi_window=np.arange(10, 30, step=15),
-                    buy_threshold=np.arange(5, 50, step=15),
-                    sell_threshold = np.arange(50, 95, step=15),
-                    adx_buy_threshold = np.arange(20, 60, step=20),
-                    adx_time_period=np.arange(10, 30, step=15))
+                    bb_period=np.arange(10, 30, step=5),  # Matches bb_period range
+                    bb_dev=np.arange(1, 3, step=0.5),    # Matches bb_dev range
+                    rsi_window=np.arange(10, 20, step=2),# Matches rsi_window range
+                    rsi_buy=np.arange(20, 40, step=5),   # Matches rsi_buy range
+                    rsi_sell=np.arange(60, 80, step=5)   # Matches rsi_sell range
+                )
+
 
                 database_interaction.export_hyper_to_db(
                     strategy=strat,
