@@ -18,8 +18,18 @@ logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
-CORS(app, resources={r"/api/*": {"origins": "http://localhost:8080"}})
+CORS(app, resources={r"/api/*": {"origins": "http://localhost:8080"}}, supports_credentials=True)
 
+
+@app.before_request
+def handle_options():
+    if request.method == 'OPTIONS':
+        response = app.response_class()
+        response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type'
+        response.status_code = 200
+        return response
 
 @app.errorhandler(Exception)
 def handle_exception(e):
@@ -74,6 +84,8 @@ def backtest():
     if not token:
         return jsonify({"status": "error", "message": "Token is missing"}), 403
 
+    if token.startswith('Bearer '):
+        token = token[7:]
     try:
         decoded = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
         email = decoded['email']
@@ -82,7 +94,7 @@ def backtest():
             symbol=params["symbol"],
             strategy=params["strategy_obj"],
             result=stats,
-            date=datetime.datetime.now().isoformat()  # Use UTC for consistency
+            date=datetime.datetime.now().isoformat()  
         )
     except jwt.ExpiredSignatureError:
         return jsonify({"status": "error", "message": "Token has expired"}), 403
@@ -154,18 +166,26 @@ def login():
 @app.route('/api/backtests', methods=['GET'])
 def get_history():
     token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({"status": "error", "message": "Token is missing"}), 403
+    app.logger.info(f"Authorization header: {token}")
     
+    if not token or not token.startswith("Bearer "):
+        app.logger.error("Token is missing or invalid")
+        return jsonify({"status": "error", "message": "Token is missing or invalid"}), 403
+    
+    token = token.split("Bearer ")[1]
     try:
         decoded = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+        app.logger.info(f"Decoded token: {decoded}")
         email = decoded['email']
         history = database_interaction.get_backtest_history(email)
         return jsonify({"status": "success", "history": history}), 200
     except jwt.ExpiredSignatureError:
+        app.logger.error("Token has expired")
         return jsonify({"status": "error", "message": "Token has expired"}), 403
-    except jwt.InvalidTokenError:
+    except jwt.InvalidTokenError as e:
+        app.logger.error(f"Invalid token: {e}")
         return jsonify({"status": "error", "message": "Invalid token"}), 403
+
     
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

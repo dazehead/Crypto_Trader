@@ -10,6 +10,7 @@ import sys
 from datetime import datetime
 import os
 import logging
+import json
 logging.basicConfig(level=logging.DEBUG)
 
 from dotenv import load_dotenv
@@ -223,16 +224,42 @@ def get_backtest_history(email):
     history = pd.read_sql_query(query, conn, params=(email,))
     conn.close()
     return history.to_dict(orient="records")
+import json
+import datetime
+import pandas as pd
+
 def save_backtest(email, symbol, strategy, result, date):
-    _create_table_if_not_exists('backtests', pd.DataFrame(columns=['email','symbol','strategy','result', 'date']), sql.connect(f'{db_path}/backtests.db'))
+    # Convert non-serializable objects in 'result' to serializable types
+    def make_serializable(obj):
+        if isinstance(obj, pd.Timestamp):
+            return obj.isoformat()  # Convert Timestamps to ISO 8601 strings
+        elif isinstance(obj, datetime.datetime):
+            return obj.isoformat()  # Handle datetime objects
+        elif isinstance(obj, datetime.date):
+            return obj.isoformat()  # Handle date objects
+        return obj
+
+    # Apply conversion to the entire 'result' dictionary
+    serializable_result = {key: make_serializable(value) for key, value in result.items()}
+
+    # Serialize the processed result into JSON
+    result_json = json.dumps(serializable_result)
+
+    _create_table_if_not_exists(
+        'backtests',
+        pd.DataFrame(columns=['email', 'symbol', 'strategy', 'result', 'date']),
+        sql.connect(f'{db_path}/backtests.db')
+    )
+
     conn = sql.connect(f'{db_path}/backtests.db')
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO backtests (email, symbol, strategy, result, date)
         VALUES (?, ?, ?, ?, ?);
-    """, (email, symbol, strategy, result, date))
+    """, (email, symbol, strategy, result_json, date))
     conn.commit()
     conn.close()
+
 
 def export_hyper_to_db(strategy: object, hyper: object):
     stats_to_export = [
