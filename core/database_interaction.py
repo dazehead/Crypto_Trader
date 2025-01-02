@@ -11,7 +11,17 @@ from datetime import datetime
 import os
 import logging
 import json
-logging.basicConfig(level=logging.DEBUG)
+import pandas as pd
+import logging
+
+# Suppress debug logs from libraries
+logging.getLogger("numba").setLevel(logging.WARNING)
+logging.getLogger("matplotlib").setLevel(logging.WARNING)
+logging.getLogger("numpy").setLevel(logging.WARNING)
+
+# Set your own logging level if needed
+logging.basicConfig(level=logging.INFO)  # Set to DEBUG, INFO, WARNING, ERROR, CRITICAL as needed
+
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -61,7 +71,7 @@ def get_best_params(strategy_object, df_manager=None, live_trading=False, best_o
     granularities = ['ONE_MINUTE', 'FIVE_MINUTE', 'FIFTEEN_MINUTE', 'THIRTY_MINUTE', 'ONE_HOUR', 'TWO_HOUR', 'SIX_HOUR', 'ONE_DAY']
     
     try:
-        conn = sql.connect(f'{db_path}/hyper.db')
+        conn = sql.connect(f'{db_path}/test_hyper.db')
         logging.info('Connected to the database successfully.')
     except Exception as e:
         logging.error('Failed to connect to the database: %s', e)
@@ -170,39 +180,62 @@ def get_best_params(strategy_object, df_manager=None, live_trading=False, best_o
 
     return best_results if best_of_all_granularities else list_results
 
-
+def export_optimization_results(df):
+    try:
+        conn = sql.connect(f'{db_path}/optimization.db')
+        print("Connected to database successfully.")
+        _create_table_if_not_exists('optimization_results', df, conn)
+        
+        # Check for unsupported types
+        print("Verifying DataFrame types:")
+        print(df.dtypes)
+        
+        print("Exporting results to the database...")
+        df.to_sql('optimization_results', conn, if_exists='append', index=False)
+        print("Data exported successfully.")
+    except Exception as e:
+        print(f"Error occurred while exporting optimization results: {e}")
+    finally:
+        conn.close()
+        print("Database connection closed.")
 
 def _create_table_if_not_exists(table_name, df, conn):
     """ Helper function to create table if it doesn't exist """
-    # Check if the table exists
-    table_exists_query = f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';"
-    table_exists = pd.read_sql(table_exists_query, conn)
-    
-    if table_exists.empty:
-        # Create table if it does not exist
-        print(f"Table {table_name} doesn't exist. Creating table...")
-        columns = df.columns
-        dtypes = df.dtypes  
-        sql_dtypes = []
-        for col in columns:
-            dtype = dtypes[col]
-            if pd.api.types.is_integer_dtype(dtype):
-                sql_dtype = 'INTEGER'
-            elif pd.api.types.is_float_dtype(dtype):
-                sql_dtype = 'REAL'
-            else:
-                sql_dtype = 'TEXT'
-            sql_dtypes.append(f'"{col}" {sql_dtype}')
-        create_table_query = f"CREATE TABLE {table_name} ("
-        create_table_query += ', '.join(sql_dtypes)
-        create_table_query += ");"
-        print(create_table_query)
+    try:
+        # Check if the table exists
+        print(f"Checking if table {table_name} exists...")
+        table_exists_query = f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';"
+        table_exists = pd.read_sql(table_exists_query, conn)
+        print("Table existence check completed.")
         
-        cursor = conn.cursor()
-        cursor.execute(create_table_query)
-        conn.commit()
-        print(f"Table {table_name} created successfully.")
-        return
+        if table_exists.empty:
+            # Create table if it does not exist
+            print(f"Table {table_name} doesn't exist. Creating table...")
+            columns = df.columns
+            dtypes = df.dtypes  
+            sql_dtypes = []
+            for col in columns:
+                dtype = dtypes[col]
+                if pd.api.types.is_integer_dtype(dtype):
+                    sql_dtype = 'INTEGER'
+                elif pd.api.types.is_float_dtype(dtype):
+                    sql_dtype = 'REAL'
+                else:
+                    sql_dtype = 'TEXT'
+                sql_dtypes.append(f'"{col}" {sql_dtype}')
+            
+            create_table_query = f"CREATE TABLE {table_name} ("
+            create_table_query += ', '.join(sql_dtypes)
+            create_table_query += ");"
+            print(f"Creating table with query:\n{create_table_query}")
+            
+            cursor = conn.cursor()
+            cursor.execute(create_table_query)
+            conn.commit()
+            print(f"Table {table_name} created successfully.")
+    except Exception as e:
+        print(f"Error occurred while creating table {table_name}: {e}")
+
 def get_users():
     conn = sql.connect(f'{db_path}/users.db')
     query = "SELECT email, password FROM users;"
@@ -274,8 +307,9 @@ def export_hyper_to_db(strategy: object, hyper: object):
     
     data = hyper.pf.stats(silence_warnings=True,
                           agg_func=None)
-
-    conn = sql.connect(f'{db_path}/hyper.db')
+    
+    # dont forget to change this when using hyper !!!
+    conn = sql.connect(f'{db_path}/test_hyper.db')
 
     symbol = strategy.symbol
     granularity = strategy.granularity
@@ -543,3 +577,22 @@ def trade_export(response_json, balance, order_type="spot"):
     conn.close()
 
     print("Trade exported successfully.")
+
+def export_optimization_results(df):
+    try:
+        conn = sql.connect(f'{db_path}/ai_optimization.db')
+        print("Connected to database successfully.")
+        _create_table_if_not_exists('ai_optimization_results', df, conn)
+        
+        # Check for unsupported types
+        print("Verifying DataFrame types:")
+        print(df.dtypes)
+        
+        print("Exporting results to the database...")
+        df.to_sql('optimization_results', conn, if_exists='append', index=False)
+        print("Data exported successfully.")
+    except Exception as e:
+        print(f"Error occurred while exporting optimization results: {e}")
+    finally:
+        conn.close()
+        print("Database connection closed.")

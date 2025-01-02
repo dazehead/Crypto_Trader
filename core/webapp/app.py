@@ -13,7 +13,7 @@ import jwt
 import core.database_interaction as database_interaction
 from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 
 
 app = Flask(__name__)

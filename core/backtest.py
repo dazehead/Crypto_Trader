@@ -35,7 +35,13 @@ from PIL import Image
 #pd.set_option('display.max_rows', None)
 #pd.set_option('display.max_columns', None)
 import logging
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
+logging.getLogger("numba").setLevel(logging.WARNING)
+logging.getLogger("matplotlib").setLevel(logging.WARNING)
+logging.getLogger("numpy").setLevel(logging.WARNING)
+
+# Set your own logging level if needed
+logging.basicConfig(level=logging.INFO) 
 
 
 
@@ -232,3 +238,146 @@ class Backtest():
                 # x_level = 'cust_fast_window',
                 # y_level = 'cust_slow_window')
                 # fig.show()
+    def run_optimization_tests(self, strategy_class, param_ranges, train_test_split=0.7):
+        """
+        Run optimization tests with walk-forward analysis for multiple symbols and granularities.
+
+        Args:
+            strategy_class: The strategy class to test (e.g., RSI_ADX_GPU).
+            param_ranges: Dictionary of hyperparameter ranges for optimization.
+            train_test_split: Proportion of data to use for training (default: 70% train, 30% test).
+        """
+        results = []
+        risk = Risk_Handler()
+
+        for granularity in self.granularites:
+            num_days = {
+                'ONE_MINUTE': 25,
+                'FIVE_MINUTE': 100,
+                'FIFTEEN_MINUTE': 250,
+                'THIRTY_MINUTE': 365,
+                'ONE_HOUR': 365,
+                'TWO_HOUR': 365,
+                'SIX_HOUR': 365,
+                'ONE_DAY': 365,
+            }.get(granularity, 365)
+
+            logging.info(f"Processing granularity: {granularity}, num_days: {num_days}")
+
+            for symbol in self.symbols:
+                try:
+                    # Fetch historical data
+                    logging.info(f"Fetching historical data for {symbol} at {granularity}")
+                    dict_df = database_interaction.get_historical_from_db(
+                        granularity=granularity,
+                        symbols=symbol,
+                        num_days=num_days
+                    )
+                    if not dict_df or symbol not in dict_df:
+                        logging.warning(f"No data available for {symbol} at {granularity}")
+                        continue
+
+                    data = dict_df[symbol]
+                    logging.info(f"Fetched data for {symbol}: {data.shape[0]} rows")
+
+                    total_len = len(data)
+                    train_len = int(total_len * train_test_split)
+
+                    if train_len < 1 or total_len - train_len < 1:
+                        logging.warning(f"Insufficient data for training/testing split for {symbol} at {granularity}")
+                        continue
+
+                    # Walk-forward analysis
+                    for start_idx in range(0, total_len - train_len, train_len // 2):
+                        try:
+                            logging.info(f"Processing window: start_idx={start_idx}, train_len={train_len}")
+                            train_data = data.iloc[start_idx: start_idx + train_len]
+                            test_data = data.iloc[start_idx + train_len: start_idx + 2 * train_len]
+
+                            if len(test_data) < 1:
+                                logging.warning(f"Skipping incomplete test window for {symbol} at {granularity}")
+                                break
+
+                            # Optimize on train_data
+                            strat_train = strategy_class(
+                                dict_df={symbol: train_data},
+                                risk_object=risk,
+                                with_sizing=True
+                            )
+                            hyper = Hyper(
+                                strategy_object=strat_train,
+                                close=strat_train.close,
+                                **param_ranges
+                            )
+
+                            database_interaction.export_hyper_to_db(
+                                strategy=strat_train,
+                                hyper=hyper
+                            )
+
+                            best_params = database_interaction.get_best_params(strat_train)
+                            logging.info(f"Best params for {symbol} at {granularity}: {best_params}")
+
+                            # Test on test_data
+                            strat_test = strategy_class(
+                                dict_df={symbol: test_data},
+                                risk_object=risk,
+                                with_sizing=True
+                            )
+                            strat_test.custom_indicator(None, *best_params)
+                            strat_test.generate_backtest()
+                            stats = strat_test.portfolio.stats(silence_warnings=True).to_dict()
+                            stats = strat_test.portfolio.stats(silence_warnings=True).to_dict()
+
+                            # Filter stats to only include the specified metrics
+                            filtered_stats = {
+                                key: stats[key]
+                                for key in [
+                                    'Total Return [%]',
+                                    'Total Trades',
+                                    'Win Rate [%]',
+                                    'Best Trade [%]',
+                                    'Worst Trade [%]',
+                                    'Avg Winning Trade [%]',
+                                    'Avg Losing Trade [%]',
+                                ]
+                                if key in stats
+                            }
+
+                            # Add additional metadata fields
+                            filtered_stats.update({
+                                "symbol": symbol,
+                                "granularity": granularity,
+                                "start_idx": start_idx,
+                                "end_idx": start_idx + train_len,
+                            })
+
+                            # Add to results
+                            results.append(filtered_stats)
+
+
+                            del strat_train, strat_test, hyper
+                            gc.collect()
+                        except Exception as e:
+                            logging.error(f"Error during walk-forward window processing: {e}", exc_info=True)
+                except Exception as e:
+                    logging.error(f"Error processing {symbol} at {granularity}: {e}", exc_info=True)
+
+        # Convert results to DataFrame for easier analysis
+        results_df = pd.DataFrame(results)
+
+
+        if results_df.empty:
+            logging.warning("Results DataFrame is empty. Nothing to export.")
+            return
+
+        logging.info(f"Results DataFrame:\n{results_df.head()}")
+
+        try:
+            database_interaction.export_optimization_results(results_df)
+            logging.info("Optimization results exported successfully.")
+        except Exception as e:
+            logging.error(f"Error exporting optimization results: {e}", exc_info=True)
+
+        return results_df
+
