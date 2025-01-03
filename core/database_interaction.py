@@ -578,21 +578,21 @@ def trade_export(response_json, balance, order_type="spot"):
 
     print("Trade exported successfully.")
 
-def export_optimization_results(df):
-    try:
-        conn = sql.connect(f'{db_path}/ai_optimization.db')
-        print("Connected to database successfully.")
-        _create_table_if_not_exists('ai_optimization_results', df, conn)
+# def export_optimization_results(df):
+#     try:
+#         conn = sql.connect(f'{db_path}/ai_optimization.db')
+#         print("Connected to database successfully.")
+#         _create_table_if_not_exists('ai_optimization_results', df, conn)
         
-        # Check for unsupported types
-        print("Verifying DataFrame types:")
-        print(df.dtypes)
+#         # Check for unsupported types
+#         print("Verifying DataFrame types:")
+#         print(df.dtypes)
         
-        print("Exporting results to the database...")
-        df.to_sql('optimization_results', conn, if_exists='append', index=False)
-        print("Data exported successfully.")
-    except Exception as e:
-        print(f"Error occurred while exporting optimization results: {e}")
-    finally:
-        conn.close()
-        print("Database connection closed.")
+#         print("Exporting results to the database...")
+#         df.to_sql('optimization_results', conn, if_exists='append', index=False)
+#         print("Data exported successfully.")
+#     except Exception as e:
+#         print(f"Error occurred while exporting optimization results: {e}")
+#     finally:
+#         conn.close()
+#         print("Database connection closed.")

@@ -252,15 +252,15 @@ class Backtest():
 
         for granularity in self.granularites:
             num_days = {
-                'ONE_MINUTE': 25,
-                'FIVE_MINUTE': 100,
-                'FIFTEEN_MINUTE': 250,
-                'THIRTY_MINUTE': 365,
-                'ONE_HOUR': 365,
-                'TWO_HOUR': 365,
-                'SIX_HOUR': 365,
-                'ONE_DAY': 365,
-            }.get(granularity, 365)
+                'ONE_MINUTE': 1095,
+                'FIVE_MINUTE': 1095,
+                'FIFTEEN_MINUTE': 1095,
+                'THIRTY_MINUTE': 1095,
+                'ONE_HOUR': 1095,
+                'TWO_HOUR': 1095,
+                'SIX_HOUR': 1095,
+                'ONE_DAY': 1095,
+            }.get(granularity, 1095)
 
             logging.info(f"Processing granularity: {granularity}, num_days: {num_days}")
 
