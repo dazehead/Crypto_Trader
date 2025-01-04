@@ -106,9 +106,12 @@ def get_best_params(strategy_object, df_manager=None, live_trading=False, best_o
                     logging.info('Executing query: %s', query)
                     result = pd.read_sql_query(query, conn)
                     logging.info('Query result: %s', result)
-                    
-                    list_results = [result[param][0] for param in result]
-                    
+
+                    if all(value is None for value in result.values()):
+                        print("No valid data for the given granularity and coin.")
+                    else:
+                        list_results = [result[param][0] for param in result]
+
                     if not best_results or best_results[-1] < list_results[-1]:
                         best_results = list_results
                         best_granularity = granularity

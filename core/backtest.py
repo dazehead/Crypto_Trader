@@ -252,15 +252,15 @@ class Backtest():
 
         for granularity in self.granularites:
             num_days = {
-                'ONE_MINUTE': 1095,
-                'FIVE_MINUTE': 1095,
-                'FIFTEEN_MINUTE': 1095,
-                'THIRTY_MINUTE': 1095,
-                'ONE_HOUR': 1095,
-                'TWO_HOUR': 1095,
-                'SIX_HOUR': 1095,
-                'ONE_DAY': 1095,
-            }.get(granularity, 1095)
+                'ONE_MINUTE': 25,
+                'FIVE_MINUTE': 50,
+                'FIFTEEN_MINUTE': 100,
+                'THIRTY_MINUTE': 150,
+                'ONE_HOUR': 250,
+                'TWO_HOUR': 365,
+                'SIX_HOUR':365,
+                'ONE_DAY':365,
+            }.get(granularity,365)
 
             logging.info(f"Processing granularity: {granularity}, num_days: {num_days}")
 
@@ -283,12 +283,16 @@ class Backtest():
                     total_len = len(data)
                     train_len = int(total_len * train_test_split)
 
+                    
+
+
                     if train_len < 1 or total_len - train_len < 1:
                         logging.warning(f"Insufficient data for training/testing split for {symbol} at {granularity}")
                         continue
-
+                    
+                    step_size = max(1, (total_len - train_len) // 10)
                     # Walk-forward analysis
-                    for start_idx in range(0, total_len - train_len, train_len // 2):
+                    for start_idx in range(0, total_len - train_len, step_size):
                         try:
                             logging.info(f"Processing window: start_idx={start_idx}, train_len={train_len}")
                             train_data = data.iloc[start_idx: start_idx + train_len]
