@@ -180,12 +180,13 @@ class Strategy:
 
         return combined_signals
           
+    def ensure_series(self, data, index):
+        if isinstance(data, pd.Series):
+            return data
+        return pd.Series(data, index=index) if len(data) == len(index) else None
 
 
     def graph(self, graph_callback=None):
-        """
-        Dynamically plot the strategy components: price data, indicators, oscillators, and signals.
-        """
         try:
             # Plot candlestick for the price data
             fig1 = go.Figure(data=[go.Candlestick(
@@ -198,7 +199,6 @@ class Strategy:
             fig2 = None
             param_number = 0
 
-            # Dynamically plot indicators and oscillators
             while True:
                 param_number += 1
 
@@ -208,110 +208,69 @@ class Strategy:
                     if isinstance(ti_data_attr, tuple) and len(ti_data_attr) >= 2:
                         ti_data_name, *ti_data_list = ti_data_attr
                         for i, ti_data in enumerate(ti_data_list):
-                            try:
-                                # Ensure data is a Series with matching index
-                                ti_data_series = pd.Series(ti_data, index=self.close.index) if not isinstance(ti_data, pd.Series) else ti_data
-                                if len(ti_data_series) == len(self.close):
-                                    fig1 = ti_data_series.vbt.plot(
-                                        trace_kwargs=dict(name=f"{ti_data_name}_{i+1}"), fig=fig1
-                                    )
-                                else:
-                                    print(f"Skipping {ti_data_name}_{i+1}: incompatible length ({len(ti_data_series)} vs {len(self.close)}).")
-                            except Exception as e:
-                                print(f"Error plotting {ti_data_name}_{i+1}: {e}")
-                    else:
-                        print(f"Skipping ti{param_number}_data: invalid format.")
+                            ti_data_series = self.ensure_series(ti_data, self.close.index)
+                            if ti_data_series is not None:
+                                fig1 = ti_data_series.vbt.plot(
+                                    trace_kwargs=dict(name=f"{ti_data_name}_{i+1}"), fig=fig1
+                                )
+                            else:
+                                print(f"Skipping {ti_data_name}_{i+1}: incompatible data.")
 
-                # Plot oscillators
                 osc_data_attr = getattr(self, f"osc{param_number}_data", None)
                 if osc_data_attr:
                     if isinstance(osc_data_attr, tuple) and len(osc_data_attr) >= 2:
                         osc_data_name, *osc_data_list = osc_data_attr
                         for i, osc_data in enumerate(osc_data_list):
-                            try:
-                                # Ensure data is a Series with matching index
-                                osc_data_series = pd.Series(osc_data, index=self.close.index) if not isinstance(osc_data, pd.Series) else osc_data
-                                if len(osc_data_series) == len(self.close):
-                                    if fig2 is None:
-                                        fig2 = osc_data_series.vbt.plot(
-                                            trace_kwargs=dict(name=f"{osc_data_name}_{i+1}")
-                                        )
-                                    else:
-                                        fig2 = osc_data_series.vbt.plot(
-                                            trace_kwargs=dict(name=f"{osc_data_name}_{i+1}"), fig=fig2
-                                        )
+                            osc_data_series = self.ensure_series(osc_data, self.close.index)
+                            if osc_data_series is not None:
+                                if fig2 is None:
+                                    fig2 = osc_data_series.vbt.plot(trace_kwargs=dict(name=f"{osc_data_name}_{i+1}"))
                                 else:
-                                    print(f"Skipping {osc_data_name}_{i+1}: incompatible length ({len(osc_data_series)} vs {len(self.close)}).")
-                            except Exception as e:
-                                print(f"Error plotting {osc_data_name}_{i+1}: {e}")
-                    else:
-                        print(f"Skipping osc{param_number}_data: invalid format.")
+                                    fig2 = osc_data_series.vbt.plot(trace_kwargs=dict(name=f"{osc_data_name}_{i+1}"), fig=fig2)
 
-                # Exit loop if no more data is available
                 if not ti_data_attr and not osc_data_attr:
                     break
 
-            # Plot entry and exit signals
+            # Plot entry/exit signals
             if self.entries is not None:
-                try:
-                    if not isinstance(self.entries, pd.Series):
-                        self.entries = pd.Series(self.entries, index=self.close.index, dtype=bool)
-                    if len(self.entries) == len(self.close):
-                        fig1 = self.entries.vbt.signals.plot_as_entry_markers(self.close, fig=fig1)
-                        if fig2:
-                            fig2 = self.entries.vbt.signals.plot_as_entry_markers(fig2, fig=fig2)
-                    else:
-                        print(f"Skipping entry signals due to length mismatch: {len(self.entries)} vs {len(self.close)}")
-                except Exception as e:
-                    print(f"Error plotting entry signals: {e}")
+                self.entries = self.ensure_series(self.entries, self.close.index)
+                if self.entries is not None:
+                    fig1 = self.entries.vbt.signals.plot_as_entry_markers(self.close, fig=fig1)
 
             if self.exits is not None:
-                try:
-                    if not isinstance(self.exits, pd.Series):
-                        self.exits = pd.Series(self.exits, index=self.close.index, dtype=bool)
-                    if len(self.exits) == len(self.close):
-                        fig1 = self.exits.vbt.signals.plot_as_exit_markers(self.close, fig=fig1)
-                        if fig2:
-                            fig2 = self.exits.vbt.signals.plot_as_exit_markers(fig2, fig=fig2)
-                    else:
-                        print(f"Skipping exit signals due to length mismatch: {len(self.exits)} vs {len(self.close)}")
-                except Exception as e:
-                    print(f"Error plotting exit signals: {e}")
+                self.exits = self.ensure_series(self.exits, self.close.index)
+                if self.exits is not None:
+                    fig1 = self.exits.vbt.signals.plot_as_exit_markers(self.close, fig=fig1)
 
-            # Dynamically create subplots
+            # Combine subplots
             rows = 1 + (1 if fig2 else 0)
             fig_combined = sp.make_subplots(rows=rows, cols=1)
-
-            # Add traces from fig1 to subplot row 1
             for trace in fig1['data']:
                 fig_combined.add_trace(trace, row=1, col=1)
-
-            # Add traces from fig2 to subplot row 2, if available
             if fig2:
                 for trace in fig2['data']:
                     fig_combined.add_trace(trace, row=2, col=1)
+                if self.buy_threshold is not None:
+                    fig_combined.add_hline(y=self.buy_threshold, line_color='green', row=2, col=1)
+                if self.sell_threshold is not None:
+                    fig_combined.add_hline(y=self.sell_threshold, line_color='red', row=2, col=1)
 
-            # Add buy/sell thresholds, if defined
-            if self.buy_threshold is not None:
-                fig_combined.add_hline(y=self.buy_threshold, line_color='green', line_width=1.5, row=2, col=1)
-            if self.sell_threshold is not None:
-                fig_combined.add_hline(y=self.sell_threshold, line_color='red', line_width=1.5, row=2, col=1)
-
-            # Final layout adjustments
             fig_combined.update_layout(
                 height=800,
-                title_text=f"{self.__class__.__name__} strategy for {self.symbol} on {self.granularity} timeframe",
+                title_text=f"{self.__class__.__name__} strategy for {self.symbol} on {self.granularity}",
                 xaxis_rangeslider_visible=False
             )
+            if fig_combined is None:
+                print("Failed to create the combined figure.")
+                return
 
-            # Return or display the combined graph
             if graph_callback:
                 return graph_callback(fig_combined)
             else:
                 fig_combined.show()
-
         except Exception as e:
             print(f"Error while graphing: {e}")
+
 
 
     def generate_backtest(self):

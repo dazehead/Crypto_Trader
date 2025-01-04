@@ -72,56 +72,68 @@ def get_best_params(strategy_object, df_manager=None, live_trading=False, best_o
     
     try:
         conn = sql.connect(f'{db_path}/test_hyper.db')
-        logging.info('Connected to the database successfully.')
+        print('Connected to the database successfully.')
     except Exception as e:
-        logging.error('Failed to connect to the database: %s', e)
+        print('Failed to connect to the database:', e)
         return None
-    
-    logging.info('Getting best params')
-    logging.info('DATABASE_PATH (best params): %s/hyper.db', db_path)
+
+    print('Getting best params...')
+    print(f'DATABASE_PATH (best params): {db_path}/hyper.db')
 
     try:
         if best_of_all_granularities:
             best_results = []
             best_granularity = ''
+            best_return = float('-inf')  # To track the best return
             
             for granularity in granularities:
                 try:
-                    logging.info('Processing granularity: %s', granularity)
+                    print(f'Processing granularity: {granularity}')
                     table = f"RSI_ADX_GPU_{granularity}" if strategy_object.__class__.__name__ == "RSI_ADX_NP" else f"{strategy_object.__class__.__name__}_{granularity}"
                     
                     params = inspect.signature(strategy_object.custom_indicator)
-                    param_keys = list(dict(params.parameters).keys())[1:]
+                    param_keys = list(dict(params.parameters).keys())[1:]  # Exclude 'self'
                     parameters = ', '.join(param_keys)
-                    
-                    if strategy_object.risk_object.client is not None:
-                        symbol = utils.convert_symbols(strategy_object=strategy_object)
-                    else:
-                        symbol = strategy_object.symbol
-                    
-                    query = f'SELECT {parameters}, MAX("Total Return [%]") FROM {table} WHERE symbol="{symbol}"'
+
+                    symbol = (
+                        utils.convert_symbols(strategy_object=strategy_object)
+                        if strategy_object.risk_object.client is not None else strategy_object.symbol
+                    )
+
+                    query = f'SELECT {parameters}, MAX("Total Return [%]") AS max_return FROM {table} WHERE symbol="{symbol}"'
                     if minimum_trades is not None:
                         query += f' AND "Total Trades" >= {minimum_trades}'
-                    
-                    logging.info('Executing query: %s', query)
+                    print(f"Executing query: {query}")
+
                     result = pd.read_sql_query(query, conn)
-                    logging.info('Query result: %s', result)
+                    print(f"Query result for {granularity}:", result)
 
-                    if all(value is None for value in result.values()):
-                        print("No valid data for the given granularity and coin.")
-                    else:
-                        list_results = [result[param][0] for param in result]
+                    if result.empty or all(result.iloc[0].isnull()):
+                        print(f"No valid results for granularity: {granularity}")
+                        continue
 
-                    if not best_results or best_results[-1] < list_results[-1]:
+                    max_return = result['max_return'].iloc[0]
+                    list_results = [
+                        result[param].iloc[0] if param in result.columns else None for param in param_keys
+                    ]
+
+                    print(f"Results for {granularity}: max_return={max_return}, parameters={list_results}")
+
+                    # Update the best results if this granularity has a higher return
+                    if max_return > best_return:
+                        print(f"New best granularity: {granularity} with return: {max_return}")
+                        best_return = max_return
                         best_results = list_results
                         best_granularity = granularity
 
                 except Exception as e:
-                    logging.error('Error processing granularity %s: %s', granularity, e)
+                    print(f'Error processing granularity {granularity}:', e)
 
             try:
-                if best_granularity != strategy_object.granularity or strategy_object.granularity is None:
-                    logging.info('Granularity has changed. Updating strategy with new data.')
+                if best_granularity and (strategy_object.granularity != best_granularity or strategy_object.granularity is None):
+                    print('Granularity has changed. Updating strategy with new data.')
+                    print(f"Best granularity: {best_granularity}")
+
                     if live_trading:
                         dict_df = get_historical_from_db(
                             granularity=best_granularity,
@@ -136,52 +148,56 @@ def get_best_params(strategy_object, df_manager=None, live_trading=False, best_o
                             symbols=strategy_object.symbol,
                             num_days=num_days
                         )
-                    
+
                     if hasattr(strategy_object, 'df'):
                         strategy_object.update(dict_df)
                     
                     if live_trading and df_manager:
                         df_manager.add_to_manager(dict_df)
                         df_manager.products_granularity[list(dict_df.keys())[0]] = best_granularity
-                
-                best_results = best_results[:-1]
+
+                print(f"Final best results: {best_results[:-1]}")
+                best_results = best_results[:-1]  # Exclude the return value for parameters
             except Exception as e:
-                logging.error('Error updating strategy or DF manager: %s', e)
-            
+                print('Error updating strategy or DF manager:', e)
+
         else:
             try:
                 table = f"{strategy_object.__class__.__name__}_{strategy_object.granularity}"
                 params = inspect.signature(strategy_object.custom_indicator)
-                param_keys = list(dict(params.parameters).keys())[1:]
+                param_keys = list(dict(params.parameters).keys())[1:]  # Exclude 'self'
                 parameters = ', '.join(param_keys)
 
-                if strategy_object.risk_object.client is not None:
-                    symbol = utils.convert_symbols(strategy_object=strategy_object)
-                else:
-                    symbol = strategy_object.symbol
+                symbol = (
+                    utils.convert_symbols(strategy_object=strategy_object)
+                    if strategy_object.risk_object.client is not None else strategy_object.symbol
+                )
 
-                query = f'SELECT {parameters}, MAX("Total Return [%]") FROM {table} WHERE symbol="{symbol}"'
+                query = f'SELECT {parameters}, MAX("Total Return [%]") AS max_return FROM {table} WHERE symbol="{symbol}"'
                 if minimum_trades is not None:
                     query += f' AND "Total Trades" >= {minimum_trades}'
+                print(f"Executing query: {query}")
 
-                logging.info('Executing query: %s', query)
                 result = pd.read_sql_query(query, conn)
-                logging.info('Query result: %s', result)
+                print(f"Query result:", result)
 
-                list_results = [result[param][0] for param in result]
-                list_results = list_results[:-1]
+                list_results = [
+                    result[param].iloc[0] for param in param_keys if param in result.columns
+                ]
+                print(f"Final results for single granularity: {list_results}")
             except Exception as e:
-                logging.error('Error querying for specific granularity: %s', e)
+                print('Error querying for specific granularity:', e)
                 return None
 
     finally:
         try:
             conn.close()
-            logging.info('Database connection closed successfully.')
+            print('Database connection closed successfully.')
         except Exception as e:
-            logging.warning('Failed to close the database connection: %s', e)
+            print('Failed to close the database connection:', e)
 
     return best_results if best_of_all_granularities else list_results
+
 
 def export_optimization_results(df):
     try:
