@@ -8,6 +8,7 @@ import time
 import gc
 import sys
 from datetime import datetime
+from threading import Lock
 import os
 import logging
 import json
@@ -33,7 +34,12 @@ def get_historical_from_db(granularity, symbols: list = [], num_days: int = None
 
     if convert:
         symbols = utils.convert_symbols(lone_symbol=symbols)
-    conn = sql.connect(f'{db_path}/{granularity}.db')
+    db_lock = Lock()
+
+    def get_connection():
+        with db_lock:
+            return sql.connect(f'{db_path}/{granularity}.db')    
+    conn = get_connection()
     query = "SELECT name FROM sqlite_master WHERE type='table';"
     tables = pd.read_sql_query(query, conn)
     tables_data = {}
@@ -328,7 +334,12 @@ def export_hyper_to_db(strategy: object, hyper: object):
                           agg_func=None)
     
     # dont forget to change this when using hyper !!!
-    conn = sql.connect(f'{db_path}/test_hyper.db')
+    db_lock = Lock()
+    def get_connection():
+        with db_lock:
+            return sql.connect(f'{db_path}/test_hyper.db')
+
+    conn = get_connection()
 
     symbol = strategy.symbol
     granularity = strategy.granularity

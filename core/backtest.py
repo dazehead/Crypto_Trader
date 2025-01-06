@@ -29,6 +29,7 @@ from core.strategies.gpu_optimized.rsi_bollinger_np import BollingerBands_RSI
 from core.risk import Risk_Handler
 from core.log import LinkedList
 from core.hyper import Hyper
+from concurrent.futures import ThreadPoolExecutor
 import plotly
 from io import BytesIO
 from PIL import Image
@@ -42,6 +43,9 @@ logging.getLogger("numpy").setLevel(logging.WARNING)
 
 # Set your own logging level if needed
 logging.basicConfig(level=logging.INFO) 
+import tracemalloc
+
+
 
 
 
@@ -238,138 +242,157 @@ class Backtest():
                 # x_level = 'cust_fast_window',
                 # y_level = 'cust_slow_window')
                 # fig.show()
-    def run_optimization_tests(self, strategy_class, param_ranges, train_test_split=0.7):
+
+    def chunk_dataframe(slef, df, chunk_size):
         """
-        Run optimization tests with walk-forward analysis for multiple symbols and granularities.
+        Splits a DataFrame into smaller chunks of specified size.
 
         Args:
-            strategy_class: The strategy class to test (e.g., RSI_ADX_GPU).
-            param_ranges: Dictionary of hyperparameter ranges for optimization.
-            train_test_split: Proportion of data to use for training (default: 70% train, 30% test).
+            df (pd.DataFrame): The DataFrame to chunk.
+            chunk_size (int): The size of each chunk.
+
+        Yields:
+            pd.DataFrame: A chunk of the original DataFrame.
         """
+        for start_idx in range(0, len(df), chunk_size):
+            yield df.iloc[start_idx:start_idx + chunk_size]
+
+    def process_symbol(self, symbol, granularity, num_days, train_test_split, strategy_class, param_ranges, risk, chunk_size=1000):
+        try:
+            logging.info(f"Fetching historical data for {symbol} at {granularity}")
+            dict_df = database_interaction.get_historical_from_db(
+                granularity=granularity,
+                symbols=symbol,
+                num_days=num_days
+            )
+            if not dict_df or symbol not in dict_df:
+                logging.warning(f"No data available for {symbol} at {granularity}")
+                return None
+
+            data = dict_df[symbol].astype(np.float32)  # Reduce precision to optimize memory
+            logging.info(f"Fetched data for {symbol}: {data.shape[0]} rows")
+
+            results = []
+            
+            for chunk in self.chunk_dataframe(data, chunk_size):
+                total_len = len(chunk)
+                train_len = int(total_len * train_test_split)
+
+                if train_len < 1 or total_len - train_len < 1:
+                    logging.warning(f"Insufficient data for training/testing split in chunk for {symbol} at {granularity}")
+                    continue
+
+                step_size = max(1, (total_len - train_len) // 10)
+
+                # Walk-forward analysis within the chunk
+                for start_idx in range(0, total_len - train_len, step_size):
+                    try:
+                        logging.info(f"Processing window: start_idx={start_idx}, train_len={train_len}")
+                        train_data = chunk.iloc[start_idx: start_idx + train_len]
+                        test_data = chunk.iloc[start_idx + train_len: start_idx + 2 * train_len]
+
+                        if len(test_data) < 1:
+                            logging.warning(f"Skipping incomplete test window in chunk for {symbol} at {granularity}")
+                            break
+
+                        gc.collect()
+                        strat_train = strategy_class(
+                            dict_df={symbol: train_data},
+                            risk_object=risk,
+                            with_sizing=True
+                        )
+                        hyper = Hyper(
+                            strategy_object=strat_train,
+                            close=strat_train.close,
+                            **param_ranges
+                        )
+
+                        database_interaction.export_hyper_to_db(
+                            strategy=strat_train,
+                            hyper=hyper
+                        )
+
+                        best_params = database_interaction.get_best_params(strat_train)
+                        logging.info(f"Best params for {symbol} at {granularity}: {best_params}")
+
+                        strat_test = strategy_class(
+                            dict_df={symbol: test_data},
+                            risk_object=risk,
+                            with_sizing=True
+                        )
+                        strat_test.custom_indicator(None, *best_params)
+                        strat_test.generate_backtest()
+                        stats = strat_test.portfolio.stats(silence_warnings=True).to_dict()
+
+                        filtered_stats = {
+                            key: stats[key]
+                            for key in [
+                                'Total Return [%]',
+                                'Total Trades',
+                                'Win Rate [%]',
+                                'Best Trade [%]',
+                                'Worst Trade [%]',
+                                'Avg Winning Trade [%]',
+                                'Avg Losing Trade [%]',
+                            ]
+                            if key in stats
+                        }
+
+                        filtered_stats.update({
+                            "symbol": symbol,
+                            "granularity": granularity,
+                            "start_idx": start_idx,
+                            "end_idx": start_idx + train_len,
+                        })
+
+                        results.append(filtered_stats)
+
+                        del train_data, test_data, strat_train, strat_test, hyper
+                        gc.collect()
+
+                    except MemoryError:
+                        logging.error(f"MemoryError at window: start_idx={start_idx}. Skipping window.", exc_info=True)
+                        continue
+                    except Exception as e:
+                        logging.error(f"Error during walk-forward window processing in chunk: {e}", exc_info=True)
+
+            return results
+
+        except Exception as e:
+            logging.error(f"Error processing {symbol} at {granularity}: {e}", exc_info=True)
+            return None
+
+    def run_optimization_tests(self, strategy_class, param_ranges, train_test_split=0.7):
+        tracemalloc.start()
+
         results = []
         risk = Risk_Handler()
 
         for granularity in self.granularites:
             num_days = {
                 'ONE_MINUTE': 25,
-                'FIVE_MINUTE': 50,
-                'FIFTEEN_MINUTE': 100,
-                'THIRTY_MINUTE': 150,
-                'ONE_HOUR': 250,
-                'TWO_HOUR': 365,
-                'SIX_HOUR':365,
-                'ONE_DAY':365,
-            }.get(granularity,365)
+                'FIVE_MINUTE': 125,
+                'FIFTEEN_MINUTE': 375,
+                'THIRTY_MINUTE': 750,
+                'ONE_HOUR': 1500,
+                'TWO_HOUR': 3000,
+                'SIX_HOUR': 3000,
+                'ONE_DAY': 3000,
+            }.get(granularity, 3000)
 
             logging.info(f"Processing granularity: {granularity}, num_days: {num_days}")
 
-            for symbol in self.symbols:
-                try:
-                    # Fetch historical data
-                    logging.info(f"Fetching historical data for {symbol} at {granularity}")
-                    dict_df = database_interaction.get_historical_from_db(
-                        granularity=granularity,
-                        symbols=symbol,
-                        num_days=num_days
-                    )
-                    if not dict_df or symbol not in dict_df:
-                        logging.warning(f"No data available for {symbol} at {granularity}")
-                        continue
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                futures = [
+                    executor.submit(self.process_symbol, symbol, granularity, num_days, train_test_split, strategy_class, param_ranges, risk)
+                    for symbol in self.symbols
+                ]
+                for future in futures:
+                    result = future.result()
+                    if result:
+                        results.extend(result)
 
-                    data = dict_df[symbol]
-                    logging.info(f"Fetched data for {symbol}: {data.shape[0]} rows")
-
-                    total_len = len(data)
-                    train_len = int(total_len * train_test_split)
-
-                    
-
-
-                    if train_len < 1 or total_len - train_len < 1:
-                        logging.warning(f"Insufficient data for training/testing split for {symbol} at {granularity}")
-                        continue
-                    
-                    step_size = max(1, (total_len - train_len) // 10)
-                    # Walk-forward analysis
-                    for start_idx in range(0, total_len - train_len, step_size):
-                        try:
-                            logging.info(f"Processing window: start_idx={start_idx}, train_len={train_len}")
-                            train_data = data.iloc[start_idx: start_idx + train_len]
-                            test_data = data.iloc[start_idx + train_len: start_idx + 2 * train_len]
-
-                            if len(test_data) < 1:
-                                logging.warning(f"Skipping incomplete test window for {symbol} at {granularity}")
-                                break
-
-                            # Optimize on train_data
-                            strat_train = strategy_class(
-                                dict_df={symbol: train_data},
-                                risk_object=risk,
-                                with_sizing=True
-                            )
-                            hyper = Hyper(
-                                strategy_object=strat_train,
-                                close=strat_train.close,
-                                **param_ranges
-                            )
-
-                            database_interaction.export_hyper_to_db(
-                                strategy=strat_train,
-                                hyper=hyper
-                            )
-
-                            best_params = database_interaction.get_best_params(strat_train)
-                            logging.info(f"Best params for {symbol} at {granularity}: {best_params}")
-
-                            # Test on test_data
-                            strat_test = strategy_class(
-                                dict_df={symbol: test_data},
-                                risk_object=risk,
-                                with_sizing=True
-                            )
-                            strat_test.custom_indicator(None, *best_params)
-                            strat_test.generate_backtest()
-                            stats = strat_test.portfolio.stats(silence_warnings=True).to_dict()
-                            stats = strat_test.portfolio.stats(silence_warnings=True).to_dict()
-
-                            # Filter stats to only include the specified metrics
-                            filtered_stats = {
-                                key: stats[key]
-                                for key in [
-                                    'Total Return [%]',
-                                    'Total Trades',
-                                    'Win Rate [%]',
-                                    'Best Trade [%]',
-                                    'Worst Trade [%]',
-                                    'Avg Winning Trade [%]',
-                                    'Avg Losing Trade [%]',
-                                ]
-                                if key in stats
-                            }
-
-                            # Add additional metadata fields
-                            filtered_stats.update({
-                                "symbol": symbol,
-                                "granularity": granularity,
-                                "start_idx": start_idx,
-                                "end_idx": start_idx + train_len,
-                            })
-
-                            # Add to results
-                            results.append(filtered_stats)
-
-
-                            del strat_train, strat_test, hyper
-                            gc.collect()
-                        except Exception as e:
-                            logging.error(f"Error during walk-forward window processing: {e}", exc_info=True)
-                except Exception as e:
-                    logging.error(f"Error processing {symbol} at {granularity}: {e}", exc_info=True)
-
-        # Convert results to DataFrame for easier analysis
         results_df = pd.DataFrame(results)
-
 
         if results_df.empty:
             logging.warning("Results DataFrame is empty. Nothing to export.")
@@ -385,3 +408,43 @@ class Backtest():
 
         return results_df
 
+
+    def run_optuna_backtest(self, symbol, granularity, strategy_obj, num_days, sizing, params):
+        print(f"Running Optuna Backtest for {symbol} on {granularity}")
+        print(f"Parameters: {params}")
+        dict_df = database_interaction.get_historical_from_db(
+            granularity=granularity,
+            symbols=symbol,
+            num_days=num_days
+        )
+        if not dict_df:
+            raise ValueError("No historical data found for the given parameters.")
+
+        for key, value in dict_df.items():
+            try:
+                current_dict = {key: value}
+                risk = Risk_Handler()
+
+                # Initialize strategy with the dictionary and sizing
+                strat = strategy_obj(
+                    dict_df=current_dict,
+                    risk_object=risk,
+                    with_sizing=sizing,
+                )
+
+                # Apply the Optuna parameters
+                strat.custom_indicator(**params)
+
+                # Run backtest
+                strat.generate_backtest()
+                pf = strat.portfolio
+
+                # Return relevant performance metrics
+                stats = pf.stats().to_dict()
+                print(f"Stats for {symbol}: {stats}")
+                return stats
+            except Exception as e:
+                print(f"Error in backtest for {key}: {e}")
+                return {"error": str(e)}
+
+        return {"error": "No data processed"}
