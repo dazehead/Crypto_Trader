@@ -52,7 +52,7 @@ import tracemalloc
 
 class Backtest():
     def __init__(self):
-        self.symbols = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
+        self.symbols = ['BTC-USD', 'ETH-USD'] #, 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD'
         self.granularites = ['ONE_MINUTE','FIVE_MINUTE','FIFTEEN_MINUTE','THIRTY_MINUTE','ONE_HOUR','TWO_HOUR','SIX_HOUR','ONE_DAY']
         self.product = ['XTZ-USD']
         self.granularity = 'ONE_MINUTE'
@@ -257,7 +257,7 @@ class Backtest():
         for start_idx in range(0, len(df), chunk_size):
             yield df.iloc[start_idx:start_idx + chunk_size]
 
-    def process_symbol(self, symbol, granularity, num_days, train_test_split, strategy_class, param_ranges, risk, chunk_size=1000):
+    def process_symbol(self, symbol, granularity, num_days, train_test_split, strategy_class, param_ranges, risk, chunk_size=10000):
         try:
             logging.info(f"Fetching historical data for {symbol} at {granularity}")
             dict_df = database_interaction.get_historical_from_db(

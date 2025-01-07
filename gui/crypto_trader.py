@@ -84,6 +84,11 @@ class CryptoTrader():
             frame_name = f'{symbol}_graph' 
             self.__setattr__(frame_name, Canvas(self.graph_notebook, width=500, height=400, background='gray'))
             self.graph_notebook.add(self.__getattribute__(frame_name), text=symbol)
+            self.DEFAULT_graph = Canvas(self.graph_notebook, width=500, height=400, background='gray')
+            self.DEFAULT_graph = Canvas(self.graph_notebook, width=500, height=400, background='gray')
+            self.graph_notebook.add(self.DEFAULT_graph, text="DEFAULT")
+
+
 
         # backtest page content
 
@@ -205,8 +210,16 @@ class CryptoTrader():
 
 
     def update_graph(self, fig, strat=None):
+
+        print(f"update_graph called with strat: {strat}, fig: {fig}")
+        if fig is None:
+            print("No figure provided for graph update.")
+            return
+        # Rest of the logic here
+
         try:
             strat_symbol = utils.convert_symbols(strat, to_robinhood=True) if strat else "DEFAULT"
+            print(f"Updating graph for {strat_symbol}...")
             if fig is None:
                 print("No figure provided for graph update.")
                 return

@@ -9,7 +9,7 @@ load_dotenv()
 
 db_path = os.getenv('DATABASE_PATH')
 print("DATABASE_PATH : ", db_path)  # Ensure the correct database path is printed
-study_name = "RSI_ADX_GPU_Optimization2"
+study_name = "hyperparameter_optimization"
 
 class BacktestWithBayesian(Backtest):
     def run_bayesian_optimization(self, strategy_class, n_trials=100):
@@ -41,7 +41,7 @@ class BacktestWithBayesian(Backtest):
             study = optuna.create_study(
                 direction='maximize', 
                 study_name=study_name, 
-                storage=f"sqlite:///{db_path}/new_backtest.db"
+                storage=f"sqlite:///{db_path}/hyper_optuna.db"
             )
             print(f"Study '{study_name}' created successfully.")
         except optuna.exceptions.DuplicatedStudyError:
@@ -49,7 +49,7 @@ class BacktestWithBayesian(Backtest):
             # Load the existing study if it already exists
             study = optuna.load_study(
                 study_name=study_name, 
-                storage=f"sqlite:///{db_path}/new_backtest.db"
+                storage=f"sqlite:///{db_path}/hyper_optuna.db"
             )
 
         # Ensure the study variable is defined
@@ -63,7 +63,7 @@ class BacktestWithBayesian(Backtest):
 
     def export_optimization_results_to_db(self, study, strategy_class):
         """Export Bayesian optimization results to the database."""
-        conn = sql.connect(f'{db_path}/new_backtest.db')
+        conn = sql.connect(f'{db_path}/hyper_optuna.db')
         table_name = f"OptunaOptimization_{strategy_class.__name__}"
 
         # Create table if it doesn't exist

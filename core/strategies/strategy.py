@@ -187,8 +187,9 @@ class Strategy:
 
 
     def graph(self, graph_callback=None):
+        print(f"Data available - Close: {len(self.close)}, Entries: {self.entries is not None}, Exits: {self.exits is not None}")
         try:
-            # Plot candlestick for the price data
+            # Initialize the candlestick figure
             fig1 = go.Figure(data=[go.Candlestick(
                 x=self.close.index,
                 open=self.open,
@@ -199,10 +200,9 @@ class Strategy:
             fig2 = None
             param_number = 0
 
+            # Add technical indicators
             while True:
                 param_number += 1
-
-                # Plot technical indicators
                 ti_data_attr = getattr(self, f"ti{param_number}_data", None)
                 if ti_data_attr:
                     if isinstance(ti_data_attr, tuple) and len(ti_data_attr) >= 2:
@@ -231,20 +231,25 @@ class Strategy:
                 if not ti_data_attr and not osc_data_attr:
                     break
 
-            # Plot entry/exit signals
+            # Add entry/exit markers
             if self.entries is not None:
                 self.entries = self.ensure_series(self.entries, self.close.index)
                 if self.entries is not None:
                     fig1 = self.entries.vbt.signals.plot_as_entry_markers(self.close, fig=fig1)
+                else:
+                    print("Entries are incompatible with graphing.")
 
             if self.exits is not None:
                 self.exits = self.ensure_series(self.exits, self.close.index)
                 if self.exits is not None:
                     fig1 = self.exits.vbt.signals.plot_as_exit_markers(self.close, fig=fig1)
+                else:
+                    print("Exits are incompatible with graphing.")
 
             # Combine subplots
             rows = 1 + (1 if fig2 else 0)
             fig_combined = sp.make_subplots(rows=rows, cols=1)
+            
             for trace in fig1['data']:
                 fig_combined.add_trace(trace, row=1, col=1)
             if fig2:
@@ -260,14 +265,20 @@ class Strategy:
                 title_text=f"{self.__class__.__name__} strategy for {self.symbol} on {self.granularity}",
                 xaxis_rangeslider_visible=False
             )
-            if fig_combined is None:
-                print("Failed to create the combined figure.")
+
+            # Final check for combined figure
+            if not fig_combined or len(fig_combined.data) == 0:
+                print("Error: Combined figure is empty.")
                 return
 
+            # Display or call callback
             if graph_callback:
-                return graph_callback(fig_combined)
+                print("Graph callback is being called with a figure.")
+                graph_callback(fig_combined)
             else:
+                print("Displaying the figure directly.")
                 fig_combined.show()
+
         except Exception as e:
             print(f"Error while graphing: {e}")
 
