@@ -42,6 +42,7 @@ class CryptoTrader():
 
     def run_setup_tasks(self):
         self.livetrader.update_candle_data(callback=self.update_setup_label)
+        print("Candle data updated.")
 
         # this loads GPU as of right now need something to pick strategy
         #self.livetrader.load_strategy_params_for_strategy()
@@ -211,7 +212,7 @@ class CryptoTrader():
 
     def update_graph(self, fig, strat=None):
 
-        print(f"update_graph called with strat: {strat}, fig: {fig}")
+        print(f"update_graph called with strat: {strat}")
         if fig is None:
             print("No figure provided for graph update.")
             return

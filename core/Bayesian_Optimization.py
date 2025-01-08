@@ -1,6 +1,7 @@
 import optuna
 from core.backtest import Backtest
 from core.strategies.gpu_optimized.rsi_adx_gpu import RSI_ADX_GPU
+import core.database_interaction as database_interaction
 import sqlite3 as sql
 from dotenv import load_dotenv
 import os
@@ -59,40 +60,7 @@ class BacktestWithBayesian(Backtest):
         study.optimize(objective, n_trials=n_trials)
 
         # Export the results
-        self.export_optimization_results_to_db(study, strategy_class)
-
-    def export_optimization_results_to_db(self, study, strategy_class):
-        """Export Bayesian optimization results to the database."""
-        conn = sql.connect(f'{db_path}/hyper_optuna.db')
-        table_name = f"OptunaOptimization_{strategy_class.__name__}"
-
-        # Create table if it doesn't exist
-        conn.execute(f"""
-            CREATE TABLE IF NOT EXISTS "{table_name}" (
-                trial_id INTEGER PRIMARY KEY,
-                params TEXT,
-                value REAL
-            )
-        """)
-
-        # Insert the results
-        for trial in study.trials:
-            params = str(trial.params)
-            value = trial.value
-            
-            # Check if trial_id already exists
-            cursor = conn.execute(f"SELECT COUNT(1) FROM {table_name} WHERE trial_id = ?", (trial.number,))
-            exists = cursor.fetchone()[0]
-            
-            if exists == 0:
-                # If trial_id doesn't exist, insert it
-                conn.execute(f"""
-                    INSERT INTO "{table_name}" (trial_id, params, value)
-                    VALUES (?, ?, ?)
-                """, (trial.number, params, value))
-
-        conn.commit()
-        conn.close()
+        database_interaction.export_optimization_results_to_db(study, strategy_class)
 
 
 backtest_instance = BacktestWithBayesian()
