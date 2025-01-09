@@ -6,7 +6,7 @@ from core.log import LinkedList
 from core.strategies.strategy import Strategy
 from core.strategies.single.rsi import RSI
 from core.strategies.double.rsi_adx import RSI_ADX
-from core.strategies.gpu_optimized.rsi_adx_gpu import RSI_ADX_GPU
+from core.strategies.gpu_optimized.GPU.rsi_adx_gpu import RSI_ADX_GPU
 from core.trade import Trade
 from core.scanner import Scanner
 from core.risk import Risk_Handler

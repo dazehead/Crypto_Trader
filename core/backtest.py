@@ -23,8 +23,8 @@ from core.strategies.single.adx import ADX
 from core.strategies.single.bollinger import BollingerBands
 from core.strategies.double.rsi_adx import RSI_ADX
 from core.strategies.combined_strategy import Combined_Strategy
-from core.strategies.gpu_optimized.rsi_adx_gpu import RSI_ADX_GPU
-from core.strategies.gpu_optimized.rsi_adx_np import RSI_ADX_NP
+from core.strategies.gpu_optimized.GPU.rsi_adx_gpu import RSI_ADX_GPU
+from core.strategies.gpu_optimized.NP.rsi_adx_np import RSI_ADX_NP
 from core.strategies.gpu_optimized.rsi_bollinger_np import BollingerBands_RSI
 from core.risk import Risk_Handler
 from core.log import LinkedList
@@ -392,11 +392,19 @@ class Backtest():
                     if result:
                         results.extend(result)
 
+        # Convert results to DataFrame
         results_df = pd.DataFrame(results)
 
         if results_df.empty:
             logging.warning("Results DataFrame is empty. Nothing to export.")
             return
+
+        # Identify the row with the best parameters based on a metric (e.g., 'Total Return [%]')
+        if 'Total Return [%]' in results_df.columns:
+            best_index = results_df['Total Return [%]'].idxmax()
+            results_df['is_best'] = False  # Add a column to mark the best result
+            results_df.loc[best_index, 'is_best'] = True
+            logging.info(f"Best parameters: {results_df.loc[best_index]}")
 
         logging.info(f"Results DataFrame:\n{results_df.head()}")
 
@@ -407,6 +415,7 @@ class Backtest():
             logging.error(f"Error exporting optimization results: {e}", exc_info=True)
 
         return results_df
+
 
 
     def run_optuna_backtest(self, symbol, granularity, strategy_obj, num_days, sizing, params):
@@ -448,3 +457,5 @@ class Backtest():
                 return {"error": str(e)}
 
         return {"error": "No data processed"}
+    
+

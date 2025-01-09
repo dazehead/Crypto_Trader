@@ -10,7 +10,7 @@ from core.scanner import Scanner
 from core.risk import Risk_Handler
 from core.kraken_wrapper import Kraken
 from core.strategies.double.rsi_adx import RSI_ADX
-from core.strategies.gpu_optimized.rsi_adx_gpu import RSI_ADX_GPU
+from core.strategies.gpu_optimized.GPU.rsi_adx_gpu import RSI_ADX_GPU
 import datetime as dt
 
 granularity = 'ONE_MINUTE'

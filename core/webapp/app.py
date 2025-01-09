@@ -2,8 +2,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from ..backtest import Backtest
 from ..strategies.single.rsi import RSI
-from ..strategies.gpu_optimized.rsi_adx_np import RSI_ADX_NP
-from ..strategies.gpu_optimized.rsi_adx_gpu import RSI_ADX_GPU
+from ..strategies.gpu_optimized.NP.rsi_adx_np import RSI_ADX_NP
+from ..strategies.gpu_optimized.GPU.rsi_adx_gpu import RSI_ADX_GPU
 from ..strategies.gpu_optimized.rsi_bollinger_np import BollingerBands_RSI
 import base64
 import plotly.io as pio
