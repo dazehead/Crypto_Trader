@@ -3,7 +3,7 @@ import optuna
 from core.backtest import Backtest
 from core.strategies.gpu_optimized.GPU.rsi_adx_gpu import RSI_ADX_GPU
 import core.database_interaction as database_interaction
-from core.strategies.gpu_optimized.NP.bollinger_vwap import Bollinger_VWAP
+from core.strategies.gpu_optimized.GPU.bollinger_vwap_gpu import BollingerBands_VWAP_GPU
 import sqlite3 as sql
 from dotenv import load_dotenv
 import os
@@ -21,12 +21,11 @@ def optimize_worker(strategy_class, symbol, granularity, db_path, n_trials):
     def objective(trial):
         start_time = time.time()
         params = {
-            'rsi_window': trial.suggest_int('rsi_window', 5, 50),
-            'buy_threshold': trial.suggest_int('buy_threshold', 10, 30),
-            'sell_threshold': trial.suggest_int('sell_threshold', 70, 90),
-            'adx_time_period': trial.suggest_int('adx_time_period', 10, 50),
-            'adx_buy_threshold': trial.suggest_int('adx_buy_threshold', 20, 50),
+            'bb_period': trial.suggest_int('bb_period', 10, 50),
+            'bb_dev': trial.suggest_float('bb_dev', 1.0, 3.0, step=0.1),
+            'vwap_window': trial.suggest_int('vwap_window', 5, 50),  
         }
+
 
         stats = backtest_instance.run_optuna_backtest(
             symbol=symbol,
@@ -37,6 +36,9 @@ def optimize_worker(strategy_class, symbol, granularity, db_path, n_trials):
             params=params
         )
 
+        
+        end_time = time.time() - start_time
+        trial_durations.append(end_time)
         return stats.get('Total Return [%]', -1)
 
     try:
@@ -62,15 +64,15 @@ def optimize_worker(strategy_class, symbol, granularity, db_path, n_trials):
 
 # Multiprocessing
 if __name__ == "__main__":
-    symbols = ['BTC-USD', 'ETH-USD'] #, 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD'
+    symbols = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD'] #
     granularity = ['ONE_MINUTE','FIVE_MINUTE','FIFTEEN_MINUTE','THIRTY_MINUTE','ONE_HOUR','TWO_HOUR','SIX_HOUR','ONE_DAY']
-     # Example granularities
+
     n_trials = 100
-    num_workers = 4  # Adjust based on available CPU cores
+    num_workers = 10  
 
     pool = multiprocessing.Pool(processes=num_workers)
     tasks = [
-        (RSI_ADX_GPU, symbol, gran, db_path, n_trials)
+        (BollingerBands_VWAP_GPU, symbol, gran, db_path, n_trials)
         for symbol in symbols
         for gran in granularity
     ]

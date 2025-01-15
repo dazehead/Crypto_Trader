@@ -28,7 +28,8 @@ from core.strategies.double.rsi_adx import RSI_ADX
 from core.strategies.combined_strategy import Combined_Strategy
 from core.strategies.gpu_optimized.GPU.rsi_adx_gpu import RSI_ADX_GPU
 from core.strategies.gpu_optimized.NP.rsi_adx_np import RSI_ADX_NP
-from core.strategies.gpu_optimized.rsi_bollinger_np import BollingerBands_RSI
+from core.strategies.gpu_optimized.NP.rsi_bollinger_np import BollingerBands_RSI
+from core.strategies.gpu_optimized.GPU.bollinger_vwap_gpu import BollingerBands_VWAP_GPU
 from core.risk import Risk_Handler
 from core.log import LinkedList
 from core.hyper import Hyper

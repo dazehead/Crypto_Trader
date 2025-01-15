@@ -27,6 +27,7 @@ class Hyper(Strategy):
                 setattr(self, key, value) # dont think we need this it sets self.close = object
             else:
                 self.params[key] = value
+                print(f"Param: {key} = {value}")
 
         self.ind = self.build_indicator_factory()
         self.res = self.generate_signals()

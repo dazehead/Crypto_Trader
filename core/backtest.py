@@ -25,7 +25,7 @@ from core.strategies.double.rsi_adx import RSI_ADX
 from core.strategies.combined_strategy import Combined_Strategy
 from core.strategies.gpu_optimized.GPU.rsi_adx_gpu import RSI_ADX_GPU
 from core.strategies.gpu_optimized.NP.rsi_adx_np import RSI_ADX_NP
-from core.strategies.gpu_optimized.rsi_bollinger_np import BollingerBands_RSI
+from core.strategies.gpu_optimized.GPU.bollinger_vwap_gpu import BollingerBands_VWAP_GPU
 from core.risk import Risk_Handler
 from core.log import LinkedList
 from core.hyper import Hyper
@@ -52,8 +52,8 @@ import tracemalloc
 
 class Backtest():
     def __init__(self):
-        self.symbols = ['BTC-USD', 'ETH-USD'] #, 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD'
-        self.granularites = ['ONE_MINUTE','FIVE_MINUTE','FIFTEEN_MINUTE','THIRTY_MINUTE','ONE_HOUR','TWO_HOUR','SIX_HOUR','ONE_DAY']
+        self.symbols = ['LINK-USD', 'XLM-USD'] #'BTC-USD', 'ETH-USD', , 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD'
+        self.granularites = ['THIRTY_MINUTE','ONE_HOUR','TWO_HOUR','SIX_HOUR','ONE_DAY']#'ONE_MINUTE','FIVE_MINUTE','FIFTEEN_MINUTE',
         self.product = ['XTZ-USD']
         self.granularity = 'ONE_MINUTE'
         
@@ -364,6 +364,8 @@ class Backtest():
 
     def run_optimization_tests(self, strategy_class, param_ranges, train_test_split=0.7):
         tracemalloc.start()
+        # print("Printing param ranges...")
+        # print(param_ranges)
 
         results = []
         risk = Risk_Handler()
@@ -382,7 +384,7 @@ class Backtest():
 
             logging.info(f"Processing granularity: {granularity}, num_days: {num_days}")
 
-            with ThreadPoolExecutor(max_workers=2) as executor:
+            with ThreadPoolExecutor(max_workers=1) as executor:
                 futures = [
                     executor.submit(self.process_symbol, symbol, granularity, num_days, train_test_split, strategy_class, param_ranges, risk)
                     for symbol in self.symbols

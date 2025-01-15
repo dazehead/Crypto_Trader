@@ -348,10 +348,14 @@ def export_hyper_to_db(strategy: object, hyper: object):
     params = list(dict(params.parameters).keys())[1:]
     combined_df = pd.DataFrame()
 
+
     for i in range(len(data)):
         stats = data.iloc[i]
+        print(f"Stats: {stats}")
+        print(f"Stats name: {stats.name}")
         backtest_dict = {'symbol': symbol}
         for j,param in enumerate(params):
+            print(j, param, stats.name[j])
             backtest_dict[param] = stats.name[j]
 
         for key, value in stats.items():
