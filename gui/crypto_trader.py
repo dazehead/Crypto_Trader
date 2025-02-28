@@ -42,6 +42,7 @@ class CryptoTrader():
 
     def run_setup_tasks(self):
         self.livetrader.update_candle_data(callback=self.update_setup_label)
+        print("Candle data updated.")
 
         # this loads GPU as of right now need something to pick strategy
         #self.livetrader.load_strategy_params_for_strategy()
@@ -84,6 +85,11 @@ class CryptoTrader():
             frame_name = f'{symbol}_graph' 
             self.__setattr__(frame_name, Canvas(self.graph_notebook, width=500, height=400, background='gray'))
             self.graph_notebook.add(self.__getattribute__(frame_name), text=symbol)
+            self.DEFAULT_graph = Canvas(self.graph_notebook, width=500, height=400, background='gray')
+            self.DEFAULT_graph = Canvas(self.graph_notebook, width=500, height=400, background='gray')
+            self.graph_notebook.add(self.DEFAULT_graph, text="DEFAULT")
+
+
 
         # backtest page content
 
@@ -207,24 +213,38 @@ class CryptoTrader():
 
 
     def update_graph(self, fig, strat=None):
-            if strat:
-                strat_symbol = utils.convert_symbols(strat, to_robinhood=True)
-            else:
-                strat_symbol = "NOT SURE YET"
 
+        print(f"update_graph called with strat: {strat}")
+        if fig is None:
+            print("No figure provided for graph update.")
+            return
+        # Rest of the logic here
+
+        try:
+            strat_symbol = utils.convert_symbols(strat, to_robinhood=True) if strat else "DEFAULT"
+            print(f"Updating graph for {strat_symbol}...")
+            if fig is None:
+                print("No figure provided for graph update.")
+                return
+            
             plotly.io.orca.config.executable = path_to_orca
             plotly.io.orca.config.save()
 
-            # plotly.io.write_image(fig=fig, file='gui/images/backtest_graph/graph.png', format="png", width=500, height=400, engine='orca')
-            # print('converted plotly to image')
-
+            # Convert the figure to an image
             image_buffer = BytesIO()
             plotly.io.write_image(fig, image_buffer, format='png', width=500, height=400, engine='orca')
             image_buffer.seek(0)
             image = Image.open(image_buffer)
-            setattr(self, f"{strat_symbol}_graph_image", ImageTk.PhotoImage(image)) 
+            setattr(self, f"{strat_symbol}_graph_image", ImageTk.PhotoImage(image))
 
-            getattr(self, f"{strat_symbol}_graph").create_image(0, 0, image=getattr(self, f"{strat_symbol}_graph_image"), anchor='nw')
+            if hasattr(self, f"{strat_symbol}_graph"):
+                getattr(self, f"{strat_symbol}_graph").create_image(
+                    0, 0, image=getattr(self, f"{strat_symbol}_graph_image"), anchor='nw'
+                )
+            else:
+                print(f"Graph widget for {strat_symbol} does not exist.")
+        except Exception as e:
+            print("Error updating graph: %s", e)
 
     
     def start_live_trade(self):

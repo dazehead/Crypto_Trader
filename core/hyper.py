@@ -27,9 +27,13 @@ class Hyper(Strategy):
                 setattr(self, key, value) # dont think we need this it sets self.close = object
             else:
                 self.params[key] = value
+                print(f"Param: {key} = {value}")
 
         self.ind = self.build_indicator_factory()
         self.res = self.generate_signals()
+        if self.res is None or not hasattr(self.res, 'value'):
+            print("Invalid 'res' object. Skipping processing.")
+
         self.entries, self.exits = self.convert_signals()
         self.pf = self.run_portfolio()
         self.returns = self.pf.total_return() #to view print(self.returns.to_string())
@@ -131,7 +135,7 @@ class Hyper(Strategy):
             freq=freq,
             size_type=size_type,
             accumulate=accumulate,
-            init_cash=init_cash
+            init_cash=init_cash,
         )
        
 

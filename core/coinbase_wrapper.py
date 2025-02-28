@@ -14,11 +14,14 @@ import sys
 
 class Coinbase_Wrapper():
     def __init__(self):
-        load_dotenv()
+        load_dotenv(override=True)
 
         self.db_path = os.getenv('DATABASE_PATH')
         self.api_key = os.getenv('DOTENV_API_KEY_COINBASE')
         self.api_secret = os.getenv('DOTENV_API_PRIVATE_KEY_COINBASE')
+
+        print("API KEY COINBASE :",self.api_key)
+        print("API SECRET COINBASE :",self.api_secret)
         self.client = RESTClient(api_key=self.api_key, api_secret=self.api_secret)
         self.coinbase_robin_crypto = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SHIB-USD', 'AVAX-USD', 'BCH-USD', 'LINK-USD', 'UNI-USD', 'LTC-USD', 'XLM-USD', 'ETC-USD', 'AAVE-USD', 'XTZ-USD', 'COMP-USD']
 

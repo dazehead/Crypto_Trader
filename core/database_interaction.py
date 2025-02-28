@@ -8,18 +8,38 @@ import time
 import gc
 import sys
 from datetime import datetime
+from threading import Lock
 import os
+import logging
+import json
+import pandas as pd
+import logging
+
+# Suppress debug logs from libraries
+logging.getLogger("numba").setLevel(logging.WARNING)
+logging.getLogger("matplotlib").setLevel(logging.WARNING)
+logging.getLogger("numpy").setLevel(logging.WARNING)
+
+# Set your own logging level if needed
+logging.basicConfig(level=logging.INFO)  # Set to DEBUG, INFO, WARNING, ERROR, CRITICAL as needed
+
 
 from dotenv import load_dotenv
 load_dotenv()
 
 db_path = os.getenv('DATABASE_PATH')
+print("DATABASE_PATH : ", db_path)
 def get_historical_from_db(granularity, symbols: list = [], num_days: int = None, convert=False):
     original_symbol = symbols
 
     if convert:
         symbols = utils.convert_symbols(lone_symbol=symbols)
-    conn = sql.connect(f'{db_path}/{granularity}.db')
+    db_lock = Lock()
+
+    def get_connection():
+        with db_lock:
+            return sql.connect(f'{db_path}/{granularity}.db')    
+    conn = get_connection()
     query = "SELECT name FROM sqlite_master WHERE type='table';"
     tables = pd.read_sql_query(query, conn)
     tables_data = {}
@@ -53,128 +73,251 @@ def get_historical_from_db(granularity, symbols: list = [], num_days: int = None
     return tables_data
 
 
-def get_best_params(strategy_object, df_manager=None,live_trading=False, best_of_all_granularities=False, minimum_trades=None, with_lowest_losing_average=False):
+def get_best_params(strategy_object, df_manager=None, live_trading=False, best_of_all_granularities=False, minimum_trades=None, with_lowest_losing_average=False):
     granularities = ['ONE_MINUTE', 'FIVE_MINUTE', 'FIFTEEN_MINUTE', 'THIRTY_MINUTE', 'ONE_HOUR', 'TWO_HOUR', 'SIX_HOUR', 'ONE_DAY']
-    conn = sql.connect(f'{db_path}/hyper.db')
-    if best_of_all_granularities:
-        best_results = []
-        best_granularity = ''
-        for granularity in granularities:
-            table = ""
-            if strategy_object.__class__.__name__ == "RSI_ADX_NP":
-                table =f"RSI_ADX_GPU_{granularity}"
-            else:    
-                table = f"{strategy_object.__class__.__name__}_{granularity}"
-            params = inspect.signature(strategy_object.custom_indicator)
-            params = list(dict(params.parameters).keys())[1:]
-            parameters = ', '.join(params)
+    
+    try:
+        conn = sql.connect(f'{db_path}/test_hyper.db')
+        print('Connected to the database successfully.')
+    except Exception as e:
+        print('Failed to connect to the database:', e)
+        return None
 
-            # we have already sent it the correct symbols that it did not get from client
-            if strategy_object.risk_object.client is not None:
-                symbol = utils.convert_symbols(strategy_object = strategy_object)
-            else:
-                symbol = strategy_object.symbol
+    print('Getting best params...')
+    print(f'DATABASE_PATH (best params): {db_path}/hyper.db')
 
-            query = f'SELECT {parameters},MAX("Total Return [%]") FROM {table} WHERE symbol="{symbol}"'
-            if minimum_trades is not None:
-                query += f' AND "Total Trades" >= {minimum_trades}'
-            result = pd.read_sql_query(query, conn)
-            list_results = []
-            for param in result:
-                list_results.append(result[param][0])
+    try:
+        if best_of_all_granularities:
+            best_results = []
+            best_granularity = ''
+            best_return = float('-inf')  # To track the best return
             
-            if not best_results:
-                best_results = list_results
-                best_granularity = granularity
-            else:
-                if best_results[-1] < list_results[-1]:
-                    best_results = list_results
-                    best_granularity = granularity
+            for granularity in granularities:
+                try:
+                    print(f'Processing granularity: {granularity}')
+                    table = f"RSI_ADX_GPU_{granularity}" if strategy_object.__class__.__name__ == "RSI_ADX_NP" else f"{strategy_object.__class__.__name__}_{granularity}"
+                    
+                    params = inspect.signature(strategy_object.custom_indicator)
+                    param_keys = list(dict(params.parameters).keys())[1:]  # Exclude 'self'
+                    parameters = ', '.join(param_keys)
 
-        if best_granularity != strategy_object.granularity or strategy_object.granularity is None:
-            #if the granularity has changed then we update strat with new data
+                    symbol = (
+                        utils.convert_symbols(strategy_object=strategy_object)
+                        if strategy_object.risk_object.client is not None else strategy_object.symbol
+                    )
 
-            if live_trading:
-                dict_df = get_historical_from_db(granularity=best_granularity,
-                                                symbols = strategy_object.symbol,
-                                                num_days=30,
-                                                convert=True)
-            else:
-                num_days = int(((strategy_object.df.index[-1] - strategy_object.df.index[0]).total_seconds() // 86400))
-                dict_df = get_historical_from_db(granularity=best_granularity,
-                                symbols = strategy_object.symbol,
-                                num_days=30)
-            
-            if hasattr(strategy_object, 'df'):
-                strategy_object.update(dict_df)
-            if live_trading:
-                df_manager.add_to_manager(dict_df)
-                df_manager.products_granularity[list(dict_df.keys())[0]] = best_granularity
+                    query = f'SELECT {parameters}, MAX("Total Return [%]") AS max_return FROM {table} WHERE symbol="{symbol}"'
+                    if minimum_trades is not None:
+                        query += f' AND "Total Trades" >= {minimum_trades}'
+                    print(f"Executing query: {query}")
 
-        best_results = best_results[:-1]
-        conn.close()
-        return best_results
+                    result = pd.read_sql_query(query, conn)
+                    print(f"Query result for {granularity}:", result)
+
+                    if result.empty or all(result.iloc[0].isnull()):
+                        print(f"No valid results for granularity: {granularity}")
+                        continue
+
+                    max_return = result['max_return'].iloc[0]
+                    list_results = [
+                        result[param].iloc[0] if param in result.columns else None for param in param_keys
+                    ]
+
+                    print(f"Results for {granularity}: max_return={max_return}, parameters={list_results}")
+
+                    # Update the best results if this granularity has a higher return
+                    if max_return > best_return:
+                        print(f"New best granularity: {granularity} with return: {max_return}")
+                        best_return = max_return
+                        best_results = list_results
+                        best_granularity = granularity
+
+                except Exception as e:
+                    print(f'Error processing granularity {granularity}:', e)
+
+            try:
+                if best_granularity and (strategy_object.granularity != best_granularity or strategy_object.granularity is None):
+                    print('Granularity has changed. Updating strategy with new data.')
+                    print(f"Best granularity: {best_granularity}")
+
+                    if live_trading:
+                        dict_df = get_historical_from_db(
+                            granularity=best_granularity,
+                            symbols=strategy_object.symbol,
+                            num_days=30,
+                            convert=True
+                        )
+                    else:
+                        num_days = int((strategy_object.df.index[-1] - strategy_object.df.index[0]).total_seconds() // 86400)
+                        dict_df = get_historical_from_db(
+                            granularity=best_granularity,
+                            symbols=strategy_object.symbol,
+                            num_days=num_days
+                        )
+
+                    if hasattr(strategy_object, 'df'):
+                        strategy_object.update(dict_df)
+                    
+                    if live_trading and df_manager:
+                        df_manager.add_to_manager(dict_df)
+                        df_manager.products_granularity[list(dict_df.keys())[0]] = best_granularity
+
+                print(f"Final best results: {best_results[:-1]}")
+                best_results = best_results[:-1]  # Exclude the return value for parameters
+            except Exception as e:
+                print('Error updating strategy or DF manager:', e)
+
+        else:
+            try:
+                table = f"{strategy_object.__class__.__name__}_{strategy_object.granularity}"
+                params = inspect.signature(strategy_object.custom_indicator)
+                param_keys = list(dict(params.parameters).keys())[1:]  # Exclude 'self'
+                parameters = ', '.join(param_keys)
+
+                symbol = (
+                    utils.convert_symbols(strategy_object=strategy_object)
+                    if strategy_object.risk_object.client is not None else strategy_object.symbol
+                )
+
+                query = f'SELECT {parameters}, MAX("Total Return [%]") AS max_return FROM {table} WHERE symbol="{symbol}"'
+                if minimum_trades is not None:
+                    query += f' AND "Total Trades" >= {minimum_trades}'
+                print(f"Executing query: {query}")
+
+                result = pd.read_sql_query(query, conn)
+                print(f"Query result:", result)
+
+                list_results = [
+                    result[param].iloc[0] for param in param_keys if param in result.columns
+                ]
+                print(f"Final results for single granularity: {list_results}")
+            except Exception as e:
+                print('Error querying for specific granularity:', e)
+                return None
+
+    finally:
+        try:
+            conn.close()
+            print('Database connection closed successfully.')
+        except Exception as e:
+            print('Failed to close the database connection:', e)
+
+    return best_results if best_of_all_granularities else list_results
+
+
+def export_optimization_results(df):
+    try:
+        conn = sql.connect(f'{db_path}/optimization.db')
+        print("Connected to database successfully.")
+        _create_table_if_not_exists('optimization_results', df, conn)
         
-
-    else:
-            table = f"{strategy_object.__class__.__name__}_{strategy_object.granularity}"
-            params = inspect.signature(strategy_object.custom_indicator)
-            params = list(dict(params.parameters).keys())[1:]
-            parameters = ', '.join(params)
-
-            # we have already sent it the correct symbols that it did not get from client
-            if strategy_object.risk_object.client is not None:
-                symbol = utils.convert_symbols(strategy_object = strategy_object)
-            else:
-                symbol = strategy_object.symbol
-
-            query = f'SELECT {parameters},MAX("Total Return [%]") FROM {table} WHERE symbol="{symbol}"'
-            if minimum_trades is not None:
-                query += f' AND "Total Trades" >= {minimum_trades}'
-            print(query)
-            result = pd.read_sql_query(query, conn)
-
-            list_results = []
-
-            for param in result:
-                list_results.append(result[param][0])
-            list_results = list_results[:-1] 
-
-    conn.close()
-    return list_results
-
+        # Check for unsupported types
+        print("Verifying DataFrame types:")
+        print(df.dtypes)
+        
+        print("Exporting results to the database...")
+        df.to_sql('optimization_results', conn, if_exists='append', index=False)
+        print("Data exported successfully.")
+    except Exception as e:
+        print(f"Error occurred while exporting optimization results: {e}")
+    finally:
+        conn.close()
+        print("Database connection closed.")
 
 def _create_table_if_not_exists(table_name, df, conn):
     """ Helper function to create table if it doesn't exist """
-    # Check if the table exists
-    table_exists_query = f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';"
-    table_exists = pd.read_sql(table_exists_query, conn)
-    
-    if table_exists.empty:
-        # Create table if it does not exist
-        print(f"Table {table_name} doesn't exist. Creating table...")
-        columns = df.columns
-        dtypes = df.dtypes  
-        sql_dtypes = []
-        for col in columns:
-            dtype = dtypes[col]
-            if pd.api.types.is_integer_dtype(dtype):
-                sql_dtype = 'INTEGER'
-            elif pd.api.types.is_float_dtype(dtype):
-                sql_dtype = 'REAL'
-            else:
-                sql_dtype = 'TEXT'
-            sql_dtypes.append(f'"{col}" {sql_dtype}')
-        create_table_query = f"CREATE TABLE {table_name} ("
-        create_table_query += ', '.join(sql_dtypes)
-        create_table_query += ");"
-        print(create_table_query)
+    try:
+        # Check if the table exists
+        print(f"Checking if table {table_name} exists...")
+        table_exists_query = f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';"
+        table_exists = pd.read_sql(table_exists_query, conn)
+        print("Table existence check completed.")
         
-        cursor = conn.cursor()
-        cursor.execute(create_table_query)
-        conn.commit()
-        print(f"Table {table_name} created successfully.")
-        return
+        if table_exists.empty:
+            # Create table if it does not exist
+            print(f"Table {table_name} doesn't exist. Creating table...")
+            columns = df.columns
+            dtypes = df.dtypes  
+            sql_dtypes = []
+            for col in columns:
+                dtype = dtypes[col]
+                if pd.api.types.is_integer_dtype(dtype):
+                    sql_dtype = 'INTEGER'
+                elif pd.api.types.is_float_dtype(dtype):
+                    sql_dtype = 'REAL'
+                else:
+                    sql_dtype = 'TEXT'
+                sql_dtypes.append(f'"{col}" {sql_dtype}')
+            
+            create_table_query = f"CREATE TABLE {table_name} ("
+            create_table_query += ', '.join(sql_dtypes)
+            create_table_query += ");"
+            print(f"Creating table with query:\n{create_table_query}")
+            
+            cursor = conn.cursor()
+            cursor.execute(create_table_query)
+            conn.commit()
+            print(f"Table {table_name} created successfully.")
+    except Exception as e:
+        print(f"Error occurred while creating table {table_name}: {e}")
+
+def get_users():
+    conn = sql.connect(f'{db_path}/users.db')
+    query = "SELECT email, password FROM users;"
+    users = pd.read_sql_query(query, conn)
+    conn.close()
+    users_dict = dict(zip(users['email'], users['password']))
+    return users_dict
+def save_user(email, password):
+    _create_table_if_not_exists('users', pd.DataFrame(columns=['email', 'password']), sql.connect(f'{db_path}/users.db'))
+    conn = sql.connect(f'{db_path}/users.db')
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO users (email, password) VALUES (?, ?);", (email, password))
+    conn.commit()
+    conn.close()
+def get_backtest_history(email):
+    _create_table_if_not_exists('backtests', pd.DataFrame(columns=['email', 'symbol', 'strategy', 'result', 'date']), sql.connect(f'{db_path}/backtests.db'))
+    conn = sql.connect(f'{db_path}/backtests.db')
+    query = f"SELECT * FROM backtests WHERE email = ?;"
+    history = pd.read_sql_query(query, conn, params=(email,))
+    conn.close()
+    return history.to_dict(orient="records")
+import json
+import datetime
+import pandas as pd
+
+def save_backtest(email, symbol, strategy, result, date):
+    # Convert non-serializable objects in 'result' to serializable types
+    def make_serializable(obj):
+        if isinstance(obj, pd.Timestamp):
+            return obj.isoformat()  # Convert Timestamps to ISO 8601 strings
+        elif isinstance(obj, datetime.datetime):
+            return obj.isoformat()  # Handle datetime objects
+        elif isinstance(obj, datetime.date):
+            return obj.isoformat()  # Handle date objects
+        return obj
+
+    # Apply conversion to the entire 'result' dictionary
+    serializable_result = {key: make_serializable(value) for key, value in result.items()}
+
+    # Serialize the processed result into JSON
+    result_json = json.dumps(serializable_result)
+
+    _create_table_if_not_exists(
+        'backtests',
+        pd.DataFrame(columns=['email', 'symbol', 'strategy', 'result', 'date']),
+        sql.connect(f'{db_path}/backtests.db')
+    )
+
+    conn = sql.connect(f'{db_path}/backtests.db')
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO backtests (email, symbol, strategy, result, date)
+        VALUES (?, ?, ?, ?, ?);
+    """, (email, symbol, strategy, result_json, date))
+    conn.commit()
+    conn.close()
+
 
 def export_hyper_to_db(strategy: object, hyper: object):
     stats_to_export = [
@@ -189,8 +332,14 @@ def export_hyper_to_db(strategy: object, hyper: object):
     
     data = hyper.pf.stats(silence_warnings=True,
                           agg_func=None)
+    
+    # dont forget to change this when using hyper !!!
+    db_lock = Lock()
+    def get_connection():
+        with db_lock:
+            return sql.connect(f'{db_path}/test_hyper.db')
 
-    conn = sql.connect(f'{db_path}/hyper.db')
+    conn = get_connection()
 
     symbol = strategy.symbol
     granularity = strategy.granularity
@@ -199,10 +348,14 @@ def export_hyper_to_db(strategy: object, hyper: object):
     params = list(dict(params.parameters).keys())[1:]
     combined_df = pd.DataFrame()
 
+
     for i in range(len(data)):
         stats = data.iloc[i]
+        print(f"Stats: {stats}")
+        print(f"Stats name: {stats.name}")
         backtest_dict = {'symbol': symbol}
         for j,param in enumerate(params):
+            print(j, param, stats.name[j])
             backtest_dict[param] = stats.name[j]
 
         for key, value in stats.items():
@@ -359,8 +512,8 @@ def get_metrics_from_backtest(strategy_object, multiple=False, multiple_dict=Non
 
 
 
-def export_backtest_to_db(object, multiple_table_name=None):
-    """ object can either be a Strategy Class or a pd.DataFrame """
+def export_backtest_to_db(object, multiple_table_name=None, is_combined=False):
+    """Exports strategy backtest results to the database."""
     conn = sql.connect(f'{db_path}/backtest.db')
 
     if not isinstance(object, pd.DataFrame):
@@ -369,7 +522,13 @@ def export_backtest_to_db(object, multiple_table_name=None):
         granularity = strategy_object.granularity
         backtest_df, value_list, params = get_metrics_from_backtest(strategy_object)
         symbol = backtest_df['symbol'].unique()[0]
-        table_name = f"{strategy_object.__class__.__name__}_{granularity}"
+
+        # Determine table name
+        if is_combined and hasattr(strategy_object, "strategies"):
+            strat_names = "_".join([str(type(s).__name__) for s in strategy_object.strategies])
+            table_name = f"{strat_names}_COMBINED_{granularity}"
+        else:
+            table_name = f"{strategy_object.__class__.__name__}_{granularity}"
 
         # Ensure the table exists
         _create_table_if_not_exists(table_name, backtest_df, conn)
@@ -452,3 +611,55 @@ def trade_export(response_json, balance, order_type="spot"):
     conn.close()
 
     print("Trade exported successfully.")
+
+def export_optimization_results_to_db(study, strategy_class):
+        """Export Bayesian optimization results to the database."""
+        conn = sql.connect(f'{db_path}/hyper_optuna.db')
+        table_name = f"OptunaOptimization_{strategy_class.__name__}"
+
+        # Create table if it doesn't exist
+        conn.execute(f"""
+            CREATE TABLE IF NOT EXISTS "{table_name}" (
+                trial_id INTEGER PRIMARY KEY,
+                params TEXT,
+                value REAL
+            )
+        """)
+
+        # Insert the results
+        for trial in study.trials:
+            params = str(trial.params)
+            value = trial.value
+            
+            # Check if trial_id already exists
+            cursor = conn.execute(f"SELECT COUNT(1) FROM {table_name} WHERE trial_id = ?", (trial.number,))
+            exists = cursor.fetchone()[0]
+            
+            if exists == 0:
+                # If trial_id doesn't exist, insert it
+                conn.execute(f"""
+                    INSERT INTO "{table_name}" (trial_id, params, value)
+                    VALUES (?, ?, ?)
+                """, (trial.number, params, value))
+
+        conn.commit()
+        conn.close()    
+
+# def export_optimization_results(df):
+#     try:
+#         conn = sql.connect(f'{db_path}/ai_optimization.db')
+#         print("Connected to database successfully.")
+#         _create_table_if_not_exists('ai_optimization_results', df, conn)
+        
+#         # Check for unsupported types
+#         print("Verifying DataFrame types:")
+#         print(df.dtypes)
+        
+#         print("Exporting results to the database...")
+#         df.to_sql('optimization_results', conn, if_exists='append', index=False)
+#         print("Data exported successfully.")
+#     except Exception as e:
+#         print(f"Error occurred while exporting optimization results: {e}")
+#     finally:
+#         conn.close()
+#         print("Database connection closed.")

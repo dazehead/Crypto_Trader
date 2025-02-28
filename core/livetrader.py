@@ -6,7 +6,7 @@ from core.log import LinkedList
 from core.strategies.strategy import Strategy
 from core.strategies.single.rsi import RSI
 from core.strategies.double.rsi_adx import RSI_ADX
-from core.strategies.gpu_optimized.rsi_adx_gpu import RSI_ADX_GPU
+from core.strategies.gpu_optimized.GPU.rsi_adx_gpu import RSI_ADX_GPU
 from core.trade import Trade
 from core.scanner import Scanner
 from core.risk import Risk_Handler
@@ -34,7 +34,7 @@ class LiveTrader:
         self.strat_classes = {}
         self.extract_classes_from_scripts()
 
-        #self.update_candle_data() # the gui does this during start up now no need for this any more
+        # self.update_candle_data() # the gui does this during start up now no need for this any more
         self.load_strategy_params_for_strategy()
     
     def extract_classes_from_scripts(self):
@@ -58,7 +58,7 @@ class LiveTrader:
     def load_strategy_params_for_strategy(self):
         # Load strategy parameters for each symbol
         for symb in self.scanner.kraken_crypto:
-            strat = RSI_ADX(dict_df=None, risk_object=self.risk)
+            strat = RSI_ADX_GPU(dict_df=None, risk_object=self.risk)
             strat.symbol = symb
             params = database_interaction.get_best_params(
                 strat,
@@ -67,6 +67,7 @@ class LiveTrader:
                 best_of_all_granularities=True,
                 minimum_trades=4
             )
+            print(f'Best params for {symb}: {params}')
             self.risk.symbol_params[symb] = params
             self.df_manager.set_next_update(symb, initial=True)
 
@@ -94,7 +95,7 @@ class LiveTrader:
             current_dict = {k: self.df_manager.dict_df[k]}
 
             # Instantiate strategy
-            strat = RSI_ADX(current_dict, self.risk, with_sizing=True, hyper=False)
+            strat = RSI_ADX_GPU(current_dict, self.risk, with_sizing=True, hyper=False)
             strat.custom_indicator(strat.close, *self.risk.symbol_params[k])
 
             fig = strat.graph(self.graph_callback)

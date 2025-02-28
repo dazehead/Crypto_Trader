@@ -1,9 +1,0 @@
-services:
-  cryptobot:
-    build: .
-    env_file:
-      - .env
-    volumes:
-      - .:/app  
-      - ${DATABASE_PATH}:/app/database 
-    command: python __main__.py

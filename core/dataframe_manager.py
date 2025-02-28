@@ -44,6 +44,7 @@ class DF_Manager():
 
         coinbase_symbol = utils.convert_symbols(lone_symbol=symbol)
         granularity = self.products_granularity[symbol]
+        print("granularity for livetrading: ", granularity)
 
         timestamps = self.coinbase._get_unix_times(
             granularity=granularity,

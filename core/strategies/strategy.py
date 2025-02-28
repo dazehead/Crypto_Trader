@@ -1,4 +1,3 @@
-"""This needs to return signals"""
 import vectorbt as vbt
 import pandas as pd
 import numpy as np
@@ -9,6 +8,8 @@ import talib as ta
 import cupy as cp
 from numba import njit
 import core.utils as utils
+# import logging 
+# logging.basicConfig(level=logging.DEBUG)
 
 class Strategy:
     """Class to store strategy resources"""
@@ -179,88 +180,112 @@ class Strategy:
 
         return combined_signals
           
+    def ensure_series(self, data, index):
+        if isinstance(data, pd.Series):
+            return data
+        return pd.Series(data, index=index) if len(data) == len(index) else None
 
 
     def graph(self, graph_callback=None):
- 
-        # Start by plotting the first figure (Close price)
-        param_number = 0
-        #fig1 = self.close.vbt.plot(trace_kwargs=dict(name='Close'))
-        fig1 = go.Figure(data=[go.Candlestick(x=self.close.index,
-                                             open=self.open,
-                                             high=self.high,
-                                             low=self.low,
-                                             close=self.close)])
+        print(f"Data available - Close: {len(self.close)}, Entries: {self.entries is not None}, Exits: {self.exits is not None}")
+        try:
+            # Initialize the candlestick figure
+            fig1 = go.Figure(data=[go.Candlestick(
+                x=self.close.index,
+                open=self.open,
+                high=self.high,
+                low=self.low,
+                close=self.close
+            )])
+            fig2 = None
+            param_number = 0
 
-        fig2 = None
-        osc_data = None
+            # Add technical indicators
+            while True:
+                param_number += 1
+                ti_data_attr = getattr(self, f"ti{param_number}_data", None)
+                if ti_data_attr:
+                    if isinstance(ti_data_attr, tuple) and len(ti_data_attr) >= 2:
+                        ti_data_name, *ti_data_list = ti_data_attr
+                        for i, ti_data in enumerate(ti_data_list):
+                            ti_data_series = self.ensure_series(ti_data, self.close.index)
+                            if ti_data_series is not None:
+                                fig1 = ti_data_series.vbt.plot(
+                                    trace_kwargs=dict(name=f"{ti_data_name}_{i+1}"), fig=fig1
+                                )
+                            else:
+                                print(f"Skipping {ti_data_name}_{i+1}: incompatible data.")
 
-        # Loop over param_numbers to dynamically access ti_data and osc_data
-        while True:
-            param_number += 1
+                osc_data_attr = getattr(self, f"osc{param_number}_data", None)
+                if osc_data_attr:
+                    if isinstance(osc_data_attr, tuple) and len(osc_data_attr) >= 2:
+                        osc_data_name, *osc_data_list = osc_data_attr
+                        for i, osc_data in enumerate(osc_data_list):
+                            osc_data_series = self.ensure_series(osc_data, self.close.index)
+                            if osc_data_series is not None:
+                                if fig2 is None:
+                                    fig2 = osc_data_series.vbt.plot(trace_kwargs=dict(name=f"{osc_data_name}_{i+1}"))
+                                else:
+                                    fig2 = osc_data_series.vbt.plot(trace_kwargs=dict(name=f"{osc_data_name}_{i+1}"), fig=fig2)
 
-            # Dynamically access ti{i}_data and check if it's not None
-            ti_data_attr = getattr(self, f"ti{param_number}_data", None)
-            
-            if ti_data_attr is not None:
-                ti_data_name, ti_data = ti_data_attr  # Unpack the tuple (name, data)
-                ti_data = pd.Series(ti_data, index=self.close.index)
-                fig1 = ti_data.vbt.plot(trace_kwargs=dict(name=ti_data_name), fig=fig1)
+                if not ti_data_attr and not osc_data_attr:
+                    break
 
-            # Dynamically access osc{i}_data and check if it's not None
-            osc_data_attr = getattr(self, f"osc{param_number}_data", None)
-            
-            if osc_data_attr is not None:
-                osc_data_name, osc_data = osc_data_attr  # Unpack the tuple (name, data)
-                osc_data = pd.Series(osc_data, index=self.close.index)
-                if fig2 is None:
-                    fig2 = osc_data.vbt.plot(trace_kwargs=dict(name=osc_data_name))
+            # Add entry/exit markers
+            if self.entries is not None:
+                self.entries = self.ensure_series(self.entries, self.close.index)
+                if self.entries is not None:
+                    fig1 = self.entries.vbt.signals.plot_as_entry_markers(self.close, fig=fig1)
                 else:
-                    fig2 = osc_data.vbt.plot(trace_kwargs=dict(name=osc_data_name), fig=fig2)
+                    print("Entries are incompatible with graphing.")
 
-            # Break the loop if both ti_data and osc_data for the current param_number are None
-            if ti_data_attr is None and osc_data_attr is None:
-                break
+            if self.exits is not None:
+                self.exits = self.ensure_series(self.exits, self.close.index)
+                if self.exits is not None:
+                    fig1 = self.exits.vbt.signals.plot_as_exit_markers(self.close, fig=fig1)
+                else:
+                    print("Exits are incompatible with graphing.")
 
-        # Plot entry and exit markers on the first figure (fig1)
-        if self.entries is not None:
-            fig1 = self.entries.vbt.signals.plot_as_entry_markers(self.close, fig=fig1)
-            if osc_data is not None:  # Only plot if osc_data exists
-                fig2 = self.entries.vbt.signals.plot_as_entry_markers(osc_data, fig=fig2)
+            # Combine subplots
+            rows = 1 + (1 if fig2 else 0)
+            fig_combined = sp.make_subplots(rows=rows, cols=1)
+            
+            for trace in fig1['data']:
+                fig_combined.add_trace(trace, row=1, col=1)
+            if fig2:
+                for trace in fig2['data']:
+                    fig_combined.add_trace(trace, row=2, col=1)
+                if self.buy_threshold is not None:
+                    fig_combined.add_hline(y=self.buy_threshold, line_color='green', row=2, col=1)
+                if self.sell_threshold is not None:
+                    fig_combined.add_hline(y=self.sell_threshold, line_color='red', row=2, col=1)
 
-        if self.exits is not None:
-            fig1 = self.exits.vbt.signals.plot_as_exit_markers(self.close, fig=fig1)
-            if osc_data is not None:  # Only plot if osc_data exists
-                fig2 = self.exits.vbt.signals.plot_as_exit_markers(osc_data, fig=fig2)
+            fig_combined.update_layout(
+                height=800,
+                title_text=f"{self.__class__.__name__} strategy for {self.symbol} on {self.granularity}",
+                xaxis_rangeslider_visible=False
+            )
 
-        # Create a subplot figure with 2 rows, 1 column
-        fig_combined = sp.make_subplots(rows=2, cols=1)
+            # Final check for combined figure
+            if not fig_combined or len(fig_combined.data) == 0:
+                print("Error: Combined figure is empty.")
+                return
 
-        # Add the traces from the first figure (fig1) to the first row of the subplot
-        for trace in fig1['data']:
-            fig_combined.add_trace(trace, row=1, col=1)
+            # Display or call callback
+            if graph_callback:
+                print("Graph callback is being called with a figure.")
+                graph_callback(fig_combined)
+            else:
+                print("Displaying the figure directly.")
+                fig_combined.show()
 
-        # Add the traces from the second figure (fig2) to the second row of the subplot, if fig2 exists
-        if fig2 is not None:
-            for trace in fig2['data']:
-                fig_combined.add_trace(trace, row=2, col=1)
+        except Exception as e:
+            print(f"Error while graphing: {e}")
 
-        # Automatically add buy_threshold and sell_threshold to fig2 if they are not None
-        if self.buy_threshold is not None:
-            fig_combined.add_hline(y=self.buy_threshold, line_color='green', line_width=1.5, row=2, col=1)
-        if self.sell_threshold is not None:
-            fig_combined.add_hline(y=self.sell_threshold, line_color='red', line_width=1.5, row=2, col=1)
 
-        # Optionally, update the layout of the combined figure
-        fig_combined.update_layout(height=800, title_text=f"{self.__class__.__name__} strategy for {self.symbol} on {self.granularity} timeframe", xaxis_rangeslider_visible=False)
-
-        # Display the combined figure
-        if graph_callback:
-            return fig_combined
-        else:
-            fig_combined.show()
 
     def generate_backtest(self):
+        # logging.debug("Generating backtest")
         """Performs backtest and returns the stats"""
         init_cash = self.risk_object.total_balance
         size = None
@@ -274,8 +299,15 @@ class Strategy:
 
             size_type = 'value'
             accumulate = True
-        print("Printing close", self.close)
 
+        # logging.debug(f"close: {self.close}")
+        # logging.debug(f"entries: {self.entries}")
+        # logging.debug(f"exits: {self.exits}")
+        # logging.debug(f"size: {size}")
+        # logging.debug(f"size_type: {size_type}")
+        # logging.debug(f"accumulate: {accumulate}")
+        # logging.debug(f"init_cash: {init_cash}")
+        # logging.debug(f"strategy: {self.__class__.__name__}")
         self.portfolio = vbt.Portfolio.from_signals(
             close = self.close,
             entries = self.entries,
