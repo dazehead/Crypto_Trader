@@ -168,6 +168,8 @@ class CryptoTrader():
         self.backtest_content.columnconfigure(0, weight=0)
         self.backtest_content.rowconfigure(0, weight=0)
 
+
+
     def second_strat_checked(self):
         if self.add_strategy.get():
             self.second_strat_combobox['state'] = 'normal'
