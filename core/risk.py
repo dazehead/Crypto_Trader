@@ -9,7 +9,5 @@ class Risk_Handler:
             self.total_balance = self.client.get_account_balance()
             self.balance_to_risk = None
             print(f"Balance: {self.total_balance}") 
-        print("Risk Handler Initialized")
-        print(f"client: {self.client.__class__.__name__}")  
         self.symbol_params = {}
 

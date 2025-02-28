@@ -110,7 +110,7 @@ class Backtest():
                     print("getting best parameters ...")
                     logging.info(f"Getting best parameters for {strat.__class__.__name__}")
                     params = database_interaction.get_best_params(strat, minimum_trades=4)
-                    logging.info(f"Best params: {params}")
+                    #logging.info(f"Best params: {params}")
                     strat.custom_indicator(None, *params)
                 else:
                     try:

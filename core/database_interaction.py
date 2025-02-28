@@ -28,7 +28,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 db_path = os.getenv('DATABASE_PATH')
-print("DATABASE_PATH : ", db_path)
 def get_historical_from_db(granularity, symbols: list = [], num_days: int = None, convert=False):
     original_symbol = symbols
 
@@ -78,13 +77,13 @@ def get_best_params(strategy_object, df_manager=None, live_trading=False, best_o
     
     try:
         conn = sql.connect(f'{db_path}/test_hyper.db')
-        print('Connected to the database successfully.')
+        #print('Connected to the database successfully.')
     except Exception as e:
-        print('Failed to connect to the database:', e)
+        #print('Failed to connect to the database:', e)
         return None
 
-    print('Getting best params...')
-    print(f'DATABASE_PATH (best params): {db_path}/hyper.db')
+    # print('Getting best params...')
+    # print(f'DATABASE_PATH (best params): {db_path}/hyper.db')
 
     try:
         if best_of_all_granularities:
@@ -94,7 +93,6 @@ def get_best_params(strategy_object, df_manager=None, live_trading=False, best_o
             
             for granularity in granularities:
                 try:
-                    print(f'Processing granularity: {granularity}')
                     table = f"RSI_ADX_GPU_{granularity}" if strategy_object.__class__.__name__ == "RSI_ADX_NP" else f"{strategy_object.__class__.__name__}_{granularity}"
                     
                     params = inspect.signature(strategy_object.custom_indicator)
@@ -109,13 +107,10 @@ def get_best_params(strategy_object, df_manager=None, live_trading=False, best_o
                     query = f'SELECT {parameters}, MAX("Total Return [%]") AS max_return FROM {table} WHERE symbol="{symbol}"'
                     if minimum_trades is not None:
                         query += f' AND "Total Trades" >= {minimum_trades}'
-                    print(f"Executing query: {query}")
 
                     result = pd.read_sql_query(query, conn)
-                    print(f"Query result for {granularity}:", result)
 
                     if result.empty or all(result.iloc[0].isnull()):
-                        print(f"No valid results for granularity: {granularity}")
                         continue
 
                     max_return = result['max_return'].iloc[0]
@@ -123,22 +118,21 @@ def get_best_params(strategy_object, df_manager=None, live_trading=False, best_o
                         result[param].iloc[0] if param in result.columns else None for param in param_keys
                     ]
 
-                    print(f"Results for {granularity}: max_return={max_return}, parameters={list_results}")
 
                     # Update the best results if this granularity has a higher return
                     if max_return > best_return:
-                        print(f"New best granularity: {granularity} with return: {max_return}")
                         best_return = max_return
                         best_results = list_results
                         best_granularity = granularity
 
                 except Exception as e:
-                    print(f'Error processing granularity {granularity}:', e)
+                    pass
+                    # print(f'Error processing granularity {granularity}:', e)
 
             try:
                 if best_granularity and (strategy_object.granularity != best_granularity or strategy_object.granularity is None):
-                    print('Granularity has changed. Updating strategy with new data.')
-                    print(f"Best granularity: {best_granularity}")
+                    # print('Granularity has changed. Updating strategy with new data.')
+                    # print(f"Best granularity: {best_granularity}")
 
                     if live_trading:
                         dict_df = get_historical_from_db(
@@ -162,10 +156,11 @@ def get_best_params(strategy_object, df_manager=None, live_trading=False, best_o
                         df_manager.add_to_manager(dict_df)
                         df_manager.products_granularity[list(dict_df.keys())[0]] = best_granularity
 
-                print(f"Final best results: {best_results[:-1]}")
+                # print(f"Final best results: {best_results[:-1]}")
                 best_results = best_results[:-1]  # Exclude the return value for parameters
             except Exception as e:
-                print('Error updating strategy or DF manager:', e)
+                pass
+                # print('Error updating strategy or DF manager:', e)
 
         else:
             try:
@@ -182,23 +177,23 @@ def get_best_params(strategy_object, df_manager=None, live_trading=False, best_o
                 query = f'SELECT {parameters}, MAX("Total Return [%]") AS max_return FROM {table} WHERE symbol="{symbol}"'
                 if minimum_trades is not None:
                     query += f' AND "Total Trades" >= {minimum_trades}'
-                print(f"Executing query: {query}")
+                # print(f"Executing query: {query}")
 
                 result = pd.read_sql_query(query, conn)
-                print(f"Query result:", result)
+                # print(f"Query result:", result)
 
                 list_results = [
                     result[param].iloc[0] for param in param_keys if param in result.columns
                 ]
-                print(f"Final results for single granularity: {list_results}")
+                # print(f"Final results for single granularity: {list_results}")
             except Exception as e:
-                print('Error querying for specific granularity:', e)
                 return None
+                # print('Error querying for specific granularity:', e)
 
     finally:
         try:
             conn.close()
-            print('Database connection closed successfully.')
+            # print('Database connection closed successfully.')
         except Exception as e:
             print('Failed to close the database connection:', e)
 
@@ -208,34 +203,25 @@ def get_best_params(strategy_object, df_manager=None, live_trading=False, best_o
 def export_optimization_results(df):
     try:
         conn = sql.connect(f'{db_path}/optimization.db')
-        print("Connected to database successfully.")
+        # print("Connected to database successfully.")
         _create_table_if_not_exists('optimization_results', df, conn)
         
-        # Check for unsupported types
-        print("Verifying DataFrame types:")
-        print(df.dtypes)
-        
-        print("Exporting results to the database...")
+        # print("Exporting results to the database...")
         df.to_sql('optimization_results', conn, if_exists='append', index=False)
-        print("Data exported successfully.")
     except Exception as e:
         print(f"Error occurred while exporting optimization results: {e}")
     finally:
         conn.close()
-        print("Database connection closed.")
 
 def _create_table_if_not_exists(table_name, df, conn):
     """ Helper function to create table if it doesn't exist """
     try:
         # Check if the table exists
-        print(f"Checking if table {table_name} exists...")
         table_exists_query = f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';"
         table_exists = pd.read_sql(table_exists_query, conn)
-        print("Table existence check completed.")
         
         if table_exists.empty:
             # Create table if it does not exist
-            print(f"Table {table_name} doesn't exist. Creating table...")
             columns = df.columns
             dtypes = df.dtypes  
             sql_dtypes = []
@@ -252,12 +238,10 @@ def _create_table_if_not_exists(table_name, df, conn):
             create_table_query = f"CREATE TABLE {table_name} ("
             create_table_query += ', '.join(sql_dtypes)
             create_table_query += ");"
-            print(f"Creating table with query:\n{create_table_query}")
             
             cursor = conn.cursor()
             cursor.execute(create_table_query)
             conn.commit()
-            print(f"Table {table_name} created successfully.")
     except Exception as e:
         print(f"Error occurred while creating table {table_name}: {e}")
 

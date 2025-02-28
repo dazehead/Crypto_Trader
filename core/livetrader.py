@@ -67,7 +67,7 @@ class LiveTrader:
                 best_of_all_granularities=True,
                 minimum_trades=4
             )
-            print(f'Best params for {symb}: {params}')
+            #print(f'Best params for {symb}: {params}')
             self.risk.symbol_params[symb] = params
             self.df_manager.set_next_update(symb, initial=True)
 
